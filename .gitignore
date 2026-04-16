@@ -1,0 +1,6 @@
+/target/
+/targetyp7aAr/
+*.tmp
+.claude/settings.local.json
+config.toml
+save.json

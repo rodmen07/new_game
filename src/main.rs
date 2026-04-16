@@ -1,12 +1,14 @@
-﻿mod constants;
-mod resources;
 mod components;
+mod constants;
+mod resources;
+mod save;
 mod settings;
 mod setup;
 mod systems;
 
 use bevy::prelude::*;
 use resources::*;
+use save::{PendingLoad, SaveRequest, apply_save_data, handle_save};
 use settings::{GameSettings, apply_settings};
 use setup::setup;
 use systems::*;
@@ -25,6 +27,7 @@ fn main() {
             }),
             ..default()
         }))
+        // ── Game resources ────────────────────────────────────────────────────
         .init_resource::<PlayerMovement>()
         .init_resource::<PlayerStats>()
         .init_resource::<Inventory>()
@@ -48,7 +51,11 @@ fn main() {
         .init_resource::<Pet>()
         .init_resource::<SocialEvents>()
         .init_resource::<Season>()
-        .add_systems(Startup, (apply_settings, setup).chain())
+        // ── Save / load ───────────────────────────────────────────────────────
+        .init_resource::<PendingLoad>()
+        .add_event::<SaveRequest>()
+        // ── Systems ───────────────────────────────────────────────────────────
+        .add_systems(Startup, (apply_settings, setup, apply_save_data).chain())
         .add_systems(Update, camera_zoom)
         .add_systems(Update, (
             tick_time, on_new_day, decay_stats, degrade_health, check_critical,
@@ -56,11 +63,13 @@ fn main() {
             npc_wander, npc_visuals, update_npc_labels, update_npc_prompts,
         ).chain())
         .add_systems(Update, (
-            detect_nearby, update_highlight, handle_interaction, check_daily_goal, check_milestones,
+            detect_nearby, update_highlight, handle_interaction,
+            check_daily_goal, check_milestones,
         ).chain().after(player_movement))
         .add_systems(Update, (
             spawn_dash_particles, update_particles,
             camera_follow, tick_notification, update_hud, update_day_night,
         ).chain().after(player_visuals))
+        .add_systems(Update, handle_save.after(on_new_day))
         .run();
 }

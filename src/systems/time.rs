@@ -165,6 +165,9 @@ pub fn on_new_day(
     gs.high_stress_today = false; gs.high_hunger_today = false;
     *goal = make_goal(gt.day, &day_extras.season.current);
 
+    // Auto-save at the start of each new day.
+    day_extras.save_writer.send_default();
+
     if gt.is_weekend() && notif.timer <= 0. {
         notif.message = format!("It''s {}! Work pays 1.5x today.", gt.day_name());
         notif.timer = 4.;
