@@ -1,18 +1,27 @@
 # Everyday Life Simulator
 
-A real-time 2D life management sim written in Rust with Bevy. You manage a single character's day-to-day existence — balancing energy, hunger, finances, career progression, social relationships, and housing — across an accelerated 24-hour cycle in a small procedurally-driven urban world.
+A real-time 2D life management prototype written in Rust with Bevy. You guide a single character through work, meals, rent, sleep, friendships, hobbies, pets, weather, crises, and seasonal festivals across an accelerated city sandbox, now with typed action challenges that gate moment-to-moment tasks.
 
 ---
 
 ## Overview
 
-Genre: life sim / idle RPG  
+Genre: life sim / survival sandbox  
 Perspective: top-down 2D  
-Time scale: 60× (1 real second = 1 in-game minute)
+Time scale: 60x (1 real second = 1 in-game minute)
 
-The core loop is daily survival and long-term progression. Each day you work, eat, sleep, interact with NPCs, and pursue goals. Stats decay continuously; neglect any of them long enough and cascading penalties kick in (burnout, malnourishment, eviction). Progress unlocks better housing, career ranks, passive income streams, and one of 15 milestone achievements. The game grades your life daily on an F–S scale.
+The current playable build focuses on daily survival and long-term stability. You start with very little, work toward housing access, manage core needs, build friendships, survive bad luck, and slowly unlock stronger routines and milestone goals.
 
-The project is currently a feature-complete prototype with no save system, no audio, and a single world layout.
+Current implemented highlights include:
+- save and load with JSON persistence
+- Menu, Playing, Paused, and Settings screens
+- banking, loans, investments, housing, and transport upgrades
+- NPC friendship, quests, narrative unlocks, and reputation systems
+- pets, crisis events, seasonal festivals, and weather-driven visuals
+- universal typed action prompts with seniority-based retries and subject-aware phrases before tasks resolve
+- 21 milestone goals and a daily life rating system
+
+The current baseline is verified with a successful build, a clean strict clippy run, and 149 passing tests.
 
 ---
 
@@ -25,9 +34,9 @@ The project is currently a feature-complete prototype with no save system, no au
 | Architecture | Entity-Component-System (ECS) |
 | Rendering | Bevy 2D sprite pipeline (no external renderer) |
 | RNG | Linear congruential generator (seeded per day) |
-| Dependencies | Bevy only (single entry in `Cargo.toml`) |
+| Dependencies | bevy 0.15 · serde + serde_json · toml |
 
-Bevy's ECS drives the entire game: all game state lives in `Resource` structs; all logic lives in `System` functions scheduled by Bevy's scheduler. Custom `SystemParam` groups work around Bevy's 16-parameter system limit.
+Bevy's ECS drives the entire game: most shared world state lives in Resources, while some player-local state now lives on Components. Game logic runs through scheduled Systems, with custom SystemParam groups helping keep larger systems manageable.
 
 ---
 
@@ -35,33 +44,20 @@ Bevy's ECS drives the entire game: all game state lives in `Resource` structs; a
 
 ### Prerequisites
 
-- Rust stable toolchain (1.80+): https://rustup.rs
-- On Linux: `libudev-dev`, `libasound2-dev`, `libxkbcommon-dev` (Bevy window/audio deps)
-- On Windows/macOS: no extra system dependencies
+- Rust stable toolchain: https://rustup.rs
+- On Linux: libudev-dev, libasound2-dev, libxkbcommon-dev
+- On Windows and macOS: no extra system packages are typically needed
 
-### Build
+### Common commands
 
 ```bash
-# Debug (fast compile, slow runtime)
 cargo run
-
-# Release (optimized — recommended for gameplay)
 cargo run --release
+cargo build
+cargo test
 ```
 
-The first build downloads and compiles Bevy's dependency tree (~200 crates). Expect 2–5 minutes on first run; subsequent builds are incremental.
-
-### Optional: faster debug builds
-
-Add to `.cargo/config.toml` at the project root:
-
-```toml
-[profile.dev]
-opt-level = 1
-
-[profile.dev.package."*"]
-opt-level = 3
-```
+The first build compiles the Bevy dependency tree and can take a few minutes. Windows debug builds are tuned in Cargo.toml for more stable linking during development.
 
 ---
 
@@ -69,155 +65,126 @@ opt-level = 3
 
 | Key | Action |
 |---|---|
-| `W A S D` / Arrow keys | Move |
-| `Shift` (hold) | Sprint (1.75× speed, drains energy) |
-| `Space` | Dash (burst 620 px/s for 0.18 s, 1.2 s cooldown) |
-| `E` | Interact with nearest object / NPC |
-| `G` | Gift (when adjacent to a max-friendship NPC) |
-| `1`–`8` | Bank shortcuts (deposit, withdraw, loan, invest, etc.) |
-| Scroll wheel | Camera zoom (0.35×–2.5×) |
+| W A S D / Arrow keys | Move |
+| Shift (hold) | Sprint |
+| E | Interact with the nearest object or NPC |
+| G | Give a gift when available |
+| 1-9 | Context actions such as shopping, banking, festival activities, and insurance |
+| Enter | Confirm a typed action prompt |
+| Backspace | Edit the active typed prompt |
+| Esc | Pause, cancel a typed prompt, or access settings |
+| Mouse wheel | Camera zoom |
 
-Interaction radius: 58 px. A prompt at the bottom of the screen shows the available action when in range.
+Interaction prompts appear at the bottom of the HUD whenever you are in range of something useful.
 
 ---
 
 ## Architecture
 
-```
+```text
 src/
-├── main.rs          # App entry point, system scheduling, resource init
-├── components.rs    # All ECS component definitions
-├── constants.rs     # Numeric tuning constants (speeds, radii, timings)
-├── resources.rs     # All ECS resources (PlayerStats, Skills, Hobbies,
-│                    #   Housing, Transport, Pet, Investment, Reputation, …)
-├── setup.rs         # World spawn: geometry, interactables, NPCs, HUD
+├── main.rs          # App entry point and system scheduling
+├── menu.rs          # Main menu, pause menu, settings screen
+├── audio.rs         # SFX and ambient audio plumbing
+├── save.rs          # JSON persistence and reset flow
+├── settings.rs      # config.toml load and save
+├── components.rs    # ECS components including LocalPlayer and PlayerId
+├── constants.rs     # Gameplay tuning constants
+├── resources.rs     # Shared game resources and SystemParam bundles
+├── setup.rs         # World, interactables, NPCs, and HUD spawn
 └── systems/
-    ├── mod.rs
-    ├── player.rs    # Movement, sprint, dash, camera, body animation
-    ├── collision.rs # AABB resolution, least-penetration ordering
-    ├── npc.rs       # Zone wandering, friendship, walk cycle, labels
-    ├── interaction.rs # Proximity detection, action dispatch, cooldowns
-    ├── stats.rs     # Continuous stat decay, condition triggers
-    ├── time.rs      # Game clock, day transitions, daily events
-    ├── goals.rs     # 18-day goal cycle, milestone evaluation
-    ├── hud.rs       # All UI text/bar updates
-    └── visual.rs    # Day/night overlay, highlights, dash particles
+    ├── player.rs
+    ├── collision.rs
+    ├── npc.rs
+    ├── interaction.rs
+    ├── stats.rs
+    ├── time.rs
+    ├── goals.rs
+    ├── hud.rs
+    ├── visual.rs
+    ├── narrative.rs
+    ├── vehicle.rs
+    ├── crisis.rs
+    └── festival.rs
 ```
 
-### Key design decisions
+### Key design notes
 
-- **Resource-driven state**: All mutable game state (`PlayerStats`, `Skills`, `GameClock`, etc.) is stored in Bevy `Resource`s, not on entities. This keeps queries simple and avoids multi-entity synchronization.
-- **LCG pseudo-RNG**: NPC wandering and daily event selection use a seeded linear congruential generator (`seed = day_number`), giving deterministic but varied daily content without pulling in an RNG crate.
-- **SystemParam groups**: Custom parameter structs (`HudExtras`, `InteractExtras`, `DayExtras`) bundle related queries/resources to stay under Bevy's 16-argument system limit.
-- **Layered Z-ordering**: All 2D depth is explicit (0–50 range); no scene graph.
+- Hybrid ECS state model: most global gameplay data still lives in Resources, while local player identity and several movement and input systems now live on the player entity as Components.
+- Deterministic day-based randomness: wandering, events, and crisis timing use seeded logic for predictable testing with varied play.
+- SystemParam bundles keep large Bevy systems readable while staying under the engine parameter limit.
+- Collision is resolved in sub-steps to avoid tunneling at sprint and vehicle speeds.
+- Save data mirrors the main gameplay state so runs can resume cleanly between sessions.
 
 ---
 
 ## Current Feature Set
 
-### Player & Movement
-- Acceleration/friction model (1400/900 px/s²), speed capped by health and energy thresholds
-- Dash with trail particles; dash cancelled and penalized on wall collision
-- Sprint stamina drain; movement penalties below 30 HP or 20 energy
-- Transport modifier: Walk 1.0×, Bike 1.1×, Car 1.3× (speed and work pay)
+### Survival loop
+- Harder opening state where you begin with no lease and must earn access to stable housing
+- Continuous management of energy, hunger, happiness, health, stress, and sleep debt
+- Long-term condition systems including burnout, malnourishment, mental fatigue, and short hospitalization recovery
+- Daily life rating from F through S based on how well the run is going
 
-### Stats (all 0–100)
-- **Energy** — drains 0.55/s; weather-modified (Stormy 1.5×); recoverable via sleep, coffee, items
-- **Hunger** — increases 0.8/s; causes health damage above 80; cured by eating
-- **Happiness** — degrades from hunger/exhaustion; boosted by social actions, hobbies, outdoor weather
-- **Health** — damaged by severe hunger, sleep deprivation, high stress; blocks work below threshold
-- **Stress** — increased by work (+8), loan debt, random events; reduced by meditation (−25), relaxation (−12)
-- **Sleep Debt** — accumulates 8 h/day; caps max energy at 80 (8–16 h debt) or 60 (>16 h)
+### Economy and progression
+- Cash, savings, loan pressure, rent, eviction risk, and seeded investment returns
+- Housing upgrades from unhoused to apartment, condo, and penthouse
+- Transport progression from walking to bike and car, with movement and work bonuses
+- Skills, hobbies, reputation, courses, and goal rewards feeding long-term progression
+- 21 milestones including transport, social, crisis, quest, crafting, and festival achievements
 
-### Conditions
-- **Burnout**: triggers after 3 consecutive high-stress days; −30% work pay
-- **Malnourished**: triggers after 3 consecutive high-hunger days; health degrades 1.5× faster
+### Social systems
+- Three named NPCs with time-of-day routines and personality-based relationship bonuses
+- Chatting, gifting, parties, study sessions, and friendship decay across days
+- Quest board progression and narrative chapter unlocks tied to life progress
+- Pet adoption and daily care with hunger tracking and passive bonuses
 
-### Economy
-- Cash, savings (5%/day interest), loan (8%/day interest, hard cap $300 before repay required)
-- Daily rent by housing tier; 3-day unpaid rent → eviction
-- Investments: low-risk (4%/day) and medium-risk (10%/day) with seeded daily variance
-- Work pay formula: `base × career_bonus × mood × time_of_day × weekend × stress × loan_penalty × burnout × transport`
+### Dynamic world systems
+- Four seasons with rotating modifiers and seasonal daily goals
+- Four weather patterns with particle effects, splash or snow variants, and storm flashes
+- Six crisis types: layoff, market crash, medical emergency, rent hike, theft, and appliance breakdown
+- Insurance purchase option at the bank to reduce crisis damage
+- Seasonal festivals at the park with unique activities, token rewards, and a festival milestone
 
-### Progression
-- **Career** (0–5): Junior ($30/session) → Senior ($45) → Executive ($70), +12% per level
-- **Skills**: Cooking, Fitness, Social (0–5 each); bonuses applied to relevant actions
-- **Hobbies**: Painting ($6/day passive), Gaming ($4/day), Music ($8/day) — unlocks at level 3+
-- **Housing**: Apartment → Condo ($200) → Penthouse ($500); higher tiers improve sleep recovery and morning bonuses
-- **Transport**: upgradeable via savings; affects movement speed and work pay multiplier
-
-### World & Social
-- 7 named zones: Home, Office, Park, Store, Bank, Library, Garage
-- 21 action types across 13+ interactable objects
-- 3 NPCs (Alex, Sam, Mia) with zone-based schedules, LCG wandering, friendship tracking (0–5)
-- Friendship decay (−0.15/day); gifting unlocked at max friendship
-- 18-day rotating goal cycle with seasonal variants; 15 unlockable milestones
-- Life Rating calculated daily: weighted composite of all stats → grade F through S
-
-### Time & Environment
-- 24-hour accelerated clock; time-of-day bonuses (Early Bird, Late Night)
-- 4 weather types (Sunny/Cloudy/Rainy/Stormy) generated procedurally per day
-- 4 seasons (30-day cycles) with per-season stat multipliers and seasonal goals
-- 14 randomized daily events (payday, bills, found money, noise complaints, etc.)
-
-### Rendering & HUD
-- Composite humanoid sprites (7 layered rectangles per character), walk cycle animation
-- Day/night ambient color overlay (dawn orange → clear day → dusk gold → night blue)
-- Two HUD panels: left (stats, skills, inventory) and right (goals, conditions, progression)
-- Scrolling notification banner, context-sensitive bottom prompt
-- Camera: smooth lerp follow, scroll-to-zoom
+### Presentation and UX
+- Main menu, pause flow, and in-game settings screen for difficulty and volume
+- Universal typed action prompts for work, food, crafting, banking, chatting, pets, and other interactables, with more flavorful context-sensitive phrases
+- Dual-panel HUD with goals, warnings, conditions, inventory, weather, story summary, and live typing instructions
+- Optional ambient and weather audio that degrades gracefully if assets are missing
+- JSON save and load support with day-start autosave behavior
 
 ---
 
-## Development Roadmap
+## Verified Status
 
-Current state: functional prototype, ~1,600 lines, no persistence, no audio.
-
-### Q1 — Foundation Hardening & Core UX (Months 1–3)
-
-| # | Milestone |
+| Area | Status |
 |---|---|
-| 1 | **Save/load system** — serialize all `Resource`s to disk with `serde` + RON/JSON; auto-save on day end |
-| 2 | **Bevy states** — `MenuState` / `PlayState` / `PausedState`; main menu and pause screen |
-| 3 | **Audio** — integrate `bevy_kira_audio`; ambient loop, per-action SFX, day-transition chime |
-| 4 | **Settings file** — resolution, volume, key remapping persisted to `config.toml` |
-| 5 | **Bug pass** — collision tunneling at high speed, HUD text overflow, energy edge cases |
-| 6 | **CI** — GitHub Actions pipeline: `cargo fmt`, `cargo clippy`, `cargo test` on every PR |
+| Build | Passing |
+| Clippy | Passing with cargo clippy -- -D warnings |
+| Tests | 149 passing |
+| Save and load | Implemented |
+| Crisis system | Implemented |
+| Seasonal festivals | Implemented |
+| Settings screen | Implemented |
+| Audio fallback | Implemented |
+| Multiplayer support | Early groundwork only |
 
-### Q2 — Content Expansion & World Building (Months 4–6)
+The project is currently a playable, feature-rich prototype with a clean verified Rust baseline and ongoing expansion work.
 
-| # | Milestone |
-|---|---|
-| 1 | **Event pool expansion** — 14 → 40+ daily events, weighted by season, reputation, and active conditions |
-| 2 | **3 additional NPCs** (total 6) with distinct personalities; personality affects chat gain and gift outcome |
-| 3 | **NPC daily schedules** — time-of-day zone transitions (office 9–17, park evenings, home at night) |
-| 4 | **Second district** — new map area with gym, café, and clinic interactables |
-| 5 | **Narrative arcs** — short milestone-triggered storylines (e.g., promotion arc at Career 3, housing arc at Penthouse) |
-| 6 | **Item system expansion** — stackable inventory, item expiry, use-on-NPC actions |
+## Near-Term Roadmap
 
-### Q3 — Gameplay Depth & Replayability (Months 7–9)
+### In progress
+- Continued refactor of player-specific state from global resources to entity components
+- Deeper multiplayer-safe ECS cleanup and architecture follow-through
 
-| # | Milestone |
-|---|---|
-| 1 | **Difficulty modes** — Easy / Normal / Hard adjusting drain rates, interest, rent, and event severity |
-| 2 | **Character archetypes** — starting selection (Student / Professional / Artist) with different stat baselines |
-| 3 | **Crisis events** — layoffs, medical emergencies, market crashes; require multi-day recovery |
-| 4 | **Relationship depth** — acquaintance → friend → partner states per NPC; unlockable NPC side quests |
-| 5 | **New game+** — prestige mode after S-grade sustained for 30 days; carry-over stat bonuses |
-| 6 | **Tilemap migration** — replace colored-rect world geometry with `bevy_ecs_tilemap` sprite tiles |
-| 7 | **Accessibility** — colorblind palettes, UI scale setting, persistent event log panel |
+### Next content goals
+- More NPC depth and relationship states
+- Character archetypes and stronger replay loops
+- Art pass, tutorial flow, and accessibility improvements
+- Web build and broader release prep
 
-### Q4 — Polish, Release Prep & Distribution (Months 10–12)
-
-| # | Milestone |
-|---|---|
-| 1 | **Sprite art pass** — replace composite-rect characters with `TextureAtlas` sprite sheets; frame animation |
-| 2 | **Tutorial** — guided first-day walkthrough covering core loops; skippable after completion |
-| 3 | **Localization scaffolding** — externalize all UI strings; ship `en-US` baseline, support additional locales |
-| 4 | **Achievements backend** — local file mirroring the milestone system; Steam API integration points |
-| 5 | **Performance profiling** — Tracy integration, entity batching, reduce draw calls |
-| 6 | **WASM build** — target `wasm32-unknown-unknown`, bundle with `trunk`, test in browser |
-| 7 | **itch.io release** — web build + Windows binary, store page, initial devlog post |
+### Known follow-ups
+- Multiplayer readiness is still architectural groundwork rather than a playable mode
 
 ---
 
