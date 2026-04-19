@@ -658,7 +658,7 @@ impl Milestones {
 
 // ── Goal / Game State ─────────────────────────────────────────────────────────
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum GoalKind {
     EarnMoney,
     WorkTimes,

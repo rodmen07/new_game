@@ -427,13 +427,74 @@ sub-bundles, widen existing player queries, or use `ParamSet` where appropriate.
 
 ---
 
+### R-06 — `setup()` is a 780-line world-spawn function
+
+| Field | Value |
+|---|---|
+| File | `setup.rs` |
+| Lines | ~114-893 |
+| Severity | High |
+| Status | **Open** |
+
+The main `setup()` function spawns world geometry, interactables, NPCs, and miscellaneous entities inline. Every new world object requires touching this file regardless of its category.
+
+**Suggestion:** Extract `spawn_world_geometry()`, `spawn_interactables()`, `spawn_npcs()`, and `spawn_vehicles()` as private helpers called from `setup()`.
+
+---
+
+### R-07 — `spawn_hud()` is 375 lines
+
+| Field | Value |
+|---|---|
+| File | `setup.rs` |
+| Lines | ~1057-1431 |
+| Severity | High |
+| Status | **Open** |
+
+All HUD panels are built inline: left stat bars, right goal/condition panel, notification area, interaction prompt overlay, and action-prompt input.
+
+**Suggestion:** Extract `spawn_stat_bars()`, `spawn_goal_panel()`, `spawn_notification_area()`, and `spawn_prompt_overlay()` helpers.
+
+---
+
+### R-08 — `build_prompt_challenge()` is 242 lines
+
+| Field | Value |
+|---|---|
+| File | `systems/interaction.rs` |
+| Lines | ~118-359 |
+| Severity | Medium |
+| Status | **Open** |
+
+A large match over 30+ `PendingAction` variants. Each arm is 3-5 lines. The function is readable but finding a specific variant requires scanning the entire block. No test coverage since `PromptChallenge` construction depends on internal types.
+
+**Suggestion:** Group arms into per-category sub-matches or extract per-category helpers (`work_challenge`, `social_challenge`, `item_challenge`, `finance_challenge`).
+
+---
+
+### R-09 — `make_goal()` is 185 lines of repeated struct literals
+
+| Field | Value |
+|---|---|
+| File | `systems/time.rs` |
+| Lines | ~956-1140 |
+| Severity | Medium |
+| Status | **Fixed (Iteration 13, 2026-04-19)** - Extracted `goal()` constructor helper. `make_goal()` reduced from 185 lines to 20 lines. All values preserved. Existing 8 tests continue to pass. |
+
+The same 8-field `DailyGoal` struct literal was repeated 18 times with only 5 fields varying per arm (`kind`, `description`, `target`, `reward_money`, `reward_happiness`). `progress`, `completed`, and `failed` were always the same defaults.
+
+**Suggestion:** Extract a `goal(kind, desc, target, money, hap) -> DailyGoal` helper and convert the match arms to one-line calls.
+
+---
+
 ## Iteration Log
 
 Each audit run appends a dated entry to the iteration files below.
 Each file holds up to 5 iterations.
 
 - [Iterations 1-5](AUDIT-ITERATIONS-1-5.md) (5 of 5 used)
-- [Iterations 6-10](AUDIT-ITERATIONS-6-10.md) (4 of 5 used)
+- [Iterations 6-12](AUDIT-ITERATIONS-6-10.md) (7 entries - overflowed; next entries in 11-15 file)
+- [Iterations 13-15](AUDIT-ITERATIONS-11-15.md) (1 of 5 used)
 
 _Template for future entries:_
 
