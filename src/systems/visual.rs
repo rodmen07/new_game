@@ -302,59 +302,59 @@ pub fn spawn_weather_particles(
             // Autumn leaves or Spring petals on cloudy days
             match season.current {
                 SeasonKind::Autumn if hash(frame_seed) < dt * 60.0 => {
-                        let s = frame_seed.wrapping_add(3301);
-                        let x = cx + (hash(s) - 0.5) * half_w * 2.0;
-                        let y = cy + half_h + 20.0;
-                        let vx = 15.0 + hash(s.wrapping_add(1)) * 15.0;
-                        let vy = -20.0 - hash(s.wrapping_add(2)) * 20.0;
-                        // Varied leaf colors
-                        let color_pick = (s.wrapping_mul(7) % 3) as usize;
-                        let colors = [
-                            [0.80, 0.45, 0.15, 0.50], // orange
-                            [0.70, 0.25, 0.10, 0.50], // red-brown
-                            [0.85, 0.65, 0.15, 0.50], // golden
-                        ];
-                        let c = colors[color_pick];
-                        commands.spawn((
-                            Sprite {
-                                color: Color::srgba(c[0], c[1], c[2], c[3]),
-                                custom_size: Some(Vec2::new(4.0, 3.0)),
-                                ..default()
-                            },
-                            Transform::from_xyz(x, y, 48.0),
-                            WeatherDrop {
-                                vel: Vec2::new(vx, vy),
-                                lifetime: 2.5,
-                                max_lifetime: 2.5,
-                                base_color: c,
-                            },
-                        ));
+                    let s = frame_seed.wrapping_add(3301);
+                    let x = cx + (hash(s) - 0.5) * half_w * 2.0;
+                    let y = cy + half_h + 20.0;
+                    let vx = 15.0 + hash(s.wrapping_add(1)) * 15.0;
+                    let vy = -20.0 - hash(s.wrapping_add(2)) * 20.0;
+                    // Varied leaf colors
+                    let color_pick = (s.wrapping_mul(7) % 3) as usize;
+                    let colors = [
+                        [0.80, 0.45, 0.15, 0.50], // orange
+                        [0.70, 0.25, 0.10, 0.50], // red-brown
+                        [0.85, 0.65, 0.15, 0.50], // golden
+                    ];
+                    let c = colors[color_pick];
+                    commands.spawn((
+                        Sprite {
+                            color: Color::srgba(c[0], c[1], c[2], c[3]),
+                            custom_size: Some(Vec2::new(4.0, 3.0)),
+                            ..default()
+                        },
+                        Transform::from_xyz(x, y, 48.0),
+                        WeatherDrop {
+                            vel: Vec2::new(vx, vy),
+                            lifetime: 2.5,
+                            max_lifetime: 2.5,
+                            base_color: c,
+                        },
+                    ));
                 }
                 SeasonKind::Spring if hash(frame_seed.wrapping_add(99)) < dt * 40.0 => {
-                        let s = frame_seed.wrapping_add(2203);
-                        let x = cx + (hash(s) - 0.5) * half_w * 2.0;
-                        let y = cy + half_h + 20.0;
-                        let vx = 5.0 + hash(s.wrapping_add(1)) * 10.0;
-                        let vy = -15.0 - hash(s.wrapping_add(2)) * 15.0;
-                        let pink = if s.is_multiple_of(2) {
-                            [1.0, 0.75, 0.85, 0.40]
-                        } else {
-                            [1.0, 0.90, 0.95, 0.35]
-                        };
-                        commands.spawn((
-                            Sprite {
-                                color: Color::srgba(pink[0], pink[1], pink[2], pink[3]),
-                                custom_size: Some(Vec2::splat(3.0)),
-                                ..default()
-                            },
-                            Transform::from_xyz(x, y, 48.0),
-                            WeatherDrop {
-                                vel: Vec2::new(vx, vy),
-                                lifetime: 2.5,
-                                max_lifetime: 2.5,
-                                base_color: pink,
-                            },
-                        ));
+                    let s = frame_seed.wrapping_add(2203);
+                    let x = cx + (hash(s) - 0.5) * half_w * 2.0;
+                    let y = cy + half_h + 20.0;
+                    let vx = 5.0 + hash(s.wrapping_add(1)) * 10.0;
+                    let vy = -15.0 - hash(s.wrapping_add(2)) * 15.0;
+                    let pink = if s.is_multiple_of(2) {
+                        [1.0, 0.75, 0.85, 0.40]
+                    } else {
+                        [1.0, 0.90, 0.95, 0.35]
+                    };
+                    commands.spawn((
+                        Sprite {
+                            color: Color::srgba(pink[0], pink[1], pink[2], pink[3]),
+                            custom_size: Some(Vec2::splat(3.0)),
+                            ..default()
+                        },
+                        Transform::from_xyz(x, y, 48.0),
+                        WeatherDrop {
+                            vel: Vec2::new(vx, vy),
+                            lifetime: 2.5,
+                            max_lifetime: 2.5,
+                            base_color: pink,
+                        },
+                    ));
                 }
                 _ => {}
             }

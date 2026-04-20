@@ -1,7 +1,7 @@
 use crate::components::{
     ActionKind, ApartmentUnit, BodyPart, Building, BuildingKind, Collider, DayNightOverlay,
     HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind, LocalPlayer,
-    MainCamera, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize, PetKind, PlayerId, Player,
+    MainCamera, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize, PetKind, Player, PlayerId,
     PlayerIndicator, Vehicle,
 };
 use crate::resources::{ActionPrompt, BankInput, PlayerMovement, VehicleState};
@@ -2609,54 +2609,324 @@ pub fn setup(mut commands: Commands) {
     // -- Extra collective-building objects (3 additional per building) ----------
 
     // OFFICE (425, 180): three extra work desks
-    obj(&mut commands, 395., 220., 34., 18., Color::srgb(0.32, 0.22, 0.10), ActionKind::Work, "[E] Work (desk 2)");
-    obj(&mut commands, 455., 220., 34., 18., Color::srgb(0.32, 0.22, 0.10), ActionKind::Work, "[E] Work (desk 3)");
-    obj(&mut commands, 425., 135., 34., 18., Color::srgb(0.32, 0.22, 0.10), ActionKind::Work, "[E] Work (desk 4)");
+    obj(
+        &mut commands,
+        395.,
+        220.,
+        34.,
+        18.,
+        Color::srgb(0.32, 0.22, 0.10),
+        ActionKind::Work,
+        "[E] Work (desk 2)",
+    );
+    obj(
+        &mut commands,
+        455.,
+        220.,
+        34.,
+        18.,
+        Color::srgb(0.32, 0.22, 0.10),
+        ActionKind::Work,
+        "[E] Work (desk 3)",
+    );
+    obj(
+        &mut commands,
+        425.,
+        135.,
+        34.,
+        18.,
+        Color::srgb(0.32, 0.22, 0.10),
+        ActionKind::Work,
+        "[E] Work (desk 4)",
+    );
 
     // LIBRARY (-85, 180): computer terminal, media room, tutoring desk
-    obj(&mut commands, -120., 220., 28., 18., Color::srgb(0.18, 0.28, 0.44), ActionKind::ComputerLab, "[E] Computer Lab — browse / research");
-    obj(&mut commands, -50., 220., 28., 18., Color::srgb(0.30, 0.28, 0.48), ActionKind::Relax, "[E] Media Room — chill & watch");
-    obj(&mut commands, -85., 135., 30., 18., Color::srgb(0.34, 0.24, 0.12), ActionKind::StudyCourse, "[E] Tutoring — $30 study session");
-    obj(&mut commands, -55., 180., 24., 14., Color::srgb(0.62, 0.58, 0.42), ActionKind::PrintShop, "[E] Print Shop — $5 per page");
+    obj(
+        &mut commands,
+        -120.,
+        220.,
+        28.,
+        18.,
+        Color::srgb(0.18, 0.28, 0.44),
+        ActionKind::ComputerLab,
+        "[E] Computer Lab — browse / research",
+    );
+    obj(
+        &mut commands,
+        -50.,
+        220.,
+        28.,
+        18.,
+        Color::srgb(0.30, 0.28, 0.48),
+        ActionKind::Relax,
+        "[E] Media Room — chill & watch",
+    );
+    obj(
+        &mut commands,
+        -85.,
+        135.,
+        30.,
+        18.,
+        Color::srgb(0.34, 0.24, 0.12),
+        ActionKind::StudyCourse,
+        "[E] Tutoring — $30 study session",
+    );
+    obj(
+        &mut commands,
+        -55.,
+        180.,
+        24.,
+        14.,
+        Color::srgb(0.62, 0.58, 0.42),
+        ActionKind::PrintShop,
+        "[E] Print Shop — $5 per page",
+    );
 
     // WELLNESS (-255, 180): yoga mat, sauna, pharmacy counter
-    obj(&mut commands, -290., 135., 28., 18., Color::srgb(0.38, 0.60, 0.38), ActionKind::GymSession, "[E] Yoga Mat — $5 fitness session");
-    obj(&mut commands, -220., 135., 22., 22., Color::srgb(0.72, 0.44, 0.22), ActionKind::Relax, "[E] Sauna — relax & destress");
-    obj(&mut commands, -255., 175., 24., 14., Color::srgb(0.28, 0.66, 0.36), ActionKind::UseItem(ItemKind::Vitamins), "[E] Pharmacy Counter");
+    obj(
+        &mut commands,
+        -290.,
+        135.,
+        28.,
+        18.,
+        Color::srgb(0.38, 0.60, 0.38),
+        ActionKind::GymSession,
+        "[E] Yoga Mat — $5 fitness session",
+    );
+    obj(
+        &mut commands,
+        -220.,
+        135.,
+        22.,
+        22.,
+        Color::srgb(0.72, 0.44, 0.22),
+        ActionKind::Relax,
+        "[E] Sauna — relax & destress",
+    );
+    obj(
+        &mut commands,
+        -255.,
+        175.,
+        24.,
+        14.,
+        Color::srgb(0.28, 0.66, 0.36),
+        ActionKind::UseItem(ItemKind::Vitamins),
+        "[E] Pharmacy Counter",
+    );
 
     // STORE (-85, -180): deli counter, bulk goods, pharmacy aisle
-    obj(&mut commands, -120., -140., 28., 16., Color::srgb(0.72, 0.52, 0.22), ActionKind::Shop, "[E] Deli Counter [1-4]");
-    obj(&mut commands, -50., -140., 28., 16., Color::srgb(0.58, 0.72, 0.36), ActionKind::Shop, "[E] Bulk Goods [1-4]");
-    obj(&mut commands, -85., -218., 28., 16., Color::srgb(0.34, 0.60, 0.38), ActionKind::UseItem(ItemKind::Vitamins), "[E] Pharmacy Aisle");
+    obj(
+        &mut commands,
+        -120.,
+        -140.,
+        28.,
+        16.,
+        Color::srgb(0.72, 0.52, 0.22),
+        ActionKind::Shop,
+        "[E] Deli Counter [1-4]",
+    );
+    obj(
+        &mut commands,
+        -50.,
+        -140.,
+        28.,
+        16.,
+        Color::srgb(0.58, 0.72, 0.36),
+        ActionKind::Shop,
+        "[E] Bulk Goods [1-4]",
+    );
+    obj(
+        &mut commands,
+        -85.,
+        -218.,
+        28.,
+        16.,
+        Color::srgb(0.34, 0.60, 0.38),
+        ActionKind::UseItem(ItemKind::Vitamins),
+        "[E] Pharmacy Aisle",
+    );
 
     // CAFÉ (85, -180): patio seat, barista bar, pastry display
-    obj(&mut commands, 55., -140., 28., 14., Color::srgb(0.60, 0.38, 0.14), ActionKind::Relax, "[E] Patio Seat — relax outdoors");
-    obj(&mut commands, 120., -140., 28., 14., Color::srgb(0.52, 0.34, 0.12), ActionKind::Cafe, "[E] Barista Bar — $12 order");
-    obj(&mut commands, 85., -218., 24., 14., Color::srgb(0.86, 0.78, 0.52), ActionKind::UseItem(ItemKind::Coffee), "[E] Pastry Display");
+    obj(
+        &mut commands,
+        55.,
+        -140.,
+        28.,
+        14.,
+        Color::srgb(0.60, 0.38, 0.14),
+        ActionKind::Relax,
+        "[E] Patio Seat — relax outdoors",
+    );
+    obj(
+        &mut commands,
+        120.,
+        -140.,
+        28.,
+        14.,
+        Color::srgb(0.52, 0.34, 0.12),
+        ActionKind::Cafe,
+        "[E] Barista Bar — $12 order",
+    );
+    obj(
+        &mut commands,
+        85.,
+        -218.,
+        24.,
+        14.,
+        Color::srgb(0.86, 0.78, 0.52),
+        ActionKind::UseItem(ItemKind::Coffee),
+        "[E] Pastry Display",
+    );
 
     // BANK (-425, -180): ATM, loan officer, investment advisor
-    obj(&mut commands, -465., -135., 18., 22., Color::srgb(0.52, 0.44, 0.18), ActionKind::Bank, "[E] ATM  [1]Dep [2]Wth");
-    obj(&mut commands, -385., -135., 24., 18., Color::srgb(0.62, 0.52, 0.20), ActionKind::Bank, "[E] Loan Officer  [4]Loan [5]Repay");
-    obj(&mut commands, -425., -220., 28., 18., Color::srgb(0.48, 0.44, 0.20), ActionKind::Bank, "[E] Advisor  [6-8] Invest");
+    obj(
+        &mut commands,
+        -465.,
+        -135.,
+        18.,
+        22.,
+        Color::srgb(0.52, 0.44, 0.18),
+        ActionKind::Bank,
+        "[E] ATM  [1]Dep [2]Wth",
+    );
+    obj(
+        &mut commands,
+        -385.,
+        -135.,
+        24.,
+        18.,
+        Color::srgb(0.62, 0.52, 0.20),
+        ActionKind::Bank,
+        "[E] Loan Officer  [4]Loan [5]Repay",
+    );
+    obj(
+        &mut commands,
+        -425.,
+        -220.,
+        28.,
+        18.,
+        Color::srgb(0.48, 0.44, 0.20),
+        ActionKind::Bank,
+        "[E] Advisor  [6-8] Invest",
+    );
 
     // CLINIC (-255, -180): dental chair, eye exam, pharmacy window
-    obj(&mut commands, -295., -140., 28., 18., Color::srgb(0.60, 0.80, 0.76), ActionKind::DentalVisit, "[E] Dental Chair");
-    obj(&mut commands, -215., -140., 28., 18., Color::srgb(0.58, 0.72, 0.88), ActionKind::EyeExam, "[E] Eye Exam Station");
-    obj(&mut commands, -255., -218., 26., 16., Color::srgb(0.28, 0.66, 0.44), ActionKind::UseItem(ItemKind::Vitamins), "[E] Pharmacy Window");
+    obj(
+        &mut commands,
+        -295.,
+        -140.,
+        28.,
+        18.,
+        Color::srgb(0.60, 0.80, 0.76),
+        ActionKind::DentalVisit,
+        "[E] Dental Chair",
+    );
+    obj(
+        &mut commands,
+        -215.,
+        -140.,
+        28.,
+        18.,
+        Color::srgb(0.58, 0.72, 0.88),
+        ActionKind::EyeExam,
+        "[E] Eye Exam Station",
+    );
+    obj(
+        &mut commands,
+        -255.,
+        -218.,
+        26.,
+        16.,
+        Color::srgb(0.28, 0.66, 0.44),
+        ActionKind::UseItem(ItemKind::Vitamins),
+        "[E] Pharmacy Window",
+    );
 
     // GARAGE (425, -180): gas pump, service bay, parts shelf
-    obj(&mut commands, 395., -140., 20., 30., Color::srgb(0.44, 0.44, 0.50), ActionKind::GasUp, "[E] Gas Pump — fill up");
-    obj(&mut commands, 455., -140., 30., 26., Color::srgb(0.36, 0.34, 0.44), ActionKind::RepairVehicle, "[E] Service Bay — repair vehicle");
-    obj(&mut commands, 425., -220., 28., 16., Color::srgb(0.48, 0.46, 0.54), ActionKind::Shop, "[E] Parts Shelf [1-4]");
+    obj(
+        &mut commands,
+        395.,
+        -140.,
+        20.,
+        30.,
+        Color::srgb(0.44, 0.44, 0.50),
+        ActionKind::GasUp,
+        "[E] Gas Pump — fill up",
+    );
+    obj(
+        &mut commands,
+        455.,
+        -140.,
+        30.,
+        26.,
+        Color::srgb(0.36, 0.34, 0.44),
+        ActionKind::RepairVehicle,
+        "[E] Service Bay — repair vehicle",
+    );
+    obj(
+        &mut commands,
+        425.,
+        -220.,
+        28.,
+        16.,
+        Color::srgb(0.48, 0.46, 0.54),
+        ActionKind::Shop,
+        "[E] Parts Shelf [1-4]",
+    );
 
     // PARK (85, 180): sports court, playground, food cart (additional content)
-    obj(&mut commands, 115., 215., 32., 20., Color::srgb(0.38, 0.54, 0.38), ActionKind::Exercise, "[E] Sports Court — Exercise");
-    obj(&mut commands, 55., 215., 30., 20., Color::srgb(0.62, 0.48, 0.26), ActionKind::Relax, "[E] Playground — kids area, Relax");
-    obj(&mut commands, 85., 125., 24., 18., Color::srgb(0.70, 0.50, 0.20), ActionKind::Cafe, "[E] Food Cart — $12 snack");
+    obj(
+        &mut commands,
+        115.,
+        215.,
+        32.,
+        20.,
+        Color::srgb(0.38, 0.54, 0.38),
+        ActionKind::Exercise,
+        "[E] Sports Court — Exercise",
+    );
+    obj(
+        &mut commands,
+        55.,
+        215.,
+        30.,
+        20.,
+        Color::srgb(0.62, 0.48, 0.26),
+        ActionKind::Relax,
+        "[E] Playground — kids area, Relax",
+    );
+    obj(
+        &mut commands,
+        85.,
+        125.,
+        24.,
+        18.,
+        Color::srgb(0.70, 0.50, 0.20),
+        ActionKind::Cafe,
+        "[E] Food Cart — $12 snack",
+    );
 
     // ADOPTION (255, -180): training area, vet check (in addition to adopt stations)
-    obj(&mut commands, 220., -210., 24., 16., Color::srgb(0.38, 0.58, 0.38), ActionKind::Exercise, "[E] Training Area — exercise with pet");
-    obj(&mut commands, 290., -165., 22., 16., Color::srgb(0.60, 0.76, 0.72), ActionKind::Clinic, "[E] Vet Check — $40 pet health");
+    obj(
+        &mut commands,
+        220.,
+        -210.,
+        24.,
+        16.,
+        Color::srgb(0.38, 0.58, 0.38),
+        ActionKind::Exercise,
+        "[E] Training Area — exercise with pet",
+    );
+    obj(
+        &mut commands,
+        290.,
+        -165.,
+        22.,
+        16.,
+        Color::srgb(0.60, 0.76, 0.72),
+        ActionKind::Clinic,
+        "[E] Vet Check — $40 pet health",
+    );
 
     // -- Trees (inside PARK zone) -----------------------------------------------
     for (x, y, s) in [
@@ -2997,18 +3267,54 @@ pub fn setup(mut commands: Commands) {
     // doorway gap is at x=0 ± 50 (100px wide)
 
     // -- Building classification markers ---------------------------------------
-    commands.spawn(Building { name: "HOME", kind: BuildingKind::Individual });
-    commands.spawn(Building { name: "SUBURBS", kind: BuildingKind::Individual });
-    commands.spawn(Building { name: "WELLNESS", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "LIBRARY", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "PARK", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "OFFICE", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "BANK", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "CLINIC", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "STORE", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "CAFÉ", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "ADOPTION", kind: BuildingKind::Collective });
-    commands.spawn(Building { name: "GARAGE", kind: BuildingKind::Collective });
+    commands.spawn(Building {
+        name: "HOME",
+        kind: BuildingKind::Individual,
+    });
+    commands.spawn(Building {
+        name: "SUBURBS",
+        kind: BuildingKind::Individual,
+    });
+    commands.spawn(Building {
+        name: "WELLNESS",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "LIBRARY",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "PARK",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "OFFICE",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "BANK",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "CLINIC",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "STORE",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "CAFÉ",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "ADOPTION",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "GARAGE",
+        kind: BuildingKind::Collective,
+    });
 
     // -- Building walls with doorways -------------------------------------------
     // Wall thickness = 10. Door gap = 50 (player is 18px wide).

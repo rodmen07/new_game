@@ -2523,7 +2523,10 @@ pub fn handle_interaction(
         }
         ActionKind::RentUnit(unit_id) => {
             notif.push(
-                format!("Apartment {}: rent here to gain home access and save on rent.", unit_id),
+                format!(
+                    "Apartment {}: rent here to gain home access and save on rent.",
+                    unit_id
+                ),
                 4.,
             );
             stats.cooldown = 0.5;
@@ -2547,7 +2550,10 @@ pub fn handle_interaction(
                 extras.transport.maintenance_due = false;
                 extras.transport.work_uses = 0;
                 notif.push(
-                    format!("Repaired {}! Pay bonus restored. ($25 paid)", extras.transport.kind.label()),
+                    format!(
+                        "Repaired {}! Pay bonus restored. ($25 paid)",
+                        extras.transport.kind.label()
+                    ),
                     3.,
                 );
             } else {
@@ -2562,7 +2568,10 @@ pub fn handle_interaction(
                 stats.money -= 50.;
                 stats.health = (stats.health + 15.).min(100.);
                 stats.stress = (stats.stress - 5.).max(0.);
-                notif.push(format!("Dental visit! +15 Health → {:.0}  ($50 paid)", stats.health), 3.);
+                notif.push(
+                    format!("Dental visit! +15 Health → {:.0}  ($50 paid)", stats.health),
+                    3.,
+                );
             } else {
                 notif.push("Need $50 for a dental visit.", 2.);
             }
