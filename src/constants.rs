@@ -1,18 +1,20 @@
-pub const PLAYER_SPEED: f32 = 200.0;
-pub const PLAYER_ACCEL: f32 = 1400.0;
-pub const PLAYER_FRICTION: f32 = 900.0;
+#[allow(dead_code)]
+pub const MAP_SCALE: f32 = 4.0;
+pub const PLAYER_SPEED: f32 = 800.0;
+pub const PLAYER_ACCEL: f32 = 5600.0;
+pub const PLAYER_FRICTION: f32 = 3600.0;
 pub const SPRINT_MULTIPLIER: f32 = 1.75;
 pub const SPRINT_ENERGY_DRAIN: f32 = 3.5;
-pub const WORLD_BOUNDARY: f32 = 1600.0;
-pub const INTERACT_RADIUS: f32 = 58.0;
+pub const WORLD_BOUNDARY: f32 = 6400.0;
+pub const INTERACT_RADIUS: f32 = 232.0;
 pub const TIME_SCALE: f32 = 60.0;
-pub const NPC_SPEED: f32 = 55.0;
+pub const NPC_SPEED: f32 = 220.0;
 
-// Office zone — center (340, 370), size 200×180
-pub const OFFICE_LEFT: f32 = 350.;
-pub const OFFICE_RIGHT: f32 = 500.;
-pub const OFFICE_BOTTOM: f32 = 100.;
-pub const OFFICE_TOP: f32 = 260.;
+// Office zone — center (1700, 1480), size 600×720 (scaled 4x)
+pub const OFFICE_LEFT: f32 = 1400.;
+pub const OFFICE_RIGHT: f32 = 2000.;
+pub const OFFICE_BOTTOM: f32 = 400.;
+pub const OFFICE_TOP: f32 = 1040.;
 
 // Crisis system tuning
 pub const CRISIS_MIN_DAY: u32 = 10;

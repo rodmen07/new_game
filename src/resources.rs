@@ -26,7 +26,7 @@ impl Default for PlayerMovement {
         Self {
             velocity: Vec2::ZERO,
             sprinting: false,
-            base_zoom: 1.0,
+            base_zoom: 4.0,
             prev_position: Vec2::ZERO,
         }
     }

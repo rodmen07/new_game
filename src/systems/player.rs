@@ -183,22 +183,22 @@ pub fn player_visuals(
                     sprite.color = body_color;
                 }
                 BodyPart::LeftLeg => {
-                    ctf.translation.y = -5. + leg_phase;
+                    ctf.translation.y = -20. + leg_phase;
                 }
                 BodyPart::RightLeg => {
-                    ctf.translation.y = -5. - leg_phase;
+                    ctf.translation.y = -20. - leg_phase;
                 }
                 BodyPart::LeftFoot => {
-                    ctf.translation.y = -10. + leg_phase * 0.65;
+                    ctf.translation.y = -40. + leg_phase * 0.65;
                 }
                 BodyPart::RightFoot => {
-                    ctf.translation.y = -10. - leg_phase * 0.65;
+                    ctf.translation.y = -40. - leg_phase * 0.65;
                 }
                 _ => {}
             }
         }
         if let Ok(mut ctf) = indicator_q.get_mut(child) {
-            ctf.translation = Vec3::new(move_dir.x * 18., move_dir.y * 18., 3.5);
+            ctf.translation = Vec3::new(move_dir.x * 72., move_dir.y * 72., 3.5);
         }
     }
 }
@@ -239,7 +239,7 @@ pub fn camera_zoom(
             MouseScrollUnit::Line => ev.y * 0.10,
             MouseScrollUnit::Pixel => ev.y * 0.003,
         };
-        pm.base_zoom = (pm.base_zoom - delta).clamp(0.35, 2.5);
+        pm.base_zoom = (pm.base_zoom - delta).clamp(1.0, 10.0);
     }
 }
 

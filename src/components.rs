@@ -91,6 +91,39 @@ pub enum ActionKind {
     AdoptPet(PetKind),
     SleepRough,
     Craft,
+    // New collective-building actions
+    RentUnit(u32),
+    GasUp,
+    RepairVehicle,
+    DentalVisit,
+    EyeExam,
+    ComputerLab,
+    PrintShop,
+}
+
+// ── Building classification ────────────────────────────────────────────────────
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum BuildingKind {
+    /// Houses one household (HOME, SUBURBS).
+    Individual,
+    /// Serves the whole community.
+    Collective,
+}
+
+#[derive(Component, Clone)]
+#[allow(dead_code)]
+pub struct Building {
+    pub name: &'static str,
+    pub kind: BuildingKind,
+}
+
+/// Marks an apartment unit inside the APARTMENTS building.
+#[derive(Component, Clone)]
+#[allow(dead_code)]
+pub struct ApartmentUnit {
+    pub unit_id: u32,
+    pub owner: Option<PlayerId>,
 }
 
 #[derive(Component, Clone, PartialEq)]

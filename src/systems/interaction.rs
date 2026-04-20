@@ -33,6 +33,13 @@ fn action_time_hours(action: &ActionKind) -> f32 {
         ActionKind::AdoptPet(_) => 0.25,
         ActionKind::SleepRough => 8.0,
         ActionKind::Craft => 0.5,
+        ActionKind::RentUnit(_) => 0.5,
+        ActionKind::GasUp => 0.25,
+        ActionKind::RepairVehicle => 1.0,
+        ActionKind::DentalVisit => 1.5,
+        ActionKind::EyeExam => 1.0,
+        ActionKind::ComputerLab => 2.0,
+        ActionKind::PrintShop => 0.25,
     }
 }
 
@@ -309,6 +316,41 @@ fn build_prompt_challenge(
             label: "Craft".to_string(),
             instruction: "type the crafting command".to_string(),
             expected: "craft item".to_string(),
+        },
+        PendingAction::Action(ActionKind::RentUnit(id)) => PromptChallenge {
+            label: format!("Rent Apt {}", id),
+            instruction: "type the rental command".to_string(),
+            expected: "sign lease".to_string(),
+        },
+        PendingAction::Action(ActionKind::GasUp) => PromptChallenge {
+            label: "Gas Up".to_string(),
+            instruction: "type the fuel command".to_string(),
+            expected: "fill tank".to_string(),
+        },
+        PendingAction::Action(ActionKind::RepairVehicle) => PromptChallenge {
+            label: "Repair".to_string(),
+            instruction: "type the repair command".to_string(),
+            expected: "fix vehicle".to_string(),
+        },
+        PendingAction::Action(ActionKind::DentalVisit) => PromptChallenge {
+            label: "Dental".to_string(),
+            instruction: "type the dental command".to_string(),
+            expected: "open wide".to_string(),
+        },
+        PendingAction::Action(ActionKind::EyeExam) => PromptChallenge {
+            label: "Eye Exam".to_string(),
+            instruction: "type the exam command".to_string(),
+            expected: "read chart".to_string(),
+        },
+        PendingAction::Action(ActionKind::ComputerLab) => PromptChallenge {
+            label: "Computer Lab".to_string(),
+            instruction: "type the login command".to_string(),
+            expected: "study notes".to_string(),
+        },
+        PendingAction::Action(ActionKind::PrintShop) => PromptChallenge {
+            label: "Print".to_string(),
+            instruction: "type the print command".to_string(),
+            expected: "print doc".to_string(),
         },
         PendingAction::Gift => PromptChallenge {
             label: "Gift".to_string(),
@@ -2478,6 +2520,84 @@ pub fn handle_interaction(
                 5.,
             );
             stats.cooldown = 0.5;
+        }
+        ActionKind::RentUnit(unit_id) => {
+            notif.push(
+                format!("Apartment {}: rent here to gain home access and save on rent.", unit_id),
+                4.,
+            );
+            stats.cooldown = 0.5;
+        }
+        ActionKind::GasUp => {
+            if stats.money >= 20. {
+                stats.money -= 20.;
+                extras.transport.maintenance_due = false;
+                notif.push("Gassed up! Vehicle range restored. ($20 paid)", 2.5);
+            } else {
+                notif.push("Need $20 to gas up.", 2.);
+            }
+            stats.cooldown = 0.5;
+        }
+        ActionKind::RepairVehicle => {
+            if !extras.transport.kind.is_vehicle() {
+                notif.push("No vehicle to repair!", 2.);
+            } else if stats.money >= 25. {
+                gt.advance_hours(1.0);
+                stats.money -= 25.;
+                extras.transport.maintenance_due = false;
+                extras.transport.work_uses = 0;
+                notif.push(
+                    format!("Repaired {}! Pay bonus restored. ($25 paid)", extras.transport.kind.label()),
+                    3.,
+                );
+            } else {
+                notif.push("Need $25 for a full vehicle repair.", 2.);
+            }
+            stats.cooldown = 0.5;
+        }
+        ActionKind::DentalVisit => {
+            if stats.health > 90. {
+                notif.push("Teeth look great — no visit needed.", 2.);
+            } else if stats.money >= 50. {
+                stats.money -= 50.;
+                stats.health = (stats.health + 15.).min(100.);
+                stats.stress = (stats.stress - 5.).max(0.);
+                notif.push(format!("Dental visit! +15 Health → {:.0}  ($50 paid)", stats.health), 3.);
+            } else {
+                notif.push("Need $50 for a dental visit.", 2.);
+            }
+            stats.cooldown = 0.5;
+        }
+        ActionKind::EyeExam => {
+            if stats.money >= 35. {
+                stats.money -= 35.;
+                stats.stress = (stats.stress - 8.).max(0.);
+                stats.happiness = (stats.happiness + 8.).min(100.);
+                notif.push("Eye exam done! -Stress +8 Mood  ($35 paid)", 2.5);
+            } else {
+                notif.push("Need $35 for an eye exam.", 2.);
+            }
+            stats.cooldown = 0.5;
+        }
+        ActionKind::ComputerLab => {
+            handle_study(
+                &mut gt,
+                &mut stats,
+                &mut skills,
+                &mut gs,
+                &mut notif,
+                &extras.season,
+                &extras.weather,
+            );
+        }
+        ActionKind::PrintShop => {
+            if stats.money >= 5. {
+                stats.money -= 5.;
+                notif.push("Printed documents. ($5 paid)", 2.);
+            } else {
+                notif.push("Need $5 to print.", 2.);
+            }
+            stats.cooldown = 0.25;
         }
     }
     sfx.send(PlaySfx(sfx_kind));

@@ -1,113 +1,118 @@
 use crate::components::{
-    ActionKind, BodyPart, Collider, DayNightOverlay, HobbyKind, HudBar, HudLabel,
-    InteractHighlight, Interactable, ItemKind, LocalPlayer, MainCamera, Npc, NpcId, NpcLabel,
-    NpcPersonality, ObjectSize, PetKind, Player, PlayerId, PlayerIndicator, Vehicle,
+    ActionKind, ApartmentUnit, BodyPart, Building, BuildingKind, Collider, DayNightOverlay,
+    HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind, LocalPlayer,
+    MainCamera, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize, PetKind, PlayerId, Player,
+    PlayerIndicator, Vehicle,
 };
 use crate::resources::{ActionPrompt, BankInput, PlayerMovement, VehicleState};
 use bevy::prelude::*;
+
+/// World-space scale multiplier applied inside all layout helpers.
+/// All design coordinates are written in pre-scale units; S is applied internally.
+const S: f32 = 4.0;
 
 /// Builds a composite human figure as child entities of the calling spawn.
 /// The root entity should have Transform + Visibility but no Sprite.
 ///
 /// Body layout (local coords, root at 0,0):
-///   shadow y=-14, feet y=-10, legs y=-5, torso y=1, head y=9, hair y=13
+///   shadow y=-14*S, feet y=-10*S, legs y=-5*S, torso y=1*S, head y=9*S, hair y=13*S
 fn spawn_human(p: &mut ChildBuilder, outfit: Color, pants: Color, skin: Color, hair: Color) {
     // Ground shadow
     p.spawn((
         Sprite {
             color: Color::srgba(0., 0., 0., 0.32),
-            custom_size: Some(Vec2::new(20., 7.)),
+            custom_size: Some(Vec2::new(20. * S, 7. * S)),
             ..default()
         },
-        Transform::from_xyz(2., -14., -1.),
+        Transform::from_xyz(2. * S, -14. * S, -1.),
     ));
     // Left shoe
     p.spawn((
         Sprite {
             color: Color::srgb(0.14, 0.10, 0.07),
-            custom_size: Some(Vec2::new(4., 4.)),
+            custom_size: Some(Vec2::new(4. * S, 4. * S)),
             ..default()
         },
-        Transform::from_xyz(-4., -10., 0.5),
+        Transform::from_xyz(-4. * S, -10. * S, 0.5),
         BodyPart::LeftFoot,
     ));
     // Right shoe
     p.spawn((
         Sprite {
             color: Color::srgb(0.14, 0.10, 0.07),
-            custom_size: Some(Vec2::new(4., 4.)),
+            custom_size: Some(Vec2::new(4. * S, 4. * S)),
             ..default()
         },
-        Transform::from_xyz(4., -10., 0.5),
+        Transform::from_xyz(4. * S, -10. * S, 0.5),
         BodyPart::RightFoot,
     ));
     // Left leg
     p.spawn((
         Sprite {
             color: pants,
-            custom_size: Some(Vec2::new(4., 7.)),
+            custom_size: Some(Vec2::new(4. * S, 7. * S)),
             ..default()
         },
-        Transform::from_xyz(-4., -5., 1.),
+        Transform::from_xyz(-4. * S, -5. * S, 1.),
         BodyPart::LeftLeg,
     ));
     // Right leg
     p.spawn((
         Sprite {
             color: pants,
-            custom_size: Some(Vec2::new(4., 7.)),
+            custom_size: Some(Vec2::new(4. * S, 7. * S)),
             ..default()
         },
-        Transform::from_xyz(4., -5., 1.),
+        Transform::from_xyz(4. * S, -5. * S, 1.),
         BodyPart::RightLeg,
     ));
     // Torso
     p.spawn((
         Sprite {
             color: outfit,
-            custom_size: Some(Vec2::new(12., 10.)),
+            custom_size: Some(Vec2::new(12. * S, 10. * S)),
             ..default()
         },
-        Transform::from_xyz(0., 1., 1.5),
+        Transform::from_xyz(0., 1. * S, 1.5),
         BodyPart::Body,
     ));
     // Head
     p.spawn((
         Sprite {
             color: skin,
-            custom_size: Some(Vec2::new(9., 9.)),
+            custom_size: Some(Vec2::new(9. * S, 9. * S)),
             ..default()
         },
-        Transform::from_xyz(0., 9., 2.),
+        Transform::from_xyz(0., 9. * S, 2.),
         BodyPart::Head,
     ));
     // Hair
     p.spawn((
         Sprite {
             color: hair,
-            custom_size: Some(Vec2::new(10., 4.)),
+            custom_size: Some(Vec2::new(10. * S, 4. * S)),
             ..default()
         },
-        Transform::from_xyz(0., 13., 2.5),
+        Transform::from_xyz(0., 13. * S, 2.5),
         BodyPart::Hair,
     ));
     // Left eye
     p.spawn((
         Sprite {
             color: Color::srgb(0.08, 0.05, 0.04),
-            custom_size: Some(Vec2::new(2., 2.)),
+            custom_size: Some(Vec2::new(2. * S, 2. * S)),
             ..default()
         },
-        Transform::from_xyz(-2., 9., 3.),
+        Transform::from_xyz(-2. * S, 9. * S, 3.),
     ));
     // Right eye
     p.spawn((
         Sprite {
             color: Color::srgb(0.08, 0.05, 0.04),
-            custom_size: Some(Vec2::new(2., 2.)),
+            custom_size: Some(Vec2::new(2. * S, 2. * S)),
             ..default()
         },
-        Transform::from_xyz(2., 9., 3.),
+        Transform::from_xyz(2. * S, 9. * S, 3.),
     ));
 }
 
@@ -882,26 +887,26 @@ pub fn setup(mut commands: Commands) {
         .spawn((
             Sprite {
                 color: Color::srgb(0.72, 0.18, 0.18),
-                custom_size: Some(Vec2::new(62., 28.)),
+                custom_size: Some(Vec2::new(62. * S, 28. * S)),
                 ..default()
             },
-            Transform::from_xyz(425., -280., 2.),
+            Transform::from_xyz(425. * S, -280. * S, 2.),
             Vehicle,
             Interactable {
                 action: ActionKind::EnterVehicle,
                 prompt: "[E] Enter car".to_string(),
             },
-            ObjectSize(Vec2::new(62., 28.)),
+            ObjectSize(Vec2::new(62. * S, 28. * S)),
             Visibility::Hidden,
         ))
         .with_children(|p| {
             p.spawn((
                 Sprite {
                     color: Color::srgba(0., 0., 0., 0.45),
-                    custom_size: Some(Vec2::new(66., 32.)),
+                    custom_size: Some(Vec2::new(66. * S, 32. * S)),
                     ..default()
                 },
-                Transform::from_xyz(2., -2., -0.05),
+                Transform::from_xyz(2. * S, -2. * S, -0.05),
             ));
             p.spawn((
                 Sprite {
@@ -2601,6 +2606,58 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
 
+    // -- Extra collective-building objects (3 additional per building) ----------
+
+    // OFFICE (425, 180): three extra work desks
+    obj(&mut commands, 395., 220., 34., 18., Color::srgb(0.32, 0.22, 0.10), ActionKind::Work, "[E] Work (desk 2)");
+    obj(&mut commands, 455., 220., 34., 18., Color::srgb(0.32, 0.22, 0.10), ActionKind::Work, "[E] Work (desk 3)");
+    obj(&mut commands, 425., 135., 34., 18., Color::srgb(0.32, 0.22, 0.10), ActionKind::Work, "[E] Work (desk 4)");
+
+    // LIBRARY (-85, 180): computer terminal, media room, tutoring desk
+    obj(&mut commands, -120., 220., 28., 18., Color::srgb(0.18, 0.28, 0.44), ActionKind::ComputerLab, "[E] Computer Lab — browse / research");
+    obj(&mut commands, -50., 220., 28., 18., Color::srgb(0.30, 0.28, 0.48), ActionKind::Relax, "[E] Media Room — chill & watch");
+    obj(&mut commands, -85., 135., 30., 18., Color::srgb(0.34, 0.24, 0.12), ActionKind::StudyCourse, "[E] Tutoring — $30 study session");
+    obj(&mut commands, -55., 180., 24., 14., Color::srgb(0.62, 0.58, 0.42), ActionKind::PrintShop, "[E] Print Shop — $5 per page");
+
+    // WELLNESS (-255, 180): yoga mat, sauna, pharmacy counter
+    obj(&mut commands, -290., 135., 28., 18., Color::srgb(0.38, 0.60, 0.38), ActionKind::GymSession, "[E] Yoga Mat — $5 fitness session");
+    obj(&mut commands, -220., 135., 22., 22., Color::srgb(0.72, 0.44, 0.22), ActionKind::Relax, "[E] Sauna — relax & destress");
+    obj(&mut commands, -255., 175., 24., 14., Color::srgb(0.28, 0.66, 0.36), ActionKind::UseItem(ItemKind::Vitamins), "[E] Pharmacy Counter");
+
+    // STORE (-85, -180): deli counter, bulk goods, pharmacy aisle
+    obj(&mut commands, -120., -140., 28., 16., Color::srgb(0.72, 0.52, 0.22), ActionKind::Shop, "[E] Deli Counter [1-4]");
+    obj(&mut commands, -50., -140., 28., 16., Color::srgb(0.58, 0.72, 0.36), ActionKind::Shop, "[E] Bulk Goods [1-4]");
+    obj(&mut commands, -85., -218., 28., 16., Color::srgb(0.34, 0.60, 0.38), ActionKind::UseItem(ItemKind::Vitamins), "[E] Pharmacy Aisle");
+
+    // CAFÉ (85, -180): patio seat, barista bar, pastry display
+    obj(&mut commands, 55., -140., 28., 14., Color::srgb(0.60, 0.38, 0.14), ActionKind::Relax, "[E] Patio Seat — relax outdoors");
+    obj(&mut commands, 120., -140., 28., 14., Color::srgb(0.52, 0.34, 0.12), ActionKind::Cafe, "[E] Barista Bar — $12 order");
+    obj(&mut commands, 85., -218., 24., 14., Color::srgb(0.86, 0.78, 0.52), ActionKind::UseItem(ItemKind::Coffee), "[E] Pastry Display");
+
+    // BANK (-425, -180): ATM, loan officer, investment advisor
+    obj(&mut commands, -465., -135., 18., 22., Color::srgb(0.52, 0.44, 0.18), ActionKind::Bank, "[E] ATM  [1]Dep [2]Wth");
+    obj(&mut commands, -385., -135., 24., 18., Color::srgb(0.62, 0.52, 0.20), ActionKind::Bank, "[E] Loan Officer  [4]Loan [5]Repay");
+    obj(&mut commands, -425., -220., 28., 18., Color::srgb(0.48, 0.44, 0.20), ActionKind::Bank, "[E] Advisor  [6-8] Invest");
+
+    // CLINIC (-255, -180): dental chair, eye exam, pharmacy window
+    obj(&mut commands, -295., -140., 28., 18., Color::srgb(0.60, 0.80, 0.76), ActionKind::DentalVisit, "[E] Dental Chair");
+    obj(&mut commands, -215., -140., 28., 18., Color::srgb(0.58, 0.72, 0.88), ActionKind::EyeExam, "[E] Eye Exam Station");
+    obj(&mut commands, -255., -218., 26., 16., Color::srgb(0.28, 0.66, 0.44), ActionKind::UseItem(ItemKind::Vitamins), "[E] Pharmacy Window");
+
+    // GARAGE (425, -180): gas pump, service bay, parts shelf
+    obj(&mut commands, 395., -140., 20., 30., Color::srgb(0.44, 0.44, 0.50), ActionKind::GasUp, "[E] Gas Pump — fill up");
+    obj(&mut commands, 455., -140., 30., 26., Color::srgb(0.36, 0.34, 0.44), ActionKind::RepairVehicle, "[E] Service Bay — repair vehicle");
+    obj(&mut commands, 425., -220., 28., 16., Color::srgb(0.48, 0.46, 0.54), ActionKind::Shop, "[E] Parts Shelf [1-4]");
+
+    // PARK (85, 180): sports court, playground, food cart (additional content)
+    obj(&mut commands, 115., 215., 32., 20., Color::srgb(0.38, 0.54, 0.38), ActionKind::Exercise, "[E] Sports Court — Exercise");
+    obj(&mut commands, 55., 215., 30., 20., Color::srgb(0.62, 0.48, 0.26), ActionKind::Relax, "[E] Playground — kids area, Relax");
+    obj(&mut commands, 85., 125., 24., 18., Color::srgb(0.70, 0.50, 0.20), ActionKind::Cafe, "[E] Food Cart — $12 snack");
+
+    // ADOPTION (255, -180): training area, vet check (in addition to adopt stations)
+    obj(&mut commands, 220., -210., 24., 16., Color::srgb(0.38, 0.58, 0.38), ActionKind::Exercise, "[E] Training Area — exercise with pet");
+    obj(&mut commands, 290., -165., 22., 16., Color::srgb(0.60, 0.76, 0.72), ActionKind::Clinic, "[E] Vet Check — $40 pet health");
+
     // -- Trees (inside PARK zone) -----------------------------------------------
     for (x, y, s) in [
         (40., 250., 14.),
@@ -2658,13 +2715,13 @@ pub fn setup(mut commands: Commands) {
         );
     }
 
-    // NPC zone constants
-    let _home_z = Vec2::new(-425., 180.);
-    let office_z = Vec2::new(425., 180.);
-    let park_z = Vec2::new(85., 180.);
-    let store_z = Vec2::new(-85., -180.);
-    let library_z = Vec2::new(-85., 180.);
-    let garage_z = Vec2::new(425., -180.);
+    // NPC zone constants (pre-scale coords × S = world coords)
+    let _home_z = Vec2::new(-425. * S, 180. * S);
+    let office_z = Vec2::new(425. * S, 180. * S);
+    let park_z = Vec2::new(85. * S, 180. * S);
+    let store_z = Vec2::new(-85. * S, -180. * S);
+    let library_z = Vec2::new(-85. * S, 180. * S);
+    let garage_z = Vec2::new(425. * S, -180. * S);
 
     spawn_npc(
         &mut commands,
@@ -2675,10 +2732,10 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.94, 0.80, 0.65),
         Color::srgb(0.34, 0.20, 0.08),
         park_z,
-        100.,
+        100. * S,
         1,
         NpcPersonality::Neutral,
-        Vec2::new(-425., 180.),
+        Vec2::new(-425. * S, 180. * S),
         office_z,
     );
     spawn_npc(
@@ -2690,10 +2747,10 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.76, 0.58, 0.40),
         Color::srgb(0.10, 0.08, 0.06),
         park_z,
-        100.,
+        100. * S,
         2,
         NpcPersonality::Neutral,
-        Vec2::new(-425., -180.),
+        Vec2::new(-425. * S, -180. * S),
         office_z,
     );
     spawn_npc(
@@ -2705,10 +2762,10 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.96, 0.84, 0.70),
         Color::srgb(0.66, 0.20, 0.10),
         store_z,
-        60.,
+        60. * S,
         3,
         NpcPersonality::Neutral,
-        Vec2::new(-255., -180.),
+        Vec2::new(-255. * S, -180. * S),
         store_z,
     );
     spawn_npc(
@@ -2720,7 +2777,7 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.88, 0.68, 0.50),
         Color::srgb(0.55, 0.30, 0.08),
         park_z,
-        100.,
+        100. * S,
         4,
         NpcPersonality::Cheerful,
         store_z,
@@ -2735,7 +2792,7 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.95, 0.88, 0.78),
         Color::srgb(0.78, 0.72, 0.65),
         library_z,
-        60.,
+        60. * S,
         5,
         NpcPersonality::Wise,
         library_z,
@@ -2750,7 +2807,7 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.72, 0.52, 0.36),
         Color::srgb(0.08, 0.06, 0.04),
         garage_z,
-        80.,
+        80. * S,
         6,
         NpcPersonality::Influential,
         office_z,
@@ -2780,10 +2837,10 @@ pub fn setup(mut commands: Commands) {
             p.spawn((
                 Sprite {
                     color: Color::srgb(1., 1., 0.55),
-                    custom_size: Some(Vec2::splat(5.)),
+                    custom_size: Some(Vec2::splat(5. * S)),
                     ..default()
                 },
-                Transform::from_xyz(0., 18., 3.5),
+                Transform::from_xyz(0., 18. * S, 3.5),
                 PlayerIndicator,
             ));
         });
@@ -2792,7 +2849,7 @@ pub fn setup(mut commands: Commands) {
     commands.spawn((
         Sprite {
             color: Color::srgba(0., 0., 0.12, 0.),
-            custom_size: Some(Vec2::splat(6000.)),
+            custom_size: Some(Vec2::splat(24000.)),
             ..default()
         },
         Transform::from_xyz(0., 0., 50.),
@@ -2802,7 +2859,7 @@ pub fn setup(mut commands: Commands) {
     commands.spawn((
         Sprite {
             color: Color::srgba(1., 1., 0.5, 0.),
-            custom_size: Some(Vec2::splat(30.)),
+            custom_size: Some(Vec2::splat(30. * S)),
             ..default()
         },
         Transform::from_xyz(0., 0., 1.98),
@@ -2812,7 +2869,7 @@ pub fn setup(mut commands: Commands) {
     // -- Collision walls --------------------------------------------------------
 
     // World boundary
-    wall(&mut commands, 0., 330., 1200., 20.); // north
+    wall(&mut commands, 0., 480., 1200., 20.); // north (extended for back street)
     wall(&mut commands, 0., -330., 1200., 20.); // south
     wall(&mut commands, -530., 0., 20., 800.); // west
     wall(&mut commands, 530., 0., 20., 800.); // east
@@ -2830,6 +2887,128 @@ pub fn setup(mut commands: Commands) {
     ] {
         wall(&mut commands, tx, ty, ts * 0.75, ts * 0.75);
     }
+
+    // -- Back road (north, y=290) + APARTMENTS --------------------------------
+    let bsw = Color::srgb(0.42, 0.40, 0.36); // sidewalk
+    rect(&mut commands, 0., 290., 3000., 14., bsw, 0.62); // south sidewalk
+    rect(&mut commands, 0., 370., 3000., 14., bsw, 0.62); // north sidewalk
+    rect(
+        &mut commands,
+        0.,
+        330.,
+        3000.,
+        55.,
+        Color::srgb(0.36, 0.34, 0.30),
+        0.5,
+    );
+    // Back road edge lines
+    rect(
+        &mut commands,
+        0.,
+        357.,
+        3000.,
+        2.,
+        Color::srgba(1., 1., 0.8, 0.10),
+        0.6,
+    );
+    rect(
+        &mut commands,
+        0.,
+        303.,
+        3000.,
+        2.,
+        Color::srgba(1., 1., 0.8, 0.10),
+        0.6,
+    );
+    // Back road center dashes
+    for i in -17i32..=17 {
+        let x = i as f32 * 40.;
+        rect(
+            &mut commands,
+            x,
+            330.,
+            18.,
+            3.,
+            Color::srgba(1., 1., 0.75, 0.20),
+            0.7,
+        );
+    }
+    // Back street lamp posts
+    for &(lx, ly) in &[
+        (-340., 305.),
+        (-170., 305.),
+        (0., 305.),
+        (170., 305.),
+        (340., 305.),
+    ] {
+        lamp_post(&mut commands, lx, ly);
+    }
+
+    // APARTMENTS zone at (0, 400)
+    zone(
+        &mut commands,
+        0.,
+        400.,
+        500.,
+        160.,
+        Color::srgb(0.62, 0.55, 0.78),
+        "APARTMENTS",
+    );
+    commands.spawn(Building {
+        name: "APARTMENTS",
+        kind: BuildingKind::Collective,
+    });
+    // 6 apartment unit objects
+    for (i, ux) in [-190., -110., -30., 50., 130., 210.].iter().enumerate() {
+        let uid = i as u32 + 1;
+        commands.spawn((
+            Sprite {
+                color: Color::srgba(0., 0., 0., 0.45),
+                custom_size: Some(Vec2::new(52. * S, 44. * S)),
+                ..default()
+            },
+            Transform::from_xyz((ux + 2.) * S, (396. - 2.) * S, 1.95),
+        ));
+        commands.spawn((
+            Sprite {
+                color: Color::srgb(0.80, 0.72, 0.90),
+                custom_size: Some(Vec2::new(48. * S, 40. * S)),
+                ..default()
+            },
+            Transform::from_xyz(ux * S, 396. * S, 2.),
+            Interactable {
+                action: ActionKind::RentUnit(uid),
+                prompt: format!("[E] Rent Apt {}", uid),
+            },
+            ObjectSize(Vec2::new(48. * S, 40. * S)),
+            ApartmentUnit {
+                unit_id: uid,
+                owner: None,
+            },
+        ));
+    }
+    // APARTMENTS building walls
+    let ac = Color::srgb(0.45, 0.38, 0.60);
+    vis_wall(&mut commands, 0., 480., 500., 10., ac); // north
+    vis_wall(&mut commands, -250., 400., 10., 160., ac); // west
+    vis_wall(&mut commands, 250., 400., 10., 160., ac); // east
+    vis_wall(&mut commands, -100., 320., 200., 10., ac); // south-left
+    vis_wall(&mut commands, 100., 320., 200., 10., ac); // south-right
+    // doorway gap is at x=0 ± 50 (100px wide)
+
+    // -- Building classification markers ---------------------------------------
+    commands.spawn(Building { name: "HOME", kind: BuildingKind::Individual });
+    commands.spawn(Building { name: "SUBURBS", kind: BuildingKind::Individual });
+    commands.spawn(Building { name: "WELLNESS", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "LIBRARY", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "PARK", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "OFFICE", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "BANK", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "CLINIC", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "STORE", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "CAFÉ", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "ADOPTION", kind: BuildingKind::Collective });
+    commands.spawn(Building { name: "GARAGE", kind: BuildingKind::Collective });
 
     // -- Building walls with doorways -------------------------------------------
     // Wall thickness = 10. Door gap = 50 (player is 18px wide).
@@ -2961,10 +3140,10 @@ fn rect(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color, z: f32
     cmd.spawn((
         Sprite {
             color,
-            custom_size: Some(Vec2::new(w, h)),
+            custom_size: Some(Vec2::new(w * S, h * S)),
             ..default()
         },
-        Transform::from_xyz(x, y, z),
+        Transform::from_xyz(x * S, y * S, z),
     ));
 }
 
@@ -2985,16 +3164,16 @@ fn lamp_post(cmd: &mut Commands, x: f32, y: f32) {
     );
     // Collision (covers the pole)
     cmd.spawn((
-        Transform::from_xyz(x, y - 10., 0.),
-        Collider(Vec2::new(4., 18.)),
+        Transform::from_xyz(x * S, (y - 10.) * S, 0.),
+        Collider(Vec2::new(4. * S, 18. * S)),
     ));
 }
 
 /// Spawns an invisible AABB collision wall (no visual).
 fn wall(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32) {
     cmd.spawn((
-        Transform::from_xyz(x, y, 0.),
-        Collider(Vec2::new(w * 0.5, h * 0.5)),
+        Transform::from_xyz(x * S, y * S, 0.),
+        Collider(Vec2::new(w * 0.5 * S, h * 0.5 * S)),
     ));
 }
 
@@ -3003,11 +3182,11 @@ fn vis_wall(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color) {
     cmd.spawn((
         Sprite {
             color,
-            custom_size: Some(Vec2::new(w, h)),
+            custom_size: Some(Vec2::new(w * S, h * S)),
             ..default()
         },
-        Transform::from_xyz(x, y, 1.45),
-        Collider(Vec2::new(w * 0.5, h * 0.5)),
+        Transform::from_xyz(x * S, y * S, 1.45),
+        Collider(Vec2::new(w * 0.5 * S, h * 0.5 * S)),
     ));
 }
 
@@ -3025,11 +3204,11 @@ fn zone(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color, label:
     cmd.spawn((
         Text2d::new(label),
         TextFont {
-            font_size: 14.,
+            font_size: 14. * S,
             ..default()
         },
         TextColor(Color::srgba(1., 1., 1., 0.50)),
-        Transform::from_xyz(x, y + h / 2. - 16., 5.),
+        Transform::from_xyz(x * S, (y + h / 2. - 16.) * S, 5.),
     ));
 }
 
@@ -3047,23 +3226,23 @@ fn obj(
     cmd.spawn((
         Sprite {
             color: Color::srgba(0., 0., 0., 0.45),
-            custom_size: Some(Vec2::new(w + 4., h + 4.)),
+            custom_size: Some(Vec2::new((w + 4.) * S, (h + 4.) * S)),
             ..default()
         },
-        Transform::from_xyz(x + 2., y - 2., 1.95),
+        Transform::from_xyz((x + 2.) * S, (y - 2.) * S, 1.95),
     ));
     cmd.spawn((
         Sprite {
             color,
-            custom_size: Some(Vec2::new(w, h)),
+            custom_size: Some(Vec2::new(w * S, h * S)),
             ..default()
         },
-        Transform::from_xyz(x, y, 2.),
+        Transform::from_xyz(x * S, y * S, 2.),
         Interactable {
             action,
             prompt: prompt.to_string(),
         },
-        ObjectSize(Vec2::new(w, h)),
+        ObjectSize(Vec2::new(w * S, h * S)),
     ));
 }
 
@@ -3110,7 +3289,7 @@ fn spawn_npc(
             spawn_human(p, outfit, pants, skin, hair);
         })
         .id();
-    // Label floats above hair (hair tip at local y≈+15)
+    // Label floats above hair (hair tip at local y≈+15*S)
     cmd.spawn((
         Text2d::new(name),
         TextFont {
@@ -3118,7 +3297,7 @@ fn spawn_npc(
             ..default()
         },
         TextColor(Color::WHITE),
-        Transform::from_xyz(zone_center.x, zone_center.y + 26., 11.),
+        Transform::from_xyz(zone_center.x, zone_center.y + 26. * S, 11.),
         NpcLabel(id),
     ));
 }
