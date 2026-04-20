@@ -15,17 +15,26 @@ use resources::*;
 use save::{PendingLoad, SaveRequest, apply_save_data, handle_save, reset_game};
 use settings::{GameSettings, apply_settings};
 use setup::setup;
-use std::path::PathBuf;
 use systems::*;
 
 fn asset_root() -> String {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("assets")
-        .to_string_lossy()
-        .into_owned()
+    #[cfg(target_arch = "wasm32")]
+    {
+        "assets".to_string()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("assets")
+            .to_string_lossy()
+            .into_owned()
+    }
 }
 
 fn main() {
+    #[cfg(target_arch = "wasm32")]
+    console_error_panic_hook::set_once();
+
     let settings = GameSettings::load_or_default();
     let (w, h) = (settings.window_width, settings.window_height);
 
@@ -41,6 +50,12 @@ fn main() {
                     primary_window: Some(Window {
                         title: "Everyday Life Simulator".to_string(),
                         resolution: (w, h).into(),
+                        #[cfg(target_arch = "wasm32")]
+                        canvas: Some("#bevy".to_string()),
+                        #[cfg(target_arch = "wasm32")]
+                        fit_canvas_to_parent: true,
+                        #[cfg(target_arch = "wasm32")]
+                        prevent_default_event_handling: true,
                         ..default()
                     }),
                     ..default()

@@ -1,7 +1,50 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[cfg(not(target_arch = "wasm32"))]
 const SETTINGS_PATH: &str = "config.toml";
+#[cfg(target_arch = "wasm32")]
+const SETTINGS_STORAGE_KEY: &str = "new_game.settings.toml";
+
+#[cfg(target_arch = "wasm32")]
+fn browser_storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok().flatten()
+}
+
+fn read_settings_text() -> Option<String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        browser_storage()?.get_item(SETTINGS_STORAGE_KEY).ok().flatten()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::fs::read_to_string(SETTINGS_PATH).ok()
+    }
+}
+
+fn write_settings_text(contents: &str) -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let Some(storage) = browser_storage() else {
+            eprintln!("[settings] Browser localStorage is unavailable");
+            return false;
+        };
+        if let Err(e) = storage.set_item(SETTINGS_STORAGE_KEY, contents) {
+            eprintln!("[settings] Failed to write browser storage: {e:?}");
+            return false;
+        }
+        true
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        if let Err(e) = std::fs::write(SETTINGS_PATH, contents) {
+            eprintln!("[settings] Failed to write config.toml: {e}");
+            false
+        } else {
+            true
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -70,8 +113,9 @@ impl Difficulty {
     }
 }
 
-/// Persisted game settings. Loaded at startup from `config.toml`; defaults written
-/// if the file is missing or malformed.
+/// Persisted game settings. Loaded at startup from config.toml on native builds
+/// and browser localStorage on web builds; defaults are written back if missing
+/// or malformed.
 #[derive(Resource, Serialize, Deserialize, Clone, Debug)]
 #[serde(default)]
 pub struct GameSettings {
@@ -94,10 +138,10 @@ impl Default for GameSettings {
 }
 
 impl GameSettings {
-    /// Load settings from `config.toml`, falling back to defaults on any error.
-    /// Writes defaults to disk if the file was missing or unparseable.
+    /// Load settings from storage, falling back to defaults on any error.
+    /// Writes defaults back to the active platform store if missing or unparseable.
     pub fn load_or_default() -> Self {
-        if let Ok(contents) = std::fs::read_to_string(SETTINGS_PATH)
+        if let Some(contents) = read_settings_text()
             && let Ok(settings) = toml::from_str::<GameSettings>(&contents)
         {
             return settings;
@@ -107,17 +151,10 @@ impl GameSettings {
         defaults
     }
 
-    /// Persist current settings to `config.toml`. Returns `true` on success.
+    /// Persist current settings to the active platform store. Returns `true` on success.
     pub fn save(&self) -> bool {
         match toml::to_string_pretty(self) {
-            Ok(toml_str) => {
-                if let Err(e) = std::fs::write(SETTINGS_PATH, toml_str) {
-                    eprintln!("[settings] Failed to write config.toml: {e}");
-                    false
-                } else {
-                    true
-                }
-            }
+            Ok(toml_str) => write_settings_text(&toml_str),
             Err(e) => {
                 eprintln!("[settings] Failed to serialize settings: {e}");
                 false

@@ -22,7 +22,40 @@ use crate::{
     },
 };
 
+#[cfg(not(target_arch = "wasm32"))]
 const SAVE_PATH: &str = "save.json";
+#[cfg(target_arch = "wasm32")]
+const SAVE_STORAGE_KEY: &str = "new_game.save.json";
+
+#[cfg(target_arch = "wasm32")]
+fn browser_storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok().flatten()
+}
+
+fn read_save_text() -> Option<String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        browser_storage()?.get_item(SAVE_STORAGE_KEY).ok().flatten()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::fs::read_to_string(SAVE_PATH).ok()
+    }
+}
+
+fn write_save_text(contents: &str) -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let Some(storage) = browser_storage() else {
+            return Err("browser localStorage is unavailable".to_string());
+        };
+        storage.set_item(SAVE_STORAGE_KEY, contents).map_err(|e| format!("{e:?}"))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::fs::write(SAVE_PATH, contents).map_err(|e| e.to_string())
+    }
+}
 
 // ── Event ─────────────────────────────────────────────────────────────────────
 
@@ -269,14 +302,14 @@ pub struct ApplyParamsB<'w> {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/// Returns `true` if a save file exists on disk.
+/// Returns `true` if a save file exists in the active platform store.
 pub fn save_exists() -> bool {
-    std::path::Path::new(SAVE_PATH).exists()
+    read_save_text().is_some()
 }
 
-/// Load raw save data from disk. Returns `None` if no file or parse error.
+/// Load raw save data from storage. Returns `None` if no save or parse error.
 pub fn load_save_data() -> Option<SaveData> {
-    let contents = std::fs::read_to_string(SAVE_PATH).ok()?;
+    let contents = read_save_text()?;
     serde_json::from_str(&contents).ok()
 }
 
@@ -400,9 +433,9 @@ pub fn handle_save(
 
     match serde_json::to_string_pretty(&data) {
         Ok(json) => {
-            if let Err(e) = std::fs::write(SAVE_PATH, &json) {
+            if let Err(e) = write_save_text(&json) {
                 eprintln!("[save] Write failed: {e}");
-                notif.push("Save failed - could not write file", 4.0);
+                notif.push("Save failed - could not write progress", 4.0);
             }
         }
         Err(e) => {
