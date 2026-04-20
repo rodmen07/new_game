@@ -1,5 +1,8 @@
 /target/
 /targetyp7aAr/
+/dist/
+/wasm-target/
+/web-target*/
 *.tmp
 .claude/settings.local.json
 config.toml

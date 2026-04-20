@@ -15,6 +15,8 @@ use resources::*;
 use save::{PendingLoad, SaveRequest, apply_save_data, handle_save, reset_game};
 use settings::{GameSettings, apply_settings};
 use setup::setup;
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
 use systems::*;
 
 fn asset_root() -> String {
