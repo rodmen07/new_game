@@ -134,6 +134,7 @@ pub fn check_critical(
 }
 
 #[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
 mod tests {
     use super::*;
 
@@ -256,7 +257,7 @@ mod tests {
     fn happiness_does_not_decay_from_hunger_when_hunger_low() {
         let hunger = 40_f32;
         assert!(
-            !(hunger > 60.),
+            hunger <= 60.,
             "hunger below 60 should not trigger happiness decay"
         );
     }
@@ -287,7 +288,7 @@ mod tests {
     #[test]
     fn health_stable_when_hunger_below_80() {
         let hunger = 79_f32;
-        assert!(!(hunger > 80.), "hunger ≤ 80 should not drain health");
+        assert!(hunger <= 80., "hunger ≤ 80 should not drain health");
     }
 
     #[test]
@@ -307,7 +308,7 @@ mod tests {
     #[test]
     fn health_stable_when_energy_moderate() {
         let energy = 15_f32;
-        assert!(!(energy < 10.), "energy ≥ 10 should not drain health");
+        assert!(energy >= 10., "energy ≥ 10 should not drain health");
     }
 
     #[test]
