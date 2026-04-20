@@ -125,7 +125,12 @@ fn stop_ambient(
     night_q: Query<Entity, With<MusicNight>>,
     weather_q: Query<Entity, With<WeatherAmbient>>,
 ) {
-    for e in ambient_q.iter().chain(day_q.iter()).chain(night_q.iter()).chain(weather_q.iter()) {
+    for e in ambient_q
+        .iter()
+        .chain(day_q.iter())
+        .chain(night_q.iter())
+        .chain(weather_q.iter())
+    {
         commands.entity(e).despawn();
     }
 }
@@ -151,7 +156,10 @@ fn update_bgm(
             commands.spawn((
                 MusicDay,
                 AudioPlayer::<AudioSource>(src),
-                PlaybackSettings { volume: Volume::new(0.25), ..PlaybackSettings::LOOP },
+                PlaybackSettings {
+                    volume: Volume::new(0.25),
+                    ..PlaybackSettings::LOOP
+                },
             ));
         }
     } else {
@@ -166,7 +174,10 @@ fn update_bgm(
             commands.spawn((
                 MusicNight,
                 AudioPlayer::<AudioSource>(src),
-                PlaybackSettings { volume: Volume::new(0.20), ..PlaybackSettings::LOOP },
+                PlaybackSettings {
+                    volume: Volume::new(0.20),
+                    ..PlaybackSettings::LOOP
+                },
             ));
         }
     }
@@ -216,7 +227,8 @@ fn update_weather_audio(
     // Already playing? keep it (audio swaps on weather change, which is daily)
     if !weather_q.is_empty() {
         // Fire thunder SFX on lightning flash onset
-        if want_storm && lightning.flash_alpha > 0.30
+        if want_storm
+            && lightning.flash_alpha > 0.30
             && let Some(src) = handles.thunder.clone()
         {
             commands.spawn((AudioPlayer::<AudioSource>(src), PlaybackSettings::DESPAWN));
@@ -256,12 +268,27 @@ mod tests {
     #[test]
     fn shipped_audio_assets_exist() {
         // Core SFX assets must exist; BGM tracks are optional (CC downloads)
-        assert!(asset_disk_path("audio/ambient.ogg").exists(), "ambient.ogg missing");
-        assert!(asset_disk_path("audio/chime.ogg").exists(), "chime.ogg missing");
-        assert!(asset_disk_path("audio/work.ogg").exists(), "work.ogg missing");
+        assert!(
+            asset_disk_path("audio/ambient.ogg").exists(),
+            "ambient.ogg missing"
+        );
+        assert!(
+            asset_disk_path("audio/chime.ogg").exists(),
+            "chime.ogg missing"
+        );
+        assert!(
+            asset_disk_path("audio/work.ogg").exists(),
+            "work.ogg missing"
+        );
         assert!(asset_disk_path("audio/eat.ogg").exists(), "eat.ogg missing");
-        assert!(asset_disk_path("audio/sleep.ogg").exists(), "sleep.ogg missing");
-        assert!(asset_disk_path("audio/interact.ogg").exists(), "interact.ogg missing");
+        assert!(
+            asset_disk_path("audio/sleep.ogg").exists(),
+            "sleep.ogg missing"
+        );
+        assert!(
+            asset_disk_path("audio/interact.ogg").exists(),
+            "interact.ogg missing"
+        );
         // BGM tracks are optional; no assertion
     }
 }

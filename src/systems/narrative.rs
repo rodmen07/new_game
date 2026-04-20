@@ -74,7 +74,10 @@ pub fn update_narrative(
 
     if unlocked && notif.timer <= 0. {
         if gt.day == 0 {
-            notif.message = format!("Story: {} - [NE]Office  [E]Shop/Cafe  [SW]Bank  [N]Park+shelter", story.current_title);
+            notif.message = format!(
+                "Story: {} - [NE]Office  [E]Shop/Cafe  [SW]Bank  [N]Park+shelter",
+                story.current_title
+            );
             notif.timer = 9.;
         } else {
             notif.message = format!("Story: {}", story.current_title);

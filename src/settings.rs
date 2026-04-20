@@ -14,7 +14,10 @@ fn browser_storage() -> Option<web_sys::Storage> {
 fn read_settings_text() -> Option<String> {
     #[cfg(target_arch = "wasm32")]
     {
-        browser_storage()?.get_item(SETTINGS_STORAGE_KEY).ok().flatten()
+        browser_storage()?
+            .get_item(SETTINGS_STORAGE_KEY)
+            .ok()
+            .flatten()
     }
     #[cfg(not(target_arch = "wasm32"))]
     {

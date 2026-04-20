@@ -109,13 +109,21 @@ pub fn spawn_sprint_particles(
     player_q: Query<(&Transform, &PlayerMovement), With<Player>>,
     time: Res<Time>,
 ) {
-    let Ok((ptf, pm)) = player_q.get_single() else { return };
-    if !pm.sprinting { return };
+    let Ok((ptf, pm)) = player_q.get_single() else {
+        return;
+    };
+    if !pm.sprinting {
+        return;
+    };
     let dt = time.delta_secs();
     let t = time.elapsed_secs();
 
     let count = ((dt * 80.).round() as u32).min(3);
-    let dir = if pm.velocity.length() > 1. { pm.velocity.normalize() } else { Vec2::Y };
+    let dir = if pm.velocity.length() > 1. {
+        pm.velocity.normalize()
+    } else {
+        Vec2::Y
+    };
     for i in 0..count {
         let spread_angle = t * 8. + i as f32 * std::f32::consts::FRAC_PI_3;
         let spread = Vec2::new(spread_angle.cos(), spread_angle.sin()) * 3.;
@@ -132,7 +140,10 @@ pub fn spawn_sprint_particles(
                 ..default()
             },
             Transform::from_translation(pos),
-            Particle { lifetime: 0.14, max_lifetime: 0.14 },
+            Particle {
+                lifetime: 0.14,
+                max_lifetime: 0.14,
+            },
         ));
     }
 }
@@ -166,7 +177,9 @@ pub fn spawn_weather_particles(
     time: Res<Time>,
     _gt: Res<GameTime>,
 ) {
-    let Ok((cam_tf, proj)) = cam_q.get_single() else { return };
+    let Ok((cam_tf, proj)) = cam_q.get_single() else {
+        return;
+    };
     let dt = time.delta_secs();
     let t = time.elapsed_secs();
     let cx = cam_tf.translation.x;
@@ -377,7 +390,8 @@ pub fn spawn_weather_particles(
     }
 
     // Splash particles when rain/storm drops hit ground level
-    if matches!(*weather, WeatherKind::Rainy | WeatherKind::Stormy) && !is_winter
+    if matches!(*weather, WeatherKind::Rainy | WeatherKind::Stormy)
+        && !is_winter
         && hash(frame_seed.wrapping_add(5555)) < dt * 180.0
     {
         let count = if weather.is_stormy() { 2 } else { 1 };
@@ -479,13 +493,17 @@ pub fn update_lightning(
         lightning.flash_alpha = 0.35;
         // Next flash in 6-14 seconds
         let t = time.elapsed_secs();
-        let pseudo = ((t * 1000.0) as u32).wrapping_mul(1664525).wrapping_add(1013904223);
+        let pseudo = ((t * 1000.0) as u32)
+            .wrapping_mul(1664525)
+            .wrapping_add(1013904223);
         lightning.next_flash = 6.0 + (pseudo % 8000) as f32 / 1000.0;
     }
 
     // Apply flash to overlay
     if lightning.flash_alpha > 0.01 {
-        let Ok(mut sprite) = overlay_q.get_single_mut() else { return };
+        let Ok(mut sprite) = overlay_q.get_single_mut() else {
+            return;
+        };
         let current = sprite.color.to_srgba();
         sprite.color = Color::srgba(
             (current.red + lightning.flash_alpha * 0.8).min(1.0),

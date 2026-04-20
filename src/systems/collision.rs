@@ -12,17 +12,19 @@ pub fn resolve_collisions(
     mut player_q: Query<(&mut Transform, &mut PlayerMovement), With<Player>>,
     colliders_q: Query<(&Transform, &Collider), Without<Player>>,
 ) {
-    let Ok((mut ptf, mut pm)) = player_q.get_single_mut() else { return };
+    let Ok((mut ptf, mut pm)) = player_q.get_single_mut() else {
+        return;
+    };
 
     let colliders: Vec<_> = colliders_q.iter().collect();
 
-    let curr  = ptf.translation.truncate();
+    let curr = ptf.translation.truncate();
     let delta = curr - pm.prev_position;
-    let dist  = delta.length();
+    let dist = delta.length();
 
     // How many sub-steps — ceil(dist / half-extent), clamped to [1, 8].
     let step_count = ((dist / PLAYER_HALF.x).ceil() as usize).clamp(1, 8);
-    let step       = delta / step_count as f32;
+    let step = delta / step_count as f32;
 
     // Revert to pre-movement position then advance in increments.
     let start = pm.prev_position;
@@ -42,16 +44,22 @@ pub fn resolve_collisions(
                 let overlap_x = (PLAYER_HALF.x + ch.x) - dx.abs();
                 let overlap_y = (PLAYER_HALF.y + ch.y) - dy.abs();
 
-                if overlap_x <= 0. || overlap_y <= 0. { continue; }
+                if overlap_x <= 0. || overlap_y <= 0. {
+                    continue;
+                }
 
                 if overlap_x < overlap_y {
                     let sign = if dx >= 0. { 1. } else { -1. };
                     ptf.translation.x += overlap_x * sign;
-                    if pm.velocity.x * sign < 0. { pm.velocity.x = 0.; }
+                    if pm.velocity.x * sign < 0. {
+                        pm.velocity.x = 0.;
+                    }
                 } else {
                     let sign = if dy >= 0. { 1. } else { -1. };
                     ptf.translation.y += overlap_y * sign;
-                    if pm.velocity.y * sign < 0. { pm.velocity.y = 0.; }
+                    if pm.velocity.y * sign < 0. {
+                        pm.velocity.y = 0.;
+                    }
                 }
             }
         }
@@ -116,12 +124,15 @@ mod tests {
     fn aabb_overlap_pushes_on_least_penetration_axis() {
         // Verify the overlap formula: overlap_x = (PLAYER_HALF.x + ch.x) - |dx|
         let ch = bevy::math::Vec2::new(10., 10.);
-        let dx = 5_f32;  // player is 5px right of collider center
+        let dx = 5_f32; // player is 5px right of collider center
         let dy = 15_f32; // player is 15px above collider center
         let overlap_x = (PLAYER_HALF.x + ch.x) - dx.abs(); // 9+10-5 = 14
         let overlap_y = (PLAYER_HALF.y + ch.y) - dy.abs(); // 9+10-15 = 4
         // least penetration is Y axis (overlap_y < overlap_x), so push on Y
         assert!(overlap_x > 0. && overlap_y > 0., "should be overlapping");
-        assert!(overlap_y < overlap_x, "should push on Y axis (least penetration)");
+        assert!(
+            overlap_y < overlap_x,
+            "should push on Y axis (least penetration)"
+        );
     }
 }

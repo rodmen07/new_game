@@ -239,17 +239,39 @@ mod tests {
     use super::*;
 
     /// Helper with sensible defaults; override fields as needed.
-    fn progress(kind: GoalKind, target: f32, overrides: impl FnOnce(&mut GoalInputs)) -> (f32, bool) {
+    fn progress(
+        kind: GoalKind,
+        target: f32,
+        overrides: impl FnOnce(&mut GoalInputs),
+    ) -> (f32, bool) {
         let mut i = GoalInputs::default();
         i.target = target;
         overrides(&mut i);
         compute_goal_progress(
-            &kind, i.target, i.happiness, i.money_earned, i.work_today,
-            i.eat_today, i.chat_today, i.best_friendship, i.savings, i.money,
-            i.exercise_today, i.stress, i.streak_days, i.best_hobby,
-            i.passive_income, i.outdoor_done, i.is_sunny, i.study_today,
-            i.has_pet, i.fed_pet, i.party_today, i.owns_vehicle,
-            &i.season, i.hobby_today,
+            &kind,
+            i.target,
+            i.happiness,
+            i.money_earned,
+            i.work_today,
+            i.eat_today,
+            i.chat_today,
+            i.best_friendship,
+            i.savings,
+            i.money,
+            i.exercise_today,
+            i.stress,
+            i.streak_days,
+            i.best_hobby,
+            i.passive_income,
+            i.outdoor_done,
+            i.is_sunny,
+            i.study_today,
+            i.has_pet,
+            i.fed_pet,
+            i.party_today,
+            i.owns_vehicle,
+            &i.season,
+            i.hobby_today,
         )
     }
 

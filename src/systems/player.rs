@@ -1,17 +1,34 @@
 #![allow(clippy::type_complexity)]
 
 use crate::components::{BodyPart, MainCamera, Player, PlayerIndicator};
-use crate::constants::{PLAYER_SPEED, PLAYER_ACCEL, PLAYER_FRICTION, SPRINT_MULTIPLIER, SPRINT_ENERGY_DRAIN, WORLD_BOUNDARY};
-use crate::resources::{ActionPrompt, BankInput, GameTime, PlayerMovement, PlayerStats, Transport, TransportKind, VehicleState};
+use crate::constants::{
+    PLAYER_ACCEL, PLAYER_FRICTION, PLAYER_SPEED, SPRINT_ENERGY_DRAIN, SPRINT_MULTIPLIER,
+    WORLD_BOUNDARY,
+};
+use crate::resources::{
+    ActionPrompt, BankInput, GameTime, PlayerMovement, PlayerStats, Transport, TransportKind,
+    VehicleState,
+};
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 
 /// Pure computation: max speed given health, energy, transport, and sprint state.
-pub fn compute_max_speed(health: f32, energy: f32, transport: &TransportKind, sprinting: bool) -> f32 {
-    let health_mult = if health < 30. { 0.4 } else if energy < 20. { 0.6 } else { 1.0 };
+pub fn compute_max_speed(
+    health: f32,
+    energy: f32,
+    transport: &TransportKind,
+    sprinting: bool,
+) -> f32 {
+    let health_mult = if health < 30. {
+        0.4
+    } else if energy < 20. {
+        0.6
+    } else {
+        1.0
+    };
     let transport_mult = match transport {
         TransportKind::Bike => 1.15,
-        TransportKind::Car  => 1.30,
+        TransportKind::Car => 1.30,
         TransportKind::Walk => 1.0,
     };
     let sprint_mult = if sprinting { SPRINT_MULTIPLIER } else { 1.0 };
@@ -33,21 +50,45 @@ pub fn player_movement(
     time: Res<Time>,
     mut stats: ResMut<PlayerStats>,
     transport: Res<Transport>,
-    mut q: Query<(&mut Transform, &mut PlayerMovement, &VehicleState, &BankInput, &ActionPrompt), With<Player>>,
+    mut q: Query<
+        (
+            &mut Transform,
+            &mut PlayerMovement,
+            &VehicleState,
+            &BankInput,
+            &ActionPrompt,
+        ),
+        With<Player>,
+    >,
 ) {
-    let Ok((mut tf, mut pm, vehicle_state, bank_input, action_prompt)) = q.get_single_mut() else { return };
-    if vehicle_state.in_vehicle { return; }
-    if bank_input.active || action_prompt.active { return; }
+    let Ok((mut tf, mut pm, vehicle_state, bank_input, action_prompt)) = q.get_single_mut() else {
+        return;
+    };
+    if vehicle_state.in_vehicle {
+        return;
+    }
+    if bank_input.active || action_prompt.active {
+        return;
+    }
     let dt = time.delta_secs();
 
     // ── Input direction ────────────────────────────────────────────────────
     let mut wish = Vec2::ZERO;
-    if keys.any_pressed([KeyCode::ArrowUp,    KeyCode::KeyW]) { wish.y += 1.; }
-    if keys.any_pressed([KeyCode::ArrowDown,  KeyCode::KeyS]) { wish.y -= 1.; }
-    if keys.any_pressed([KeyCode::ArrowLeft,  KeyCode::KeyA]) { wish.x -= 1.; }
-    if keys.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) { wish.x += 1.; }
+    if keys.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
+        wish.y += 1.;
+    }
+    if keys.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
+        wish.y -= 1.;
+    }
+    if keys.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
+        wish.x -= 1.;
+    }
+    if keys.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
+        wish.x += 1.;
+    }
     let sprinting = keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-        && wish != Vec2::ZERO && stats.energy > 5.;
+        && wish != Vec2::ZERO
+        && stats.energy > 5.;
     pm.sprinting = sprinting;
 
     // ── Compute max speed ──────────────────────────────────────────────────
@@ -62,7 +103,10 @@ pub fn player_movement(
     } else {
         let speed = pm.velocity.length();
         let friction = (PLAYER_FRICTION * dt).min(speed);
-        if speed > 0. { let dir = pm.velocity / speed; pm.velocity -= dir * friction; }
+        if speed > 0. {
+            let dir = pm.velocity / speed;
+            pm.velocity -= dir * friction;
+        }
     }
 
     // ── Sprint energy drain ────────────────────────────────────────────────
@@ -83,18 +127,27 @@ pub fn player_movement(
 /// Squash/stretch via root scale; animate legs; tint body by state; orbit direction dot.
 pub fn player_visuals(
     stats: Res<PlayerStats>,
-    gt:    Res<GameTime>,
-    mut player_q:    Query<(&Children, &mut Transform, &PlayerMovement), With<Player>>,
-    mut parts_q:     Query<(&BodyPart, &mut Sprite, &mut Transform), (Without<Player>, Without<PlayerIndicator>)>,
+    gt: Res<GameTime>,
+    mut player_q: Query<(&Children, &mut Transform, &PlayerMovement), With<Player>>,
+    mut parts_q: Query<
+        (&BodyPart, &mut Sprite, &mut Transform),
+        (Without<Player>, Without<PlayerIndicator>),
+    >,
     mut indicator_q: Query<&mut Transform, (With<PlayerIndicator>, Without<Player>)>,
 ) {
-    let Ok((children, mut root_tf, pm)) = player_q.get_single_mut() else { return };
+    let Ok((children, mut root_tf, pm)) = player_q.get_single_mut() else {
+        return;
+    };
     let speed = pm.velocity.length();
     let speed_norm = (speed / (PLAYER_SPEED * SPRINT_MULTIPLIER)).clamp(0., 1.);
     let t = gt.anim_secs;
 
     // Squash/stretch bob
-    let bob = if speed > 10. { (t * (7. + speed * 0.012)).sin() * speed_norm * 0.06 } else { 0. };
+    let bob = if speed > 10. {
+        (t * (7. + speed * 0.012)).sin() * speed_norm * 0.06
+    } else {
+        0.
+    };
     root_tf.scale = Vec3::new(
         1. - speed_norm * 0.08 - bob * 0.4,
         1. + speed_norm * 0.12 + bob,
@@ -117,16 +170,30 @@ pub fn player_visuals(
     };
 
     let leg_phase = (t * (7. + speed * 0.015)).sin() * speed_norm * 3.5;
-    let move_dir  = if speed > 10. { pm.velocity.normalize() } else { Vec2::Y };
+    let move_dir = if speed > 10. {
+        pm.velocity.normalize()
+    } else {
+        Vec2::Y
+    };
 
     for &child in children.iter() {
         if let Ok((part, mut sprite, mut ctf)) = parts_q.get_mut(child) {
             match *part {
-                BodyPart::Body      => { sprite.color = body_color; }
-                BodyPart::LeftLeg   => { ctf.translation.y = -5. + leg_phase; }
-                BodyPart::RightLeg  => { ctf.translation.y = -5. - leg_phase; }
-                BodyPart::LeftFoot  => { ctf.translation.y = -10. + leg_phase * 0.65; }
-                BodyPart::RightFoot => { ctf.translation.y = -10. - leg_phase * 0.65; }
+                BodyPart::Body => {
+                    sprite.color = body_color;
+                }
+                BodyPart::LeftLeg => {
+                    ctf.translation.y = -5. + leg_phase;
+                }
+                BodyPart::RightLeg => {
+                    ctf.translation.y = -5. - leg_phase;
+                }
+                BodyPart::LeftFoot => {
+                    ctf.translation.y = -10. + leg_phase * 0.65;
+                }
+                BodyPart::RightFoot => {
+                    ctf.translation.y = -10. - leg_phase * 0.65;
+                }
                 _ => {}
             }
         }
@@ -138,17 +205,25 @@ pub fn player_visuals(
 
 pub fn camera_follow(
     player_q: Query<(&Transform, &PlayerMovement), With<Player>>,
-    mut cam_q: Query<(&mut Transform, &mut OrthographicProjection), (With<MainCamera>, Without<Player>)>,
+    mut cam_q: Query<
+        (&mut Transform, &mut OrthographicProjection),
+        (With<MainCamera>, Without<Player>),
+    >,
     time: Res<Time>,
 ) {
-    let Ok((ptf, pm)) = player_q.get_single() else { return };
-    let Ok((mut ctf, mut proj)) = cam_q.get_single_mut() else { return };
+    let Ok((ptf, pm)) = player_q.get_single() else {
+        return;
+    };
+    let Ok((mut ctf, mut proj)) = cam_q.get_single_mut() else {
+        return;
+    };
     let dt = time.delta_secs();
 
     let target = Vec3::new(ptf.translation.x, ptf.translation.y, ctf.translation.z);
     ctf.translation = ctf.translation.lerp(target, 1. - (-8.0_f32 * dt).exp());
 
-    let target_scale = pm.base_zoom + (pm.velocity.length() / (PLAYER_SPEED * SPRINT_MULTIPLIER)).clamp(0., 1.) * 0.10;
+    let target_scale = pm.base_zoom
+        + (pm.velocity.length() / (PLAYER_SPEED * SPRINT_MULTIPLIER)).clamp(0., 1.) * 0.10;
     proj.scale += (target_scale - proj.scale) * (1. - (-5.0_f32 * dt).exp());
 }
 
@@ -156,10 +231,12 @@ pub fn camera_zoom(
     mut scroll_evr: EventReader<MouseWheel>,
     mut pm_q: Query<&mut PlayerMovement, With<Player>>,
 ) {
-    let Ok(mut pm) = pm_q.get_single_mut() else { return };
+    let Ok(mut pm) = pm_q.get_single_mut() else {
+        return;
+    };
     for ev in scroll_evr.read() {
         let delta = match ev.unit {
-            MouseScrollUnit::Line  => ev.y * 0.10,
+            MouseScrollUnit::Line => ev.y * 0.10,
             MouseScrollUnit::Pixel => ev.y * 0.003,
         };
         pm.base_zoom = (pm.base_zoom - delta).clamp(0.35, 2.5);

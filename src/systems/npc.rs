@@ -161,15 +161,24 @@ pub fn update_npc_prompts(
             NpcPersonality::Influential => " (Influential)",
             NpcPersonality::Neutral => "",
         };
-        let quest_tag = if lvl >= 1 && !quest_board.has_quest_from(npc_id.0) && quest_board.active_count() < 3 {
+        let quest_tag = if lvl >= 1
+            && !quest_board.has_quest_from(npc_id.0)
+            && quest_board.active_count() < 3
+        {
             " [Q] Quest"
         } else {
             ""
         };
         inter.prompt = if lvl >= 2 {
-            format!("[E] Chat | [G] Gift -> {} [{}]{}{}", npc.name, tier, ptag, quest_tag)
+            format!(
+                "[E] Chat | [G] Gift -> {} [{}]{}{}",
+                npc.name, tier, ptag, quest_tag
+            )
         } else {
-            format!("[E] Chat {} [{}]{} {}{}", npc.name, tier, ptag, hearts, quest_tag)
+            format!(
+                "[E] Chat {} [{}]{} {}{}",
+                npc.name, tier, ptag, hearts, quest_tag
+            )
         };
     }
 }

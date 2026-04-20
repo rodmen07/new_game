@@ -36,7 +36,11 @@ pub fn update_hud(
             .collect();
         let mid = entries.len().div_ceil(2);
         let cap_line = |s: String| -> String {
-            if s.len() > 52 { format!("{}…", &s[..51]) } else { s }
+            if s.len() > 52 {
+                format!("{}…", &s[..51])
+            } else {
+                s
+            }
         };
         if entries.len() > 3 {
             format!(
@@ -66,12 +70,30 @@ pub fn update_hud(
                 } else {
                     ""
                 };
-                format!("{}  [{}]{}", gt.display(), extras.settings.difficulty.label(), work_hint)
+                format!(
+                    "{}  [{}]{}",
+                    gt.display(),
+                    extras.settings.difficulty.label(),
+                    work_hint
+                )
             }
             HudLabel::Money => {
-                let meals = if stats.meals > 9999 { "9999+".to_string() } else { stats.meals.to_string() };
-                let s = format!("{} cash | {} saved | {} meals", fmt_cash(stats.money), fmt_cash(stats.savings), meals);
-                if s.len() > 56 { format!("{}…", &s[..55]) } else { s }
+                let meals = if stats.meals > 9999 {
+                    "9999+".to_string()
+                } else {
+                    stats.meals.to_string()
+                };
+                let s = format!(
+                    "{} cash | {} saved | {} meals",
+                    fmt_cash(stats.money),
+                    fmt_cash(stats.savings),
+                    meals
+                );
+                if s.len() > 56 {
+                    format!("{}…", &s[..55])
+                } else {
+                    s
+                }
             }
             HudLabel::Rent => {
                 if stats.unpaid_rent_days == 0 {
@@ -215,8 +237,17 @@ pub fn update_hud(
                 }
             }
             HudLabel::Rating => {
-                let days_str = if rating.days > 9999 { "9999+".to_string() } else { rating.days.to_string() };
-                format!("{}\nScore: {:.0}/100  ({} days)", rating.grade(), rating.score, days_str)
+                let days_str = if rating.days > 9999 {
+                    "9999+".to_string()
+                } else {
+                    rating.days.to_string()
+                };
+                format!(
+                    "{}\nScore: {:.0}/100  ({} days)",
+                    rating.grade(),
+                    rating.score,
+                    days_str
+                )
             }
             HudLabel::Milestones => {
                 let s = ms.summary();
@@ -358,15 +389,23 @@ pub fn update_hud(
             }
             HudLabel::Pet => {
                 if extras.pet.has_pet {
-                    let fed = if extras.pet.fed_today { "Fed ✓" } else { "Hungry!" };
-                    format!("{} ({}) - {}", extras.pet.name, extras.pet.kind.label(), fed)
+                    let fed = if extras.pet.fed_today {
+                        "Fed ✓"
+                    } else {
+                        "Hungry!"
+                    };
+                    format!(
+                        "{} ({}) - {}",
+                        extras.pet.name,
+                        extras.pet.kind.label(),
+                        fed
+                    )
                 } else {
                     "No pet - visit Adoption Center".to_string()
                 }
             }
             HudLabel::Transport => {
-                let bonus_pct =
-                    ((extras.transport.kind.work_bonus() - 1.0) * 100.0).round() as i32;
+                let bonus_pct = ((extras.transport.kind.work_bonus() - 1.0) * 100.0).round() as i32;
                 if in_vehicle {
                     format!(
                         "{} (driving, +{}% pay)",
@@ -388,15 +427,23 @@ pub fn update_hud(
                         )
                     }
                 } else {
-                    format!("{}  Garage: Bike +10% / Car +20%", extras.transport.kind.label())
+                    format!(
+                        "{}  Garage: Bike +10% / Car +20%",
+                        extras.transport.kind.label()
+                    )
                 }
             }
             HudLabel::Quest => {
                 let qb = &*extras.quest_board;
                 if qb.quests.is_empty() {
-                    format!("No quests - chat with NPCs [Q] (done: {})", qb.completed_total)
+                    format!(
+                        "No quests - chat with NPCs [Q] (done: {})",
+                        qb.completed_total
+                    )
                 } else {
-                    let lines: Vec<String> = qb.quests.iter()
+                    let lines: Vec<String> = qb
+                        .quests
+                        .iter()
                         .filter(|q| !q.completed)
                         .take(3)
                         .map(|q| format!("{} {}/{}", q.description, q.progress, q.target))
@@ -472,29 +519,55 @@ fn fmt_cash(v: f32) -> String {
 
 fn warnings(s: &PlayerStats, conds: &Conditions) -> String {
     let mut w: Vec<&str> = Vec::new();
-    if conds.hospitalized   { w.push("!! HOSPITALISED"); }
-    if s.critical_timer > 10. { w.push("!! COLLAPSING"); }
+    if conds.hospitalized {
+        w.push("!! HOSPITALISED");
+    }
+    if s.critical_timer > 10. {
+        w.push("!! COLLAPSING");
+    }
 
-    if s.energy < 15.       { w.push("! Exhausted"); }
-    else if s.energy < 30.  { w.push("Low Energy"); }
+    if s.energy < 15. {
+        w.push("! Exhausted");
+    } else if s.energy < 30. {
+        w.push("Low Energy");
+    }
 
-    if s.hunger > 82.       { w.push("! Starving"); }
-    else if s.hunger > 62.  { w.push("Hungry"); }
+    if s.hunger > 82. {
+        w.push("! Starving");
+    } else if s.hunger > 62. {
+        w.push("Hungry");
+    }
 
-    if s.happiness < 20.    { w.push("! Depressed"); }
-    else if s.happiness < 38. { w.push("Low Mood"); }
+    if s.happiness < 20. {
+        w.push("! Depressed");
+    } else if s.happiness < 38. {
+        w.push("Low Mood");
+    }
 
-    if s.health < 25.       { w.push("! Sick"); }
-    else if s.health < 50.  { w.push("Poor Health"); }
+    if s.health < 25. {
+        w.push("! Sick");
+    } else if s.health < 50. {
+        w.push("Poor Health");
+    }
 
-    if s.stress > 82.       { w.push("! Stressed"); }
-    else if s.stress > 62.  { w.push("Tense"); }
+    if s.stress > 82. {
+        w.push("! Stressed");
+    } else if s.stress > 62. {
+        w.push("Tense");
+    }
 
-    if s.sleep_debt > 16.   { w.push("! Sleep-Deprived"); }
-    else if s.sleep_debt > 8. { w.push("Tired"); }
+    if s.sleep_debt > 16. {
+        w.push("! Sleep-Deprived");
+    } else if s.sleep_debt > 8. {
+        w.push("Tired");
+    }
 
-    if s.money < 5.         { w.push("! Broke"); }
-    if s.loan > 200.        { w.push("! Heavy Debt"); }
+    if s.money < 5. {
+        w.push("! Broke");
+    }
+    if s.loan > 200. {
+        w.push("! Heavy Debt");
+    }
 
     w.join("  ")
 }

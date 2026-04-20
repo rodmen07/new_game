@@ -1,4 +1,8 @@
-use crate::{components::{ActionKind, PetKind, Player}, save::SaveRequest, settings::GameSettings};
+use crate::{
+    components::{ActionKind, PetKind, Player},
+    save::SaveRequest,
+    settings::GameSettings,
+};
 use bevy::{ecs::system::SystemParam, prelude::*, utils::HashMap};
 use std::collections::VecDeque;
 
@@ -407,7 +411,9 @@ impl QuestBoard {
         self.quests.iter().filter(|q| !q.completed).count()
     }
     pub fn has_quest_from(&self, npc_id: usize) -> bool {
-        self.quests.iter().any(|q| q.npc_id == npc_id && !q.completed)
+        self.quests
+            .iter()
+            .any(|q| q.npc_id == npc_id && !q.completed)
     }
 }
 
@@ -888,9 +894,15 @@ pub struct Conditions {
 impl Conditions {
     pub fn work_pay_mult(&self) -> f32 {
         let mut mult = 1.0_f32;
-        if self.burnout { mult *= 0.70; }
-        if self.malnourished { mult *= 0.85; }
-        if self.mental_fatigue { mult *= 0.85; }
+        if self.burnout {
+            mult *= 0.70;
+        }
+        if self.malnourished {
+            mult *= 0.85;
+        }
+        if self.mental_fatigue {
+            mult *= 0.85;
+        }
         mult
     }
 }
@@ -1078,7 +1090,11 @@ pub struct Transport {
 }
 impl Transport {
     pub fn effective_work_bonus(&self) -> f32 {
-        if self.maintenance_due { 1.0 } else { self.kind.work_bonus() }
+        if self.maintenance_due {
+            1.0
+        } else {
+            self.kind.work_bonus()
+        }
     }
 }
 
@@ -1239,11 +1255,8 @@ impl ActionPrompt {
             return String::new();
         }
         format!(
-            "{} challenge - {}\nType: {}_\nRetries: {}  [Enter] confirm [Esc] cancel",
-            self.label,
-            self.instruction,
-            self.buffer,
-            self.retries_left
+            "{} challenge - {}\nTarget phrase: {}\nType: {}_\nRetries: {}  [Enter] confirm [Esc] cancel",
+            self.label, self.instruction, self.expected, self.buffer, self.retries_left
         )
     }
 }
@@ -1446,22 +1459,40 @@ mod tests {
     fn stress_work_mult_boundaries() {
         let mut s = PlayerStats::default();
         s.stress = 50.;
-        assert!((s.stress_work_mult() - 1.0).abs() < f32::EPSILON, "50 is not >50, so tier 1");
+        assert!(
+            (s.stress_work_mult() - 1.0).abs() < f32::EPSILON,
+            "50 is not >50, so tier 1"
+        );
         s.stress = 50.1;
-        assert!((s.stress_work_mult() - 0.85).abs() < f32::EPSILON, "50.1 is >50, tier 2");
+        assert!(
+            (s.stress_work_mult() - 0.85).abs() < f32::EPSILON,
+            "50.1 is >50, tier 2"
+        );
         s.stress = 75.;
-        assert!((s.stress_work_mult() - 0.85).abs() < f32::EPSILON, "75 is not >75, still tier 2");
+        assert!(
+            (s.stress_work_mult() - 0.85).abs() < f32::EPSILON,
+            "75 is not >75, still tier 2"
+        );
         s.stress = 75.1;
-        assert!((s.stress_work_mult() - 0.50).abs() < f32::EPSILON, "75.1 is >75, tier 3");
+        assert!(
+            (s.stress_work_mult() - 0.50).abs() < f32::EPSILON,
+            "75.1 is >75, tier 3"
+        );
     }
 
     #[test]
     fn loan_penalty_tiers() {
         let mut s = PlayerStats::default();
         s.loan = 300.;
-        assert!((s.loan_penalty() - 1.0).abs() < f32::EPSILON, "300 is not >300");
+        assert!(
+            (s.loan_penalty() - 1.0).abs() < f32::EPSILON,
+            "300 is not >300"
+        );
         s.loan = 300.1;
-        assert!((s.loan_penalty() - 0.90).abs() < f32::EPSILON, "300.1 is >300");
+        assert!(
+            (s.loan_penalty() - 0.90).abs() < f32::EPSILON,
+            "300.1 is >300"
+        );
         s.loan = 0.;
         assert!((s.loan_penalty() - 1.0).abs() < f32::EPSILON);
     }
@@ -1483,11 +1514,20 @@ mod tests {
     fn reputation_work_mult_tiers() {
         let mut r = Reputation::default();
         r.score = 10.;
-        assert!((r.work_mult() - 0.90).abs() < f32::EPSILON, "score <20 → penalty");
+        assert!(
+            (r.work_mult() - 0.90).abs() < f32::EPSILON,
+            "score <20 → penalty"
+        );
         r.score = 40.;
-        assert!((r.work_mult() - 1.00).abs() < f32::EPSILON, "score 20-59 → neutral");
+        assert!(
+            (r.work_mult() - 1.00).abs() < f32::EPSILON,
+            "score 20-59 → neutral"
+        );
         r.score = 60.;
-        assert!((r.work_mult() - 1.10).abs() < f32::EPSILON, "score >=60 → bonus");
+        assert!(
+            (r.work_mult() - 1.10).abs() < f32::EPSILON,
+            "score >=60 → bonus"
+        );
         r.score = 100.;
         assert!((r.work_mult() - 1.10).abs() < f32::EPSILON);
     }
@@ -1545,9 +1585,15 @@ mod tests {
         let s = Skills::default();
         assert!((s.work_pay(2) - 30.0).abs() < 0.01, "streak 2 → no bonus");
         assert!((s.work_pay(3) - 33.0).abs() < 0.01, "streak 3 → 1.10x");
-        assert!((s.work_pay(4) - 33.0).abs() < 0.01, "streak 4 → still 1.10x");
+        assert!(
+            (s.work_pay(4) - 33.0).abs() < 0.01,
+            "streak 4 → still 1.10x"
+        );
         assert!((s.work_pay(5) - 36.0).abs() < 0.01, "streak 5 → 1.20x");
-        assert!((s.work_pay(6) - 36.0).abs() < 0.01, "streak 6 → still 1.20x");
+        assert!(
+            (s.work_pay(6) - 36.0).abs() < 0.01,
+            "streak 6 → still 1.20x"
+        );
         assert!((s.work_pay(7) - 40.5).abs() < 0.01, "streak 7 → 1.35x");
     }
 
@@ -1594,9 +1640,18 @@ mod tests {
 
     #[test]
     fn housing_next_chain() {
-        assert!(matches!(HousingTier::Unhoused.next(), Some(HousingTier::Apartment)));
-        assert!(matches!(HousingTier::Apartment.next(), Some(HousingTier::Condo)));
-        assert!(matches!(HousingTier::Condo.next(), Some(HousingTier::Penthouse)));
+        assert!(matches!(
+            HousingTier::Unhoused.next(),
+            Some(HousingTier::Apartment)
+        ));
+        assert!(matches!(
+            HousingTier::Apartment.next(),
+            Some(HousingTier::Condo)
+        ));
+        assert!(matches!(
+            HousingTier::Condo.next(),
+            Some(HousingTier::Penthouse)
+        ));
         assert!(HousingTier::Penthouse.next().is_none());
     }
 

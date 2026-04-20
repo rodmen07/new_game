@@ -28,7 +28,10 @@ pub fn festival_trigger_system(
 
         if festival.active.is_none() {
             notif.push(
-                format!("{} has begun! Visit the Park for special activities.", kind.label()),
+                format!(
+                    "{} has begun! Visit the Park for special activities.",
+                    kind.label()
+                ),
                 6.,
             );
         }
@@ -36,7 +39,11 @@ pub fn festival_trigger_system(
         festival.active = Some(kind);
     } else if let Some(kind) = festival.active.take() {
         notif.push(
-            format!("{} is over! You earned {} tokens total.", kind.label(), festival.tokens),
+            format!(
+                "{} is over! You earned {} tokens total.",
+                kind.label(),
+                festival.tokens
+            ),
             5.,
         );
     }

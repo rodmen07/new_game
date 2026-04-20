@@ -59,6 +59,23 @@ cargo test
 
 The first build compiles the Bevy dependency tree and can take a few minutes. Windows debug builds are tuned in Cargo.toml for more stable linking during development.
 
+### Browser build
+
+The project now includes a browser-friendly build path for Bevy plus web-safe settings and save persistence.
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install trunk --locked
+trunk serve --release
+```
+
+Then open http://127.0.0.1:8080 in a modern browser.
+
+Notes for the web build:
+- game assets are served from the bundled assets directory
+- settings and save progress live in browser localStorage instead of config.toml and save.json
+- the canvas automatically fits the browser page
+
 ---
 
 ## Controls
@@ -148,7 +165,7 @@ src/
 
 ### Presentation and UX
 - Main menu, pause flow, and in-game settings screen for difficulty and volume
-- Universal typed action prompts for work, food, crafting, banking, chatting, pets, and other interactables, with more flavorful context-sensitive phrases
+- Universal typed action prompts for work, food, crafting, banking, chatting, pets, and other interactables, with more flavorful context-sensitive phrases and a clearly labeled target phrase while typing
 - Dual-panel HUD with goals, warnings, conditions, inventory, weather, story summary, and live typing instructions
 - Optional ambient and weather audio that degrades gracefully if assets are missing
 - JSON save and load support with day-start autosave behavior
@@ -167,6 +184,7 @@ src/
 | Seasonal festivals | Implemented |
 | Settings screen | Implemented |
 | Audio fallback | Implemented |
+| Browser build | Ready through Trunk + wasm32 target |
 | Multiplayer support | Early groundwork only |
 
 The project is currently a playable, feature-rich prototype with a clean verified Rust baseline and ongoing expansion work.
@@ -181,7 +199,7 @@ The project is currently a playable, feature-rich prototype with a clean verifie
 - More NPC depth and relationship states
 - Character archetypes and stronger replay loops
 - Art pass, tutorial flow, and accessibility improvements
-- Web build and broader release prep
+- Browser publishing and release polish
 
 ### Known follow-ups
 - Multiplayer readiness is still architectural groundwork rather than a playable mode

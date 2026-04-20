@@ -42,7 +42,9 @@ pub fn crisis_trigger_system(
     }
 
     // Use a sentinel to run once per day
-    let seed = (gt.day as u64).wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let seed = (gt.day as u64)
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
 
     let base_chance: u64 = match settings.difficulty {
         Difficulty::Easy => CRISIS_CHANCE_EASY,
@@ -66,18 +68,23 @@ pub fn crisis_trigger_system(
     };
 
     // Skip MarketCrash if no investments
-    let kind = if matches!(kind, CrisisKind::MarketCrash) && invest.amount < MIN_INVESTMENT_FOR_CRASH {
-        CrisisKind::Layoff
-    } else {
-        kind
-    };
+    let kind =
+        if matches!(kind, CrisisKind::MarketCrash) && invest.amount < MIN_INVESTMENT_FOR_CRASH {
+            CrisisKind::Layoff
+        } else {
+            kind
+        };
 
     crisis.active = Some(kind);
     crisis.days_left = kind.duration();
 
     // Apply immediate effects
     let insured = crisis.has_insurance;
-    let dmg_mult = if insured { INSURANCE_DAMAGE_MULTIPLIER } else { 1.0 };
+    let dmg_mult = if insured {
+        INSURANCE_DAMAGE_MULTIPLIER
+    } else {
+        1.0
+    };
 
     match kind {
         CrisisKind::Layoff => {
@@ -87,14 +94,23 @@ pub fn crisis_trigger_system(
             );
         }
         CrisisKind::MarketCrash => {
-            let loss_pct = MARKET_CRASH_BASE_LOSS_PCT + (((seed >> 8) % MARKET_CRASH_RANDOM_LOSS_RANGE) as f32 / 100.);
+            let loss_pct = MARKET_CRASH_BASE_LOSS_PCT
+                + (((seed >> 8) % MARKET_CRASH_RANDOM_LOSS_RANGE) as f32 / 100.);
             let inv_loss = invest.amount * loss_pct * dmg_mult;
             invest.amount = (invest.amount - inv_loss).max(0.);
             let sav_loss = stats.savings * MARKET_CRASH_SAVINGS_LOSS_PCT * dmg_mult;
             stats.savings = (stats.savings - sav_loss).max(0.);
             notif.push(
-                format!("CRISIS: Market crash! Lost ${:.0} investments, ${:.0} savings.{}",
-                    inv_loss, sav_loss, if insured { " (Insurance halved losses)" } else { "" }),
+                format!(
+                    "CRISIS: Market crash! Lost ${:.0} investments, ${:.0} savings.{}",
+                    inv_loss,
+                    sav_loss,
+                    if insured {
+                        " (Insurance halved losses)"
+                    } else {
+                        ""
+                    }
+                ),
                 CRISIS_NOTIF_DURATION,
             );
         }
@@ -111,32 +127,60 @@ pub fn crisis_trigger_system(
         }
         CrisisKind::RentHike => {
             notif.push(
-                format!("CRISIS: Rent hike! Rent doubles for {} days.", kind.duration()),
+                format!(
+                    "CRISIS: Rent hike! Rent doubles for {} days.",
+                    kind.duration()
+                ),
                 CRISIS_NOTIF_DURATION,
             );
         }
         CrisisKind::Theft => {
             let cash_stolen = (stats.money * THEFT_CASH_FRACTION * dmg_mult).min(stats.money);
             stats.money -= cash_stolen;
-            let items_lost = if inv.coffee > 0 { inv.coffee = 0; true } else { false };
-            let books_lost = if inv.books > 0 { inv.books = 0; true } else { false };
+            let items_lost = if inv.coffee > 0 {
+                inv.coffee = 0;
+                true
+            } else {
+                false
+            };
+            let books_lost = if inv.books > 0 {
+                inv.books = 0;
+                true
+            } else {
+                false
+            };
             let mut stolen_items = Vec::new();
-            if items_lost { stolen_items.push("coffee"); }
-            if books_lost { stolen_items.push("books"); }
+            if items_lost {
+                stolen_items.push("coffee");
+            }
+            if books_lost {
+                stolen_items.push("books");
+            }
             let items_str = if stolen_items.is_empty() {
                 String::new()
             } else {
                 format!(" Stolen items: {}.", stolen_items.join(", "))
             };
             notif.push(
-                format!("CRISIS: Theft! Lost ${:.0} cash.{}{}", cash_stolen, items_str,
-                    if insured { " (Insurance halved cash loss)" } else { "" }),
+                format!(
+                    "CRISIS: Theft! Lost ${:.0} cash.{}{}",
+                    cash_stolen,
+                    items_str,
+                    if insured {
+                        " (Insurance halved cash loss)"
+                    } else {
+                        ""
+                    }
+                ),
                 CRISIS_NOTIF_DURATION,
             );
         }
         CrisisKind::ApplianceBreak => {
             notif.push(
-                format!("CRISIS: Appliance breakdown! Home actions cost extra $8 for {} days.", kind.duration()),
+                format!(
+                    "CRISIS: Appliance breakdown! Home actions cost extra $8 for {} days.",
+                    kind.duration()
+                ),
                 CRISIS_NOTIF_DURATION,
             );
         }
@@ -181,11 +225,17 @@ pub fn crisis_day_tick(
 
     crisis.days_left = crisis.days_left.saturating_sub(1);
     if crisis.days_left == 0 {
-        let Some(kind) = crisis.active.take() else { return; };
+        let Some(kind) = crisis.active.take() else {
+            return;
+        };
         crisis.crises_survived += 1;
         crisis.last_crisis_day = gt.day;
         notif.push(
-            format!("Crisis resolved: {} is over! ({} crises survived)", kind.label(), crisis.crises_survived),
+            format!(
+                "Crisis resolved: {} is over! ({} crises survived)",
+                kind.label(),
+                crisis.crises_survived
+            ),
             CRISIS_RESOLVE_NOTIF_DURATION,
         );
     }
@@ -227,14 +277,29 @@ mod tests {
     fn difficulty_scaling() {
         // roll=3: fires Easy(4), Normal(8), Hard(12) at day 10.
         let seed = seed_with_roll(3);
-        assert!(crisis_should_trigger(seed, 4, 10, false), "Easy should trigger");
-        assert!(crisis_should_trigger(seed, 8, 10, false), "Normal should trigger");
-        assert!(crisis_should_trigger(seed, 12, 10, false), "Hard should trigger");
+        assert!(
+            crisis_should_trigger(seed, 4, 10, false),
+            "Easy should trigger"
+        );
+        assert!(
+            crisis_should_trigger(seed, 8, 10, false),
+            "Normal should trigger"
+        );
+        assert!(
+            crisis_should_trigger(seed, 12, 10, false),
+            "Hard should trigger"
+        );
 
         // roll=5: misses Easy(4) but fires Normal(8) and Hard(12).
         let seed = seed_with_roll(5);
-        assert!(!crisis_should_trigger(seed, 4, 10, false), "Easy should not trigger");
-        assert!(crisis_should_trigger(seed, 8, 10, false), "Normal should trigger");
+        assert!(
+            !crisis_should_trigger(seed, 4, 10, false),
+            "Easy should not trigger"
+        );
+        assert!(
+            crisis_should_trigger(seed, 8, 10, false),
+            "Normal should trigger"
+        );
     }
 
     #[test]
@@ -242,8 +307,14 @@ mod tests {
         // At day 10 with base 8, threshold = 8. With insurance: 8 * 3/4 = 6.
         // roll=7 fires uninsured (7 < 8) but not insured (7 >= 6).
         let seed = seed_with_roll(7);
-        assert!(crisis_should_trigger(seed, 8, 10, false), "uninsured fires at roll 7");
-        assert!(!crisis_should_trigger(seed, 8, 10, true), "insured does not fire at roll 7");
+        assert!(
+            crisis_should_trigger(seed, 8, 10, false),
+            "uninsured fires at roll 7"
+        );
+        assert!(
+            !crisis_should_trigger(seed, 8, 10, true),
+            "insured does not fire at roll 7"
+        );
     }
 
     #[test]
@@ -252,8 +323,14 @@ mod tests {
         // Day 100: day_scale = 2.0, threshold(Normal) = 16
         // roll=9 fires at day 100 (9 < 16) but not day 10 (9 >= 8).
         let seed = seed_with_roll(9);
-        assert!(!crisis_should_trigger(seed, 8, 10, false), "roll 9 misses at day 10");
-        assert!(crisis_should_trigger(seed, 8, 100, false), "roll 9 fires at day 100");
+        assert!(
+            !crisis_should_trigger(seed, 8, 10, false),
+            "roll 9 misses at day 10"
+        );
+        assert!(
+            crisis_should_trigger(seed, 8, 100, false),
+            "roll 9 fires at day 100"
+        );
     }
 
     #[test]

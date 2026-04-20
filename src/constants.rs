@@ -9,10 +9,10 @@ pub const TIME_SCALE: f32 = 60.0;
 pub const NPC_SPEED: f32 = 55.0;
 
 // Office zone — center (340, 370), size 200×180
-pub const OFFICE_LEFT: f32   = 350.;
-pub const OFFICE_RIGHT: f32  = 500.;
+pub const OFFICE_LEFT: f32 = 350.;
+pub const OFFICE_RIGHT: f32 = 500.;
 pub const OFFICE_BOTTOM: f32 = 100.;
-pub const OFFICE_TOP: f32    = 260.;
+pub const OFFICE_TOP: f32 = 260.;
 
 // Crisis system tuning
 pub const CRISIS_MIN_DAY: u32 = 10;

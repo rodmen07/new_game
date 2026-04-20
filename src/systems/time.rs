@@ -471,11 +471,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     },
 ];
 
-pub fn tick_time(
-    mut gt: ResMut<GameTime>,
-    time: Res<Time>,
-    mut sfx: EventWriter<PlaySfx>,
-) {
+pub fn tick_time(mut gt: ResMut<GameTime>, time: Res<Time>, mut sfx: EventWriter<PlaySfx>) {
     let dt = time.delta_secs();
     gt.anim_secs += dt;
     gt.hours += dt * TIME_SCALE / 3600.;
@@ -506,7 +502,10 @@ fn tick_conditions(
         }
         if conds.burnout_days == 0 && conds.burnout {
             conds.burnout = false;
-            notif.push("Recovery complete! Burnout cleared. Work pay back to 100%.", 5.);
+            notif.push(
+                "Recovery complete! Burnout cleared. Work pay back to 100%.",
+                5.,
+            );
         }
     }
     if gs.high_hunger_today {
@@ -538,17 +537,16 @@ fn tick_conditions(
             if conds.low_stress_days >= 2 {
                 conds.mental_fatigue = false;
                 conds.low_stress_days = 0;
-                notif.push("Mental Fatigue cleared! Stress is under control. Work pay restored.", 5.);
+                notif.push(
+                    "Mental Fatigue cleared! Stress is under control. Work pay restored.",
+                    5.,
+                );
             }
         }
     }
 }
 
-fn tick_investments(
-    gt: &GameTime,
-    invest: &mut Investment,
-    notif: &mut Notification,
-) {
+fn tick_investments(gt: &GameTime, invest: &mut Investment, notif: &mut Notification) {
     if invest.amount <= 0. || invest.risk == 0 {
         return;
     }
@@ -557,7 +555,13 @@ fn tick_investments(
         .wrapping_mul(1664525)
         .wrapping_add(invest.risk as u32 * 999983);
     let mood_seed = gt.day.wrapping_mul(2246822519).wrapping_add(997);
-    let pos_chance: u32 = if mood_seed % 7 < 2 { 7 } else if mood_seed % 7 >= 5 { 4 } else { 5 };
+    let pos_chance: u32 = if mood_seed % 7 < 2 {
+        7
+    } else if mood_seed % 7 >= 5 {
+        4
+    } else {
+        5
+    };
     let rand_sign: f32 = if seed % 10 < pos_chance { 1.0 } else { -1.0 };
     let rand_frac: f32 = (seed % 1000) as f32 / 1000.0;
     let daily_rate = invest.daily_return_rate * rand_sign * (0.5 + rand_frac * 0.5);
@@ -566,11 +570,20 @@ fn tick_investments(
     invest.total_return += change;
     if change.abs() >= 1. {
         let dir = if change > 0. { "gained" } else { "lost" };
-        let mood_label = if pos_chance >= 7 { " [Bull]" } else if pos_chance <= 4 { " [Bear]" } else { "" };
+        let mood_label = if pos_chance >= 7 {
+            " [Bull]"
+        } else if pos_chance <= 4 {
+            " [Bear]"
+        } else {
+            ""
+        };
         notif.push(
             format!(
                 "Investment{} {} ${:.0}! Portfolio: ${:.0}",
-                mood_label, dir, change.abs(), invest.amount
+                mood_label,
+                dir,
+                change.abs(),
+                invest.amount
             ),
             4.,
         );
@@ -622,8 +635,18 @@ fn decay_friendships(friendship: &mut NpcFriendship, skills: &Skills) {
         .collect();
     for e in not_chatted {
         if let Some(lvl) = friendship.levels.get_mut(&e) {
-            let base_decay = if *lvl >= 4. { 0.05 } else if *lvl >= 2. { 0.10 } else { 0.15 };
-            let decay = if social_master { base_decay * 0.5 } else { base_decay };
+            let base_decay = if *lvl >= 4. {
+                0.05
+            } else if *lvl >= 2. {
+                0.10
+            } else {
+                0.15
+            };
+            let decay = if social_master {
+                base_decay * 0.5
+            } else {
+                base_decay
+            };
             *lvl = (*lvl - decay).max(0.);
         }
     }
@@ -773,7 +796,10 @@ pub fn on_new_day(
     *weather = WeatherKind::from_day(gt.day);
     if weather.is_stormy() {
         stats.happiness = (stats.happiness - 8.).max(0.);
-        notif.push(format!("Day {} — Stormy! -8 Mood. Stay indoors.", gt.day + 1), 4.);
+        notif.push(
+            format!("Day {} — Stormy! -8 Mood. Stay indoors.", gt.day + 1),
+            4.,
+        );
     }
 
     // ── Condition resolution ──────────────────────────────────────────────────
@@ -784,7 +810,10 @@ pub fn on_new_day(
         if !day_extras.pet.fed_today {
             day_extras.pet.hunger = (day_extras.pet.hunger + 30.).min(100.);
             stats.happiness = (stats.happiness - 10.).max(0.);
-            notif.push(format!("{} is hungry! Feed your pet.", day_extras.pet.name), 4.);
+            notif.push(
+                format!("{} is hungry! Feed your pet.", day_extras.pet.name),
+                4.,
+            );
         } else {
             stats.happiness = (stats.happiness + 5.).min(100.);
         }
@@ -796,7 +825,10 @@ pub fn on_new_day(
     if passive > 0. {
         stats.money += passive;
         gs.passive_income_today += passive;
-        notif.push(format!("Passive income: +${:.0} from hobbies!", passive), 3.);
+        notif.push(
+            format!("Passive income: +${:.0} from hobbies!", passive),
+            3.,
+        );
     }
 
     // ── Skill mastery passive bonuses ─────────────────────────────────────────
@@ -817,7 +849,10 @@ pub fn on_new_day(
         stats.loan *= 1. + 0.08 * day_extras.settings.difficulty.loan_interest_mult();
         stats.stress = (stats.stress + 5.).min(100.);
         if stats.loan > 300. {
-            notif.push(format!("Loan is now ${:.0}! Pay it off at the Bank.", stats.loan), 5.);
+            notif.push(
+                format!("Loan is now ${:.0}! Pay it off at the Bank.", stats.loan),
+                5.,
+            );
         }
     }
 
@@ -843,7 +878,10 @@ pub fn on_new_day(
 
     // ── Rent ──────────────────────────────────────────────────────────────────
     apply_rent(
-        &mut stats, &mut housing, &mut gs, &mut notif,
+        &mut stats,
+        &mut housing,
+        &mut gs,
+        &mut notif,
         day_extras.settings.difficulty.rent_mult(),
         day_extras.crisis.rent_multiplier(),
     );
@@ -875,9 +913,15 @@ pub fn on_new_day(
 
     // ── Reset daily state ─────────────────────────────────────────────────────
     reset_daily_state(
-        &gt, &mut gs, &mut goal, &mut friendship,
-        &mut day_extras.social_events, &mut day_extras.quest_board,
-        &day_extras.season, &housing, &stats,
+        &gt,
+        &mut gs,
+        &mut goal,
+        &mut friendship,
+        &mut day_extras.social_events,
+        &mut day_extras.quest_board,
+        &day_extras.season,
+        &housing,
+        &stats,
     );
 
     // Auto-save at the start of each new day.
@@ -888,7 +932,14 @@ pub fn on_new_day(
     }
 
     // ── Daily random event — pool filtered by season, conditions, rep ─────────
-    apply_daily_event(&gt, &mut stats, &conds, &mut rep, &mut notif, &day_extras.season);
+    apply_daily_event(
+        &gt,
+        &mut stats,
+        &conds,
+        &mut rep,
+        &mut notif,
+        &day_extras.season,
+    );
 }
 
 /// Teleports the player to the park zone center when evicted so they aren't
@@ -953,7 +1004,13 @@ pub fn best_friend_perks(
     }
 }
 
-fn goal(kind: GoalKind, description: &str, target: f32, reward_money: f32, reward_happiness: f32) -> DailyGoal {
+fn goal(
+    kind: GoalKind,
+    description: &str,
+    target: f32,
+    reward_money: f32,
+    reward_happiness: f32,
+) -> DailyGoal {
     DailyGoal {
         kind,
         description: description.to_string(),
@@ -969,24 +1026,90 @@ fn goal(kind: GoalKind, description: &str, target: f32, reward_money: f32, rewar
 pub fn make_goal(day: u32, season: &SeasonKind) -> DailyGoal {
     let (seasonal_desc, seasonal_target) = season.seasonal_goal_desc();
     match day % 18 {
-        0  => goal(GoalKind::SaveMoney,       "Save $90 at the bank - get an apartment", 90., 20., 25.),
-        1  => goal(GoalKind::WorkTimes,        "Work 3 times today",                      3.,  30.,  0.),
-        2  => goal(GoalKind::MaintainHappy,    "Stay happy (60%+) all day",               1.,  15., 10.),
-        3  => goal(GoalKind::EatTimes,         "Eat 2 meals today",                       2.,   0., 20.),
-        4  => goal(GoalKind::ChatTimes,        "Chat with 2 people",                      2.,  10., 15.),
-        5  => goal(GoalKind::FriendNpc,        "Friendship 2 with any NPC",               2.,  20., 10.),
-        6  => goal(GoalKind::SaveMoney,        "Have $30+ in savings",                   30.,  15.,  0.),
-        7  => goal(GoalKind::ExerciseTimes,    "Exercise 2 times today",                  2.,   0., 20.),
-        8  => goal(GoalKind::LowerStress,      "Get stress below 30",                    30.,  20., 10.),
-        9  => goal(GoalKind::BuildStreak,      "Maintain a 3-day work streak",            3.,  35.,  5.),
-        10 => goal(GoalKind::MasterHobby,      "Reach level 3 in any hobby",              3.,  30.,  0.),
-        11 => goal(GoalKind::EarnPassive,      "Earn $10 passive income today",          10.,  25.,  0.),
-        12 => goal(GoalKind::OutdoorWeather,   "Go outside on a Sunny day",               1.,  20., 15.),
-        13 => goal(GoalKind::StudyTimes,       "Study 2 times today ($30 ea)",            2.,  20.,  5.),
-        14 => goal(GoalKind::FeedPet,          "Feed your pet today",                     1.,  15., 20.),
-        15 => goal(GoalKind::ThrowParty,       "Throw a party today ($40)",               1.,  10., 30.),
-        16 => goal(GoalKind::OwnVehicle,       "Own a Bike or Car",                       1.,  30.,  0.),
-        _  => goal(GoalKind::SeasonalGoal,     seasonal_desc,        seasonal_target,         25., 10.),
+        0 => goal(
+            GoalKind::SaveMoney,
+            "Save $90 at the bank - get an apartment",
+            90.,
+            20.,
+            25.,
+        ),
+        1 => goal(GoalKind::WorkTimes, "Work 3 times today", 3., 30., 0.),
+        2 => goal(
+            GoalKind::MaintainHappy,
+            "Stay happy (60%+) all day",
+            1.,
+            15.,
+            10.,
+        ),
+        3 => goal(GoalKind::EatTimes, "Eat 2 meals today", 2., 0., 20.),
+        4 => goal(GoalKind::ChatTimes, "Chat with 2 people", 2., 10., 15.),
+        5 => goal(
+            GoalKind::FriendNpc,
+            "Friendship 2 with any NPC",
+            2.,
+            20.,
+            10.,
+        ),
+        6 => goal(GoalKind::SaveMoney, "Have $30+ in savings", 30., 15., 0.),
+        7 => goal(
+            GoalKind::ExerciseTimes,
+            "Exercise 2 times today",
+            2.,
+            0.,
+            20.,
+        ),
+        8 => goal(GoalKind::LowerStress, "Get stress below 30", 30., 20., 10.),
+        9 => goal(
+            GoalKind::BuildStreak,
+            "Maintain a 3-day work streak",
+            3.,
+            35.,
+            5.,
+        ),
+        10 => goal(
+            GoalKind::MasterHobby,
+            "Reach level 3 in any hobby",
+            3.,
+            30.,
+            0.,
+        ),
+        11 => goal(
+            GoalKind::EarnPassive,
+            "Earn $10 passive income today",
+            10.,
+            25.,
+            0.,
+        ),
+        12 => goal(
+            GoalKind::OutdoorWeather,
+            "Go outside on a Sunny day",
+            1.,
+            20.,
+            15.,
+        ),
+        13 => goal(
+            GoalKind::StudyTimes,
+            "Study 2 times today ($30 ea)",
+            2.,
+            20.,
+            5.,
+        ),
+        14 => goal(GoalKind::FeedPet, "Feed your pet today", 1., 15., 20.),
+        15 => goal(
+            GoalKind::ThrowParty,
+            "Throw a party today ($40)",
+            1.,
+            10.,
+            30.,
+        ),
+        16 => goal(GoalKind::OwnVehicle, "Own a Bike or Car", 1., 30., 0.),
+        _ => goal(
+            GoalKind::SeasonalGoal,
+            seasonal_desc,
+            seasonal_target,
+            25.,
+            10.,
+        ),
     }
 }
 
@@ -998,7 +1121,12 @@ mod tests {
     // ── GameTime helpers ───────────────────────────────────────────────────────
 
     fn gt(hours: f32, day: u32) -> GameTime {
-        GameTime { hours, day, prev_day: day, anim_secs: 0. }
+        GameTime {
+            hours,
+            day,
+            prev_day: day,
+            anim_secs: 0.,
+        }
     }
 
     #[test]
@@ -1029,8 +1157,8 @@ mod tests {
     fn is_weekend_correct() {
         assert!(!gt(8., 0).is_weekend()); // Mon
         assert!(!gt(8., 4).is_weekend()); // Fri
-        assert!(gt(8., 5).is_weekend());  // Sat
-        assert!(gt(8., 6).is_weekend());  // Sun
+        assert!(gt(8., 5).is_weekend()); // Sat
+        assert!(gt(8., 6).is_weekend()); // Sun
         assert!(!gt(8., 7).is_weekend()); // next Mon
     }
 
@@ -1118,9 +1246,9 @@ mod tests {
     #[test]
     fn make_goal_wraps_at_18() {
         // day % 18 == 0 for both day 0 and day 18
-        let g0  = make_goal(0,  &SeasonKind::Spring);
+        let g0 = make_goal(0, &SeasonKind::Spring);
         let g18 = make_goal(18, &SeasonKind::Spring);
-        assert!(matches!(g0.kind,  GoalKind::SaveMoney));
+        assert!(matches!(g0.kind, GoalKind::SaveMoney));
         assert!(matches!(g18.kind, GoalKind::SaveMoney));
         assert!((g0.target - g18.target).abs() < 0.001);
     }
@@ -1138,7 +1266,7 @@ mod tests {
         for day in 0..18u32 {
             let g = make_goal(day, &SeasonKind::Winter);
             assert!(!g.completed, "day {day} goal should start incomplete");
-            assert!(!g.failed,    "day {day} goal should not start failed");
+            assert!(!g.failed, "day {day} goal should not start failed");
         }
     }
 

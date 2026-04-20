@@ -103,7 +103,10 @@ fn main() {
         )
         // Gameplay systems — only run in the Playing state.
         .add_systems(Update, camera_zoom.run_if(in_state(AppState::Playing)))
-        .add_systems(Update, reveal_car_on_purchase.run_if(in_state(AppState::Playing)))
+        .add_systems(
+            Update,
+            reveal_car_on_purchase.run_if(in_state(AppState::Playing)),
+        )
         .add_systems(
             Update,
             (

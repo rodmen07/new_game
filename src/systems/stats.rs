@@ -21,9 +21,15 @@ pub fn decay_stats(
     }
     let mood_mult = Mood::from_happiness(stats.happiness).decay_mult();
     let mut hap_drain = 0.;
-    if stats.hunger > 60. { hap_drain += dt * 0.25 * mood_mult; }
-    if stats.energy < 20. { hap_drain += dt * 0.25 * mood_mult; }
-    if hap_drain > 0. { stats.happiness = (stats.happiness - hap_drain).max(0.); }
+    if stats.hunger > 60. {
+        hap_drain += dt * 0.25 * mood_mult;
+    }
+    if stats.energy < 20. {
+        hap_drain += dt * 0.25 * mood_mult;
+    }
+    if hap_drain > 0. {
+        stats.happiness = (stats.happiness - hap_drain).max(0.);
+    }
     // Pet: real-time hunger accumulation when not fed today
     if pet.has_pet && !pet.fed_today {
         pet.hunger = (pet.hunger + dt * 0.15).min(100.);
@@ -59,7 +65,10 @@ pub fn degrade_health(
             conds.hospital_timer = 0.;
             conds.hospitalized = false;
             stats.health = (stats.health + 20.).min(100.);
-            notif.push("Discharged from hospital. Take better care of yourself!", 6.);
+            notif.push(
+                "Discharged from hospital. Take better care of yourself!",
+                6.,
+            );
         }
         return; // while hospitalised, health can't degrade further
     }
@@ -67,13 +76,19 @@ pub fn degrade_health(
     let mal_mult = if conds.malnourished { 1.5 } else { 1.0 };
     let health_mult = mal_mult * settings.difficulty.health_drain_mult();
     let mut health_drain = 0.;
-    if stats.hunger > 80. { health_drain += dt * 0.60 * health_mult; }
-    if stats.energy < 10. { health_drain += dt * 0.40 * health_mult; }
+    if stats.hunger > 80. {
+        health_drain += dt * 0.60 * health_mult;
+    }
+    if stats.energy < 10. {
+        health_drain += dt * 0.40 * health_mult;
+    }
     if stats.stress > 85. {
         health_drain += dt * 0.30 * settings.difficulty.health_drain_mult();
         gs.high_stress_today = true;
     }
-    if health_drain > 0. { stats.health = (stats.health - health_drain).max(0.); }
+    if health_drain > 0. {
+        stats.health = (stats.health - health_drain).max(0.);
+    }
     // Flag sustained high hunger (> 80) — used to trigger malnourishment after 3 days
     if stats.hunger > 80. {
         gs.high_hunger_today = true;
@@ -240,13 +255,16 @@ mod tests {
     #[test]
     fn happiness_does_not_decay_from_hunger_when_hunger_low() {
         let hunger = 40_f32;
-        assert!(!( hunger > 60.), "hunger below 60 should not trigger happiness decay");
+        assert!(
+            !(hunger > 60.),
+            "hunger below 60 should not trigger happiness decay"
+        );
     }
 
     #[test]
     fn depressed_mood_decays_happiness_faster_than_elated() {
         let decay_depressed = 0.25 * Mood::Depressed.decay_mult();
-        let decay_elated    = 0.25 * Mood::Elated.decay_mult();
+        let decay_elated = 0.25 * Mood::Elated.decay_mult();
         assert!(decay_depressed > decay_elated);
     }
 
@@ -257,7 +275,11 @@ mod tests {
         let hunger = 85_f32;
         let health = 50_f32;
         let dt = 1.0_f32;
-        let new = if hunger > 80. { (health - dt * 0.60).max(0.) } else { health };
+        let new = if hunger > 80. {
+            (health - dt * 0.60).max(0.)
+        } else {
+            health
+        };
         assert!(new < health);
         assert!((new - 49.4).abs() < 0.001);
     }
@@ -273,7 +295,11 @@ mod tests {
         let energy = 5_f32;
         let health = 60_f32;
         let dt = 1.0_f32;
-        let new = if energy < 10. { (health - dt * 0.40).max(0.) } else { health };
+        let new = if energy < 10. {
+            (health - dt * 0.40).max(0.)
+        } else {
+            health
+        };
         assert!(new < health);
         assert!((new - 59.6).abs() < 0.001);
     }
@@ -289,7 +315,11 @@ mod tests {
         let stress = 90_f32;
         let health = 70_f32;
         let dt = 1.0_f32;
-        let new = if stress > 85. { (health - dt * 0.30).max(0.) } else { health };
+        let new = if stress > 85. {
+            (health - dt * 0.30).max(0.)
+        } else {
+            health
+        };
         assert!(new < health);
         assert!((new - 69.7).abs() < 0.001);
     }
@@ -299,7 +329,7 @@ mod tests {
         let hunger = 90_f32;
         let dt = 1.0_f32;
         let normal_drain = if hunger > 80. { dt * 0.60 * 1.0 } else { 0. };
-        let mal_drain    = if hunger > 80. { dt * 0.60 * 1.5 } else { 0. };
+        let mal_drain = if hunger > 80. { dt * 0.60 * 1.5 } else { 0. };
         assert!((mal_drain / normal_drain - 1.5).abs() < 0.001);
     }
 

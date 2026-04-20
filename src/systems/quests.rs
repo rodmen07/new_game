@@ -5,7 +5,12 @@ use crate::resources::*;
 use bevy::prelude::*;
 
 /// Generate a quest for a specific NPC based on friendship level and personality.
-fn generate_quest(npc_id: usize, friendship: f32, personality: NpcPersonality, day: u32) -> NpcQuest {
+fn generate_quest(
+    npc_id: usize,
+    friendship: f32,
+    personality: NpcPersonality,
+    day: u32,
+) -> NpcQuest {
     let seed = (day.wrapping_mul(2654435761)).wrapping_add(npc_id as u32 * 999983);
     let variant = seed % 6;
 
@@ -71,10 +76,16 @@ pub fn quest_offer_system(
     }
 
     let Some(entity) = nearby.entity else { return };
-    let Ok(inter) = inter_q.get(entity) else { return };
-    if !matches!(&inter.action, ActionKind::Chat) { return; }
+    let Ok(inter) = inter_q.get(entity) else {
+        return;
+    };
+    if !matches!(&inter.action, ActionKind::Chat) {
+        return;
+    }
 
-    let Ok((_, npc_id, npc)) = npc_q.get(entity) else { return };
+    let Ok((_, npc_id, npc)) = npc_q.get(entity) else {
+        return;
+    };
     let lvl = friendship.levels.get(&entity).copied().unwrap_or(0.);
 
     if lvl < 1. {
@@ -83,7 +94,10 @@ pub fn quest_offer_system(
     }
 
     if quest_board.has_quest_from(npc_id.0) {
-        notif.push(format!("{} already gave you a quest. Complete it first!", npc.name), 2.5);
+        notif.push(
+            format!("{} already gave you a quest. Complete it first!", npc.name),
+            2.5,
+        );
         return;
     }
 
@@ -93,7 +107,13 @@ pub fn quest_offer_system(
     }
 
     let quest = generate_quest(npc_id.0, lvl, npc.personality, gt.day);
-    notif.push(format!("New quest from {}! {}  Reward: ${:.0}", npc.name, quest.description, quest.reward_money), 5.);
+    notif.push(
+        format!(
+            "New quest from {}! {}  Reward: ${:.0}",
+            npc.name, quest.description, quest.reward_money
+        ),
+        5.,
+    );
 
     // We need mutable access to QuestBoard, so use commands
     commands.queue(move |world: &mut World| {
@@ -121,16 +141,14 @@ pub fn quest_progress_system(
 
         // Update progress based on quest kind
         let current = match &quest.kind {
-            QuestKind::FetchItem(item, _) => {
-                match item {
-                    ItemKind::Coffee => inv.coffee,
-                    ItemKind::Vitamins => inv.vitamins,
-                    ItemKind::Books => inv.books,
-                    ItemKind::Ingredient => inv.ingredient,
-                    ItemKind::GiftBox => inv.gift_box,
-                    ItemKind::Smoothie => inv.smoothie,
-                }
-            }
+            QuestKind::FetchItem(item, _) => match item {
+                ItemKind::Coffee => inv.coffee,
+                ItemKind::Vitamins => inv.vitamins,
+                ItemKind::Books => inv.books,
+                ItemKind::Ingredient => inv.ingredient,
+                ItemKind::GiftBox => inv.gift_box,
+                ItemKind::Smoothie => inv.smoothie,
+            },
             QuestKind::DoActivity(action, _) => {
                 match action {
                     ActionKind::Work => gs.work_today,
@@ -144,7 +162,11 @@ pub fn quest_progress_system(
                 }
             }
             QuestKind::EarnMoney(_) => {
-                if gs.money_earned_today >= 60. { 1 } else { 0 }
+                if gs.money_earned_today >= 60. {
+                    1
+                } else {
+                    0
+                }
             }
             QuestKind::CraftItem(_) => crafted_today,
         };
@@ -159,25 +181,36 @@ pub fn quest_progress_system(
             gs.total_quests += 1;
 
             // Apply friendship reward
-            let npc_entity = npc_q.iter().find(|(_, id)| id.0 == quest.npc_id).map(|(e, _)| e);
+            let npc_entity = npc_q
+                .iter()
+                .find(|(_, id)| id.0 == quest.npc_id)
+                .map(|(e, _)| e);
             if let Some(e) = npc_entity {
                 let f = friendship.levels.entry(e).or_insert(0.);
                 *f = (*f + quest.reward_friendship).min(5.);
             }
 
             let npc_name = match quest.npc_id {
-                0 => "Alex", 1 => "Sam", 2 => "Mia",
-                3 => "Jordan", 4 => "Taylor", _ => "Casey",
+                0 => "Alex",
+                1 => "Sam",
+                2 => "Mia",
+                3 => "Jordan",
+                4 => "Taylor",
+                _ => "Casey",
             };
             notif.push(
-                format!("Quest complete for {}! +${:.0} +{:.1} friendship", npc_name, quest.reward_money, quest.reward_friendship),
+                format!(
+                    "Quest complete for {}! +${:.0} +{:.1} friendship",
+                    npc_name, quest.reward_money, quest.reward_friendship
+                ),
                 5.,
             );
         }
     }
 
     if any_completed {
-        quest_board.completed_total += quest_board.quests.iter().filter(|q| q.completed).count() as u32;
+        quest_board.completed_total +=
+            quest_board.quests.iter().filter(|q| q.completed).count() as u32;
         quest_board.quests.retain(|q| !q.completed);
     }
 }

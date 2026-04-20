@@ -200,10 +200,10 @@ pub struct WeatherDrop {
 
 #[derive(Clone, PartialEq)]
 pub enum QuestKind {
-    FetchItem(ItemKind, u32),   // bring N of an item
+    FetchItem(ItemKind, u32),    // bring N of an item
     DoActivity(ActionKind, u32), // perform action N times
-    EarnMoney(f32),             // earn at least $X in a day
-    CraftItem(u32),             // craft N items total
+    EarnMoney(f32),              // earn at least $X in a day
+    CraftItem(u32),              // craft N items total
 }
 impl QuestKind {
     pub fn description(&self) -> String {
@@ -230,11 +230,19 @@ impl QuestKind {
                     ActionKind::GymSession => "gym session",
                     _ => "activity",
                 };
-                if *n > 1 { format!("Do {} {}s", n, name) } else { format!("Do a {}", name) }
+                if *n > 1 {
+                    format!("Do {} {}s", n, name)
+                } else {
+                    format!("Do a {}", name)
+                }
             }
             Self::EarnMoney(amt) => format!("Earn ${:.0} today", amt),
             Self::CraftItem(n) => {
-                if *n > 1 { format!("Craft {} items", n) } else { "Craft an item".to_string() }
+                if *n > 1 {
+                    format!("Craft {} items", n)
+                } else {
+                    "Craft an item".to_string()
+                }
             }
         }
     }

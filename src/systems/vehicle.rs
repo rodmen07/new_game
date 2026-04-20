@@ -11,20 +11,38 @@ const CAR_FRICTION: f32 = 400.;
 pub fn car_movement(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut player_q: Query<(&mut Transform, &mut PlayerMovement, &VehicleState, &ActionPrompt), (With<Player>, Without<Vehicle>)>,
+    mut player_q: Query<
+        (
+            &mut Transform,
+            &mut PlayerMovement,
+            &VehicleState,
+            &ActionPrompt,
+        ),
+        (With<Player>, Without<Vehicle>),
+    >,
     mut car_q: Query<&mut Transform, (With<Vehicle>, Without<Player>)>,
 ) {
-    let Ok((mut ptf, mut pm, vehicle_state, action_prompt)) = player_q.get_single_mut() else { return };
+    let Ok((mut ptf, mut pm, vehicle_state, action_prompt)) = player_q.get_single_mut() else {
+        return;
+    };
     if action_prompt.active || !vehicle_state.in_vehicle {
         return;
     }
     let dt = time.delta_secs();
 
     let mut wish = Vec2::ZERO;
-    if keys.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) { wish.y += 1.; }
-    if keys.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) { wish.y -= 1.; }
-    if keys.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) { wish.x -= 1.; }
-    if keys.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) { wish.x += 1.; }
+    if keys.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
+        wish.y += 1.;
+    }
+    if keys.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
+        wish.y -= 1.;
+    }
+    if keys.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
+        wish.x -= 1.;
+    }
+    if keys.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
+        wish.x += 1.;
+    }
 
     if wish != Vec2::ZERO {
         pm.velocity += wish.normalize() * CAR_ACCEL * dt;
@@ -34,7 +52,10 @@ pub fn car_movement(
     } else {
         let speed = pm.velocity.length();
         let friction = (CAR_FRICTION * dt).min(speed);
-        if speed > 0. { let dir = pm.velocity / speed; pm.velocity -= dir * friction; }
+        if speed > 0. {
+            let dir = pm.velocity / speed;
+            pm.velocity -= dir * friction;
+        }
     }
 
     if pm.velocity.length() > 0.5 {

@@ -115,9 +115,22 @@ fn action_prompt_retries(career: f32) -> u8 {
     }
 }
 
-fn build_prompt_challenge(pending: &PendingAction, seed: u32, subject_name: &str) -> PromptChallenge {
+fn build_prompt_challenge(
+    pending: &PendingAction,
+    seed: u32,
+    subject_name: &str,
+) -> PromptChallenge {
     const OFFICE_WORDS: &[&str] = &[
-        "desk", "report", "email", "meeting", "budget", "client", "memo", "office", "printer", "spreadsheet",
+        "desk",
+        "report",
+        "email",
+        "meeting",
+        "budget",
+        "client",
+        "memo",
+        "office",
+        "printer",
+        "spreadsheet",
     ];
     const FOOD_WORDS: &[&str] = &["soup", "sandwich", "noodles", "salad", "stew", "toast"];
     const INGREDIENT_WORDS: &[&str] = &["carrot", "rice", "herb", "tomato", "pepper", "onion"];
@@ -145,7 +158,12 @@ fn build_prompt_challenge(pending: &PendingAction, seed: u32, subject_name: &str
         PendingAction::Action(ActionKind::Freelance) => PromptChallenge {
             label: "Freelance".to_string(),
             instruction: "type the remote work words".to_string(),
-            expected: format!("{} {} {}", pick(OFFICE_WORDS, 4), pick(OFFICE_WORDS, 5), pick(OFFICE_WORDS, 6)),
+            expected: format!(
+                "{} {} {}",
+                pick(OFFICE_WORDS, 4),
+                pick(OFFICE_WORDS, 5),
+                pick(OFFICE_WORDS, 6)
+            ),
         },
         PendingAction::Action(ActionKind::Eat) => PromptChallenge {
             label: "Eat".to_string(),
@@ -374,15 +392,32 @@ fn append_prompt_char(keys: &ButtonInput<KeyCode>, buffer: &mut String, kc: KeyC
 
 fn collect_prompt_text(keys: &ButtonInput<KeyCode>, buffer: &mut String) {
     let letters = [
-        (KeyCode::KeyA, 'a'), (KeyCode::KeyB, 'b'), (KeyCode::KeyC, 'c'),
-        (KeyCode::KeyD, 'd'), (KeyCode::KeyE, 'e'), (KeyCode::KeyF, 'f'),
-        (KeyCode::KeyG, 'g'), (KeyCode::KeyH, 'h'), (KeyCode::KeyI, 'i'),
-        (KeyCode::KeyJ, 'j'), (KeyCode::KeyK, 'k'), (KeyCode::KeyL, 'l'),
-        (KeyCode::KeyM, 'm'), (KeyCode::KeyN, 'n'), (KeyCode::KeyO, 'o'),
-        (KeyCode::KeyP, 'p'), (KeyCode::KeyQ, 'q'), (KeyCode::KeyR, 'r'),
-        (KeyCode::KeyS, 's'), (KeyCode::KeyT, 't'), (KeyCode::KeyU, 'u'),
-        (KeyCode::KeyV, 'v'), (KeyCode::KeyW, 'w'), (KeyCode::KeyX, 'x'),
-        (KeyCode::KeyY, 'y'), (KeyCode::KeyZ, 'z'),
+        (KeyCode::KeyA, 'a'),
+        (KeyCode::KeyB, 'b'),
+        (KeyCode::KeyC, 'c'),
+        (KeyCode::KeyD, 'd'),
+        (KeyCode::KeyE, 'e'),
+        (KeyCode::KeyF, 'f'),
+        (KeyCode::KeyG, 'g'),
+        (KeyCode::KeyH, 'h'),
+        (KeyCode::KeyI, 'i'),
+        (KeyCode::KeyJ, 'j'),
+        (KeyCode::KeyK, 'k'),
+        (KeyCode::KeyL, 'l'),
+        (KeyCode::KeyM, 'm'),
+        (KeyCode::KeyN, 'n'),
+        (KeyCode::KeyO, 'o'),
+        (KeyCode::KeyP, 'p'),
+        (KeyCode::KeyQ, 'q'),
+        (KeyCode::KeyR, 'r'),
+        (KeyCode::KeyS, 's'),
+        (KeyCode::KeyT, 't'),
+        (KeyCode::KeyU, 'u'),
+        (KeyCode::KeyV, 'v'),
+        (KeyCode::KeyW, 'w'),
+        (KeyCode::KeyX, 'x'),
+        (KeyCode::KeyY, 'y'),
+        (KeyCode::KeyZ, 'z'),
     ];
     for (kc, ch) in letters {
         append_prompt_char(keys, buffer, kc, ch);
@@ -426,11 +461,16 @@ fn handle_action_prompt_input(
         return None;
     }
 
-    let tries_label = if prompt.retries_left == 1 { "try" } else { "tries" };
+    let tries_label = if prompt.retries_left == 1 {
+        "try"
+    } else {
+        "tries"
+    };
     notif.message = format!(
-        "{} - {} | {} {} left | {}_",
+        "{} - {} | target phrase: {} | {} {} left | {}_",
         prompt.label,
         prompt.instruction,
+        prompt.expected,
         prompt.retries_left,
         tries_label,
         prompt.buffer
@@ -464,10 +504,7 @@ fn handle_action_prompt_input(
         if prompt.retries_left > 1 {
             prompt.retries_left -= 1;
             prompt.buffer.clear();
-            notif.push(
-                format!("Not quite. Try again: {}", prompt.expected),
-                2.5,
-            );
+            notif.push(format!("Not quite. Try again: {}", prompt.expected), 2.5);
         } else {
             let label = prompt.label.clone();
             prompt.clear();
@@ -525,14 +562,30 @@ fn pending_action_from_input(
     }
 
     if matches!(&inter.action, ActionKind::BuyTransport) {
-        let slot = if p1 { Some(1) } else if p2 { Some(2) } else if p3 { Some(3) } else { None };
+        let slot = if p1 {
+            Some(1)
+        } else if p2 {
+            Some(2)
+        } else if p3 {
+            Some(3)
+        } else {
+            None
+        };
         if let Some(slot) = slot {
             return Some(PendingAction::Transport(slot));
         }
     }
 
     if matches!(&inter.action, ActionKind::Craft) {
-        let slot = if p1 { Some(1) } else if p2 { Some(2) } else if p3 { Some(3) } else { None };
+        let slot = if p1 {
+            Some(1)
+        } else if p2 {
+            Some(2)
+        } else if p3 {
+            Some(3)
+        } else {
+            None
+        };
         if let Some(slot) = slot {
             return Some(PendingAction::Craft(slot));
         }
@@ -562,8 +615,15 @@ fn pending_action_from_input(
 
 /// Handle bank sub-menu key presses (1-9). Returns `true` if a key was handled.
 fn handle_bank_keys(
-    p1: bool, p2: bool, p3: bool, p4: bool, p5: bool,
-    p6: bool, p7: bool, p8: bool, p9: bool,
+    p1: bool,
+    p2: bool,
+    p3: bool,
+    p4: bool,
+    p5: bool,
+    p6: bool,
+    p7: bool,
+    p8: bool,
+    p9: bool,
     gt: &mut GameTime,
     stats: &mut PlayerStats,
     notif: &mut Notification,
@@ -587,14 +647,15 @@ fn handle_bank_keys(
     }
     if p3 {
         let half = (stats.money / 2.).floor().max(0.);
-        let msg = if let Some((new_money, new_savings)) = try_deposit(stats.money, stats.savings, half) {
-            gt.advance_hours(0.25);
-            stats.money = new_money;
-            stats.savings = new_savings;
-            format!("Deposited ${:.0}. Savings: ${:.0}", half, stats.savings)
-        } else {
-            "Nothing to deposit.".to_string()
-        };
+        let msg =
+            if let Some((new_money, new_savings)) = try_deposit(stats.money, stats.savings, half) {
+                gt.advance_hours(0.25);
+                stats.money = new_money;
+                stats.savings = new_savings;
+                format!("Deposited ${:.0}. Savings: ${:.0}", half, stats.savings)
+            } else {
+                "Nothing to deposit.".to_string()
+            };
         notif.push(msg, 2.);
         stats.cooldown = 0.5;
         return true;
@@ -637,10 +698,7 @@ fn handle_bank_keys(
                 invest.risk = 1;
                 invest.daily_return_rate = 0.04;
             }
-            notif.message = format!(
-                "Invested $50 (Low risk). Portfolio: ${:.0}",
-                invest.amount
-            );
+            notif.message = format!("Invested $50 (Low risk). Portfolio: ${:.0}", invest.amount);
         } else {
             notif.message = "Need $50 to invest!".to_string();
         }
@@ -703,16 +761,16 @@ fn handle_bank_keys(
 
 /// Handle transport sub-menu key presses (1-3). Returns `true` if a key was handled.
 fn handle_transport_keys(
-    p1: bool, p2: bool, p3: bool,
+    p1: bool,
+    p2: bool,
+    p3: bool,
     gt: &mut GameTime,
     stats: &mut PlayerStats,
     notif: &mut Notification,
     transport: &mut Transport,
 ) -> bool {
     if p1 {
-        if transport.kind == TransportKind::Bike
-            || transport.kind == TransportKind::Car
-        {
+        if transport.kind == TransportKind::Bike || transport.kind == TransportKind::Car {
             notif.message = "Already have a vehicle!".to_string();
         } else if stats.savings >= 80. {
             gt.advance_hours(0.5);
@@ -720,7 +778,8 @@ fn handle_transport_keys(
             transport.kind = TransportKind::Bike;
             transport.work_uses = 0;
             transport.maintenance_due = false;
-            notif.message = "Bought a Bicycle! Work pays 1.1x bonus. Service every 5 uses.".to_string();
+            notif.message =
+                "Bought a Bicycle! Work pays 1.1x bonus. Service every 5 uses.".to_string();
         } else {
             notif.message = "Need $80 in savings for a Bike!".to_string();
         }
@@ -737,7 +796,8 @@ fn handle_transport_keys(
             transport.kind = TransportKind::Car;
             transport.work_uses = 0;
             transport.maintenance_due = false;
-            notif.message = "Bought a Car! Find it parked near the Garage. Work pays 1.2x.".to_string();
+            notif.message =
+                "Bought a Car! Find it parked near the Garage. Work pays 1.2x.".to_string();
         } else {
             notif.message = "Need $300 in savings for a Car!".to_string();
         }
@@ -775,7 +835,9 @@ fn handle_transport_keys(
 
 /// Handle craft sub-menu key presses (1-3). Returns `true` if a key was handled.
 fn handle_craft_keys(
-    p1: bool, p2: bool, p3: bool,
+    p1: bool,
+    p2: bool,
+    p3: bool,
     gt: &mut GameTime,
     stats: &mut PlayerStats,
     notif: &mut Notification,
@@ -794,9 +856,18 @@ fn handle_craft_keys(
             gs.eat_today += 1;
             quest_board.crafted_today += 1;
             gs.total_crafted += 1;
-            notif.push(format!("Cooked a meal! +3 meals +{:.2} Cooking. ({}x ingredients left)", gain, inv.ingredient), 3.);
+            notif.push(
+                format!(
+                    "Cooked a meal! +3 meals +{:.2} Cooking. ({}x ingredients left)",
+                    gain, inv.ingredient
+                ),
+                3.,
+            );
         } else {
-            notif.push(format!("Need 2 ingredients to cook. (have {}x)", inv.ingredient), 2.5);
+            notif.push(
+                format!("Need 2 ingredients to cook. (have {}x)", inv.ingredient),
+                2.5,
+            );
         }
         stats.cooldown = 0.5;
         return true;
@@ -809,9 +880,21 @@ fn handle_craft_keys(
             inv.gift_box += 1;
             quest_board.crafted_today += 1;
             gs.total_crafted += 1;
-            notif.push(format!("Crafted a Gift Box! ({}x). Give it to an NPC with [G].", inv.gift_box), 3.);
+            notif.push(
+                format!(
+                    "Crafted a Gift Box! ({}x). Give it to an NPC with [G].",
+                    inv.gift_box
+                ),
+                3.,
+            );
         } else if inv.ingredient < 1 {
-            notif.push(format!("Need 1 ingredient for a gift box. (have {}x)", inv.ingredient), 2.5);
+            notif.push(
+                format!(
+                    "Need 1 ingredient for a gift box. (have {}x)",
+                    inv.ingredient
+                ),
+                2.5,
+            );
         } else {
             notif.push("Need $5 to craft a gift box.", 2.5);
         }
@@ -827,9 +910,21 @@ fn handle_craft_keys(
             skills.cooking = (skills.cooking + gain).min(5.);
             quest_board.crafted_today += 1;
             gs.total_crafted += 1;
-            notif.push(format!("Blended a Smoothie! ({}x). Use at home for +40 Energy +10 Health.", inv.smoothie), 3.);
+            notif.push(
+                format!(
+                    "Blended a Smoothie! ({}x). Use at home for +40 Energy +10 Health.",
+                    inv.smoothie
+                ),
+                3.,
+            );
         } else {
-            notif.push(format!("Need 2 ingredients for a smoothie. (have {}x)", inv.ingredient), 2.5);
+            notif.push(
+                format!(
+                    "Need 2 ingredients for a smoothie. (have {}x)",
+                    inv.ingredient
+                ),
+                2.5,
+            );
         }
         stats.cooldown = 0.5;
         return true;
@@ -856,13 +951,17 @@ fn handle_work(
     crisis: &CrisisState,
 ) {
     if crisis.is_laid_off() {
-        notif.push(format!("Laid off! {} day(s) remaining. Can't work yet.", crisis.days_left), 3.);
+        notif.push(
+            format!(
+                "Laid off! {} day(s) remaining. Can't work yet.",
+                crisis.days_left
+            ),
+            3.,
+        );
         return;
     }
     let pos = pm.prev_position;
-    if pos.x < OFFICE_LEFT || pos.x > OFFICE_RIGHT
-        || pos.y < OFFICE_BOTTOM || pos.y > OFFICE_TOP
-    {
+    if pos.x < OFFICE_LEFT || pos.x > OFFICE_RIGHT || pos.y < OFFICE_BOTTOM || pos.y > OFFICE_TOP {
         notif.push("You need to be at the office to work!", 2.5);
         return;
     }
@@ -900,7 +999,10 @@ fn handle_work(
         transport.work_uses += 1;
         if transport.work_uses >= 5 && !transport.maintenance_due {
             transport.maintenance_due = true;
-            notif.push("Vehicle needs service! Pay bonus suspended until repaired at Garage [3] $15.", 6.);
+            notif.push(
+                "Vehicle needs service! Pay bonus suspended until repaired at Garage [3] $15.",
+                6.,
+            );
         }
     }
     stats.money += earned;
@@ -914,7 +1016,11 @@ fn handle_work(
     streak.days += 1;
     rep.score = (rep.score + 0.5).min(100.);
     stats.cooldown = 2.;
-    let we = if gt.is_weekend() { " [Weekend 1.5x]" } else { "" };
+    let we = if gt.is_weekend() {
+        " [Weekend 1.5x]"
+    } else {
+        ""
+    };
     let st = if streak.days >= 3 {
         format!(" [Streak {}d]", streak.days)
     } else {
@@ -946,19 +1052,33 @@ fn handle_work(
     };
     if gs.work_today == 1 && *housing == HousingTier::Unhoused {
         notif.push(
-            format!("Earned ${:.0}! Head to the Bank (SW) and deposit to rent your apartment.", earned),
+            format!(
+                "Earned ${:.0}! Head to the Bank (SW) and deposit to rent your apartment.",
+                earned
+            ),
             5.,
         );
     } else if *housing == HousingTier::Unhoused && stats.money >= 90. {
         notif.push(
-            format!("${:.0} cash - enough for the apartment! Bank is SW.", stats.money),
+            format!(
+                "${:.0} cash - enough for the apartment! Bank is SW.",
+                stats.money
+            ),
             5.,
         );
     } else {
         notif.push(
             format!(
                 "[{}]{}{}{}{}{}{}{} Earned ${:.0}!",
-                skills.career_rank(), we, time_tag, st, bt, tr, rp, hl, earned
+                skills.career_rank(),
+                we,
+                time_tag,
+                st,
+                bt,
+                tr,
+                rp,
+                hl,
+                earned
             ),
             2.5,
         );
@@ -967,7 +1087,11 @@ fn handle_work(
 
 /// ActionKind::Shop - grocery store with numbered sub-items.
 fn handle_shop(
-    pe: bool, p1: bool, p2: bool, p3: bool, p4: bool,
+    pe: bool,
+    p1: bool,
+    p2: bool,
+    p3: bool,
+    p4: bool,
     stats: &mut PlayerStats,
     inv: &mut Inventory,
     notif: &mut Notification,
@@ -1034,16 +1158,25 @@ fn handle_shop(
             stats.money -= 15.;
             stats.meals += 3;
             stats.cooldown = 1.;
-            notif.push("Groceries: +3 meals ($15). [1]☕$5 [2]💊$8 [3]📚$12 [4]🥕$8", 3.);
+            notif.push(
+                "Groceries: +3 meals ($15). [1]☕$5 [2]💊$8 [3]📚$12 [4]🥕$8",
+                3.,
+            );
         } else {
-            notif.push("Need $15 for groceries. [1]☕$5 [2]💊$8 [3]📚$12 [4]🥕$8", 2.);
+            notif.push(
+                "Need $15 for groceries. [1]☕$5 [2]💊$8 [3]📚$12 [4]🥕$8",
+                2.,
+            );
         }
     }
 }
 
 /// ActionKind::Relax - park relaxation + festival activities.
 fn handle_relax(
-    p1: bool, p2: bool, p3: bool, p4: bool,
+    p1: bool,
+    p2: bool,
+    p3: bool,
+    p4: bool,
     gt: &mut GameTime,
     stats: &mut PlayerStats,
     skills: &mut Skills,
@@ -1068,17 +1201,25 @@ fn handle_relax(
                 stats.money += 25.;
                 notif.push("Redeemed 10 tokens: Gift Box + 2 Ingredients + $25!", 3.);
             } else {
-                notif.push(format!("Need 10 tokens to redeem (have {}).", festival.tokens), 2.);
+                notif.push(
+                    format!("Need 10 tokens to redeem (have {}).", festival.tokens),
+                    2.,
+                );
             }
             stats.cooldown = 0.5;
             return;
         }
         if festival.activities_today >= 3 {
-            notif.push("You've done 3 festival activities today! Come back tomorrow.", 2.);
+            notif.push(
+                "You've done 3 festival activities today! Come back tomorrow.",
+                2.,
+            );
             stats.cooldown = 0.5;
             return;
         }
-        let Some(kind) = festival.active.clone() else { return; };
+        let Some(kind) = festival.active.clone() else {
+            return;
+        };
         match (&kind, p1, p2) {
             (FestivalKind::SpringFair, true, _) => {
                 if stats.money < 5. {
@@ -1262,12 +1403,17 @@ fn handle_relax(
     } else {
         String::new()
     };
-    notif.push(format!("Relaxed. +{:.0}hap, -Stress.{}{}", gain, wb, fest_hint), 3.);
+    notif.push(
+        format!("Relaxed. +{:.0}hap, -Stress.{}{}", gain, wb, fest_hint),
+        3.,
+    );
 }
 
 /// ActionKind::Chat - NPC interaction and gifting.
 fn handle_chat(
-    pe: bool, pg: bool, entity: Entity,
+    pe: bool,
+    pg: bool,
+    entity: Entity,
     stats: &mut PlayerStats,
     skills: &mut Skills,
     gs: &mut GameState,
@@ -1284,7 +1430,12 @@ fn handle_chat(
     let npc_name = npc_data.map(|(n, _)| n.name.as_str()).unwrap_or("them");
     if pg {
         let lvl = friendship.levels.get(&entity).copied().unwrap_or(0.);
-        if friendship.gifted_today.get(&entity).copied().unwrap_or(false) {
+        if friendship
+            .gifted_today
+            .get(&entity)
+            .copied()
+            .unwrap_or(false)
+        {
             notif.push("Already gifted this NPC today!".to_string(), 2.);
             return;
         }
@@ -1304,20 +1455,32 @@ fn handle_chat(
             let gift_label = if used_gift_box { " (Gift Box!)" } else { "" };
             let (hap, health_gain, rep_gain, msg) = match personality {
                 NpcPersonality::Cheerful => (
-                    38., 0., 0.,
-                    format!("Gift to {}! +38 Happiness (Cheerful){}.", npc_name, gift_label),
+                    38.,
+                    0.,
+                    0.,
+                    format!(
+                        "Gift to {}! +38 Happiness (Cheerful){}.",
+                        npc_name, gift_label
+                    ),
                 ),
                 NpcPersonality::Wise => (
-                    10., 15., 0.,
+                    10.,
+                    15.,
+                    0.,
                     format!("Gift to {}! +15 Health (Wise){}.", npc_name, gift_label),
                 ),
                 NpcPersonality::Influential => (
-                    10., 0., 15.,
+                    10.,
+                    0.,
+                    15.,
                     format!("Gift to {}! +15 Rep (Influential){}.", npc_name, gift_label),
                 ),
-                NpcPersonality::Neutral => {
-                    (25., 0., 0., format!("Gift to {}! +25 Happiness{}.", npc_name, gift_label))
-                }
+                NpcPersonality::Neutral => (
+                    25.,
+                    0.,
+                    0.,
+                    format!("Gift to {}! +25 Happiness{}.", npc_name, gift_label),
+                ),
             };
             stats.happiness = (stats.happiness + hap).min(100.);
             stats.health = (stats.health + health_gain).min(100.);
@@ -1337,8 +1500,16 @@ fn handle_chat(
     let f = friendship.levels.entry(entity).or_insert(0.);
     let chat_bonus = rep.chat_bonus() * season.current.social_mult();
     let gain_mult = (1. + (*f * 0.05)) * chat_bonus;
-    let hap_mult = if personality == NpcPersonality::Cheerful { 1.5 } else { 1.0 };
-    let skill_mult = if personality == NpcPersonality::Wise { 1.5 } else { 1.0 };
+    let hap_mult = if personality == NpcPersonality::Cheerful {
+        1.5
+    } else {
+        1.0
+    };
+    let skill_mult = if personality == NpcPersonality::Wise {
+        1.5
+    } else {
+        1.0
+    };
     let rep_friend_mult = if rep.score < 15. { 0.5 } else { 1.0 };
     let hap = 15. * skills.social_bonus() * gain_mult * hap_mult;
     *f = (*f + 0.30 * rep_friend_mult).min(5.);
@@ -1350,16 +1521,28 @@ fn handle_chat(
     gs.chat_today += 1;
     stats.cooldown = 1.5;
     let base_rep = 0.8;
-    let rep_bonus = if personality == NpcPersonality::Influential { 3.0 } else { 0.0 };
+    let rep_bonus = if personality == NpcPersonality::Influential {
+        3.0
+    } else {
+        0.0
+    };
     rep.score = (rep.score + base_rep + rep_bonus).min(100.);
-    let sp = if season.current == SeasonKind::Spring { " [Spring social!]" } else { "" };
+    let sp = if season.current == SeasonKind::Spring {
+        " [Spring social!]"
+    } else {
+        ""
+    };
     let tag = match personality {
         NpcPersonality::Cheerful => " [Cheerful]",
         NpcPersonality::Wise => " [Wise]",
         NpcPersonality::Influential => " [Influential]",
         NpcPersonality::Neutral => "",
     };
-    let rr = if rep_friend_mult < 1.0 { " [Low rep -50% bond]" } else { "" };
+    let rr = if rep_friend_mult < 1.0 {
+        " [Low rep -50% bond]"
+    } else {
+        ""
+    };
     notif.push(
         format!(
             "Chat with {}! +{:.0} Mood  Friendship {}/5{}{}{}",
@@ -1389,8 +1572,16 @@ fn handle_study(
     }
     stats.money -= 30.;
     stats.energy -= 20.;
-    let season_bonus = if season.current == SeasonKind::Spring { 0.25 } else { 0. };
-    let rainy_study_mult = if *weather == WeatherKind::Rainy { 1.25 } else { 1.0 };
+    let season_bonus = if season.current == SeasonKind::Spring {
+        0.25
+    } else {
+        0.
+    };
+    let rainy_study_mult = if *weather == WeatherKind::Rainy {
+        1.25
+    } else {
+        1.0
+    };
     let seed = (gt.day.wrapping_mul(1664525)).wrapping_add(gs.study_today * 999983) % 4;
     let study_gain = (0.5 + season_bonus) * stats.skill_gain_mult() * rainy_study_mult;
     let (boost_name, new_lvl) = match seed {
@@ -1413,10 +1604,21 @@ fn handle_study(
     };
     gs.study_today += 1;
     stats.cooldown = 3.;
-    let sp = if season_bonus > 0. { " [Spring +0.25 bonus!]" } else { "" };
-    let rsp = if rainy_study_mult > 1.0 { " [Rainy +25% XP]" } else { "" };
+    let sp = if season_bonus > 0. {
+        " [Spring +0.25 bonus!]"
+    } else {
+        ""
+    };
+    let rsp = if rainy_study_mult > 1.0 {
+        " [Rainy +25% XP]"
+    } else {
+        ""
+    };
     notif.push(
-        format!("Studied! +{:.2} {} (now {:.1}){}{}", study_gain, boost_name, new_lvl, sp, rsp),
+        format!(
+            "Studied! +{:.2} {} (now {:.1}){}{}",
+            study_gain, boost_name, new_lvl, sp, rsp
+        ),
         3.,
     );
 }
@@ -1426,7 +1628,15 @@ pub fn handle_interaction(
     nearby: Res<NearbyInteractable>,
     inter_q: Query<&Interactable>,
     npc_q: Query<(&Npc, &NpcId)>,
-    mut player_q: Query<(&mut PlayerMovement, &mut VehicleState, &mut BankInput, &mut ActionPrompt), With<Player>>,
+    mut player_q: Query<
+        (
+            &mut PlayerMovement,
+            &mut VehicleState,
+            &mut BankInput,
+            &mut ActionPrompt,
+        ),
+        With<Player>,
+    >,
     mut gt: ResMut<GameTime>,
     mut stats: ResMut<PlayerStats>,
     mut inv: ResMut<Inventory>,
@@ -1439,7 +1649,11 @@ pub fn handle_interaction(
     mut extras: InteractExtras,
     mut sfx: EventWriter<PlaySfx>,
 ) {
-    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt)) = player_q.get_single_mut() else { return };
+    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt)) =
+        player_q.get_single_mut()
+    else {
+        return;
+    };
     let mut pe = keys.just_pressed(KeyCode::KeyE);
     let mut pg = keys.just_pressed(KeyCode::KeyG);
     let mut p1 = keys.just_pressed(KeyCode::Digit1);
@@ -1454,7 +1668,9 @@ pub fn handle_interaction(
     let mut forced_action: Option<ActionKind> = None;
     let mut forced_entity: Option<Entity> = None;
 
-    if let Some((pending, target)) = handle_action_prompt_input(&keys, &mut action_prompt, &mut notif) {
+    if let Some((pending, target)) =
+        handle_action_prompt_input(&keys, &mut action_prompt, &mut notif)
+    {
         forced_entity = target;
         match pending {
             PendingAction::Action(action) => {
@@ -1503,13 +1719,15 @@ pub fn handle_interaction(
                     3 => p3 = true,
                     _ => p4 = true,
                 }
-            },
+            }
         }
     } else if action_prompt.active {
         return;
     }
 
-    if (!pe && !pg && !p1 && !p2 && !p3 && !p4 && !p5 && !p6 && !p7 && !p8 && !p9) || stats.cooldown > 0. {
+    if (!pe && !pg && !p1 && !p2 && !p3 && !p4 && !p5 && !p6 && !p7 && !p8 && !p9)
+        || stats.cooldown > 0.
+    {
         return;
     }
 
@@ -1517,7 +1735,11 @@ pub fn handle_interaction(
     if extras.conds.hospitalized {
         let hrs = extras.conds.hospital_timer.ceil() as i32;
         notif.push(
-            format!("Hospitalised! Resting... ({} in-game hour{} left)", hrs, if hrs == 1 { "" } else { "s" }),
+            format!(
+                "Hospitalised! Resting... ({} in-game hour{} left)",
+                hrs,
+                if hrs == 1 { "" } else { "s" }
+            ),
             2.5,
         );
         return;
@@ -1525,7 +1747,9 @@ pub fn handle_interaction(
     if bank_input.active {
         return;
     }
-    let Some(entity) = forced_entity.or(nearby.entity) else { return };
+    let Some(entity) = forced_entity.or(nearby.entity) else {
+        return;
+    };
     let Ok(inter) = inter_q.get(entity) else {
         return;
     };
@@ -1547,7 +1771,10 @@ pub fn handle_interaction(
             p9,
         )
     {
-        let prompt_subject = if matches!(&pending, PendingAction::Action(ActionKind::Chat) | PendingAction::Gift) {
+        let prompt_subject = if matches!(
+            &pending,
+            PendingAction::Action(ActionKind::Chat) | PendingAction::Gift
+        ) {
             npc_q
                 .get(entity)
                 .map(|(npc, _)| npc.name.as_str())
@@ -1572,9 +1799,21 @@ pub fn handle_interaction(
     // ── Bank key shortcuts ────────────────────────────────────────────────────
     if matches!(&inter.action, ActionKind::Bank)
         && handle_bank_keys(
-            p1, p2, p3, p4, p5, p6, p7, p8, p9,
-            &mut gt, &mut stats, &mut notif,
-            &mut bank_input, &mut extras.invest, &mut extras.crisis,
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+            p6,
+            p7,
+            p8,
+            p9,
+            &mut gt,
+            &mut stats,
+            &mut notif,
+            &mut bank_input,
+            &mut extras.invest,
+            &mut extras.crisis,
         )
     {
         return;
@@ -1583,8 +1822,13 @@ pub fn handle_interaction(
     // ── Transport key shortcuts ───────────────────────────────────────────────
     if matches!(&inter.action, ActionKind::BuyTransport)
         && handle_transport_keys(
-            p1, p2, p3,
-            &mut gt, &mut stats, &mut notif, &mut extras.transport,
+            p1,
+            p2,
+            p3,
+            &mut gt,
+            &mut stats,
+            &mut notif,
+            &mut extras.transport,
         )
     {
         return;
@@ -1594,14 +1838,27 @@ pub fn handle_interaction(
     if matches!(&inter.action, ActionKind::Craft) {
         if needs_home_access(&inter.action) && !housing.has_access() {
             let cost = housing.upgrade_cost().unwrap_or(90.);
-            notif.push(format!("Locked out. Save ${:.0} and buy apartment access at the bank.", cost), 3.5);
+            notif.push(
+                format!(
+                    "Locked out. Save ${:.0} and buy apartment access at the bank.",
+                    cost
+                ),
+                3.5,
+            );
             stats.cooldown = 0.5;
             return;
         }
         if handle_craft_keys(
-            p1, p2, p3,
-            &mut gt, &mut stats, &mut notif, &mut inv, &mut skills,
-            &mut gs, &mut extras.quest_board,
+            p1,
+            p2,
+            p3,
+            &mut gt,
+            &mut stats,
+            &mut notif,
+            &mut inv,
+            &mut skills,
+            &mut gs,
+            &mut extras.quest_board,
         ) {
             return;
         }
@@ -1615,9 +1872,9 @@ pub fn handle_interaction(
         let cost = housing.upgrade_cost().unwrap_or(90.);
         notif.push(
             format!(
-            "Locked out. Save ${:.0} and buy apartment access at the bank.",
-            cost
-        ),
+                "Locked out. Save ${:.0} and buy apartment access at the bank.",
+                cost
+            ),
             3.5,
         );
         stats.cooldown = 0.5;
@@ -1628,7 +1885,13 @@ pub fn handle_interaction(
     let repair_fee = extras.crisis.home_cost_extra();
     if repair_fee > 0. && needs_home_access(&inter.action) {
         if stats.money < repair_fee {
-            notif.push(format!("Appliance broken! Need ${:.0} repair fee for home actions.", repair_fee), 3.);
+            notif.push(
+                format!(
+                    "Appliance broken! Need ${:.0} repair fee for home actions.",
+                    repair_fee
+                ),
+                3.,
+            );
             return;
         }
         stats.money -= repair_fee;
@@ -1661,7 +1924,13 @@ pub fn handle_interaction(
             } else {
                 "Daytime nap"
             };
-            notif.push(format!("{} — +{:.0} Energy, -SleepDebt, -Stress{}", tag, gain, stress_tag), 2.);
+            notif.push(
+                format!(
+                    "{} — +{:.0} Energy, -SleepDebt, -Stress{}",
+                    tag, gain, stress_tag
+                ),
+                2.,
+            );
         }
         ActionKind::Eat => {
             sfx_kind = SfxKind::Eat;
@@ -1688,14 +1957,27 @@ pub fn handle_interaction(
             } else {
                 ""
             };
-            notif.push(format!("{} — -{:.0} Hunger{}", meal_label, reduction, bfast), 2.);
+            notif.push(
+                format!("{} — -{:.0} Hunger{}", meal_label, reduction, bfast),
+                2.,
+            );
         }
         ActionKind::Work => {
             sfx_kind = SfxKind::Work;
             handle_work(
-                &mut gt, &mut stats, &mut skills, &mut gs, &mut notif,
-                &mut streak, &housing, &extras.conds, &mut extras.transport,
-                &mut extras.rep, &pm, &extras.settings, &extras.crisis,
+                &mut gt,
+                &mut stats,
+                &mut skills,
+                &mut gs,
+                &mut notif,
+                &mut streak,
+                &housing,
+                &extras.conds,
+                &mut extras.transport,
+                &mut extras.rep,
+                &pm,
+                &extras.settings,
+                &extras.crisis,
             );
         }
         ActionKind::Freelance => {
@@ -1726,10 +2008,23 @@ pub fn handle_interaction(
         }
         ActionKind::Relax => {
             handle_relax(
-                p1, p2, p3, p4,
-                &mut gt, &mut stats, &mut skills, &mut gs, &mut inv, &mut notif,
-                &mut friendship, &mut extras.festival, &extras.weather,
-                &extras.season, &mut extras.hobbies, &mut extras.rep, &extras.pet,
+                p1,
+                p2,
+                p3,
+                p4,
+                &mut gt,
+                &mut stats,
+                &mut skills,
+                &mut gs,
+                &mut inv,
+                &mut notif,
+                &mut friendship,
+                &mut extras.festival,
+                &extras.weather,
+                &extras.season,
+                &mut extras.hobbies,
+                &mut extras.rep,
+                &extras.pet,
             );
         }
         ActionKind::Exercise => {
@@ -1743,9 +2038,15 @@ pub fn handle_interaction(
             }
             let season_mult = extras.season.current.social_mult();
             if *extras.weather == WeatherKind::Rainy {
-                notif.push("Exercising in the rain! Consider going indoors instead.", 2.5);
+                notif.push(
+                    "Exercising in the rain! Consider going indoors instead.",
+                    2.5,
+                );
             }
-            let fit_gain = (0.20 + skills.fitness * 0.02) * gt.exercise_mult() * season_mult * stats.skill_gain_mult();
+            let fit_gain = (0.20 + skills.fitness * 0.02)
+                * gt.exercise_mult()
+                * season_mult
+                * stats.skill_gain_mult();
             let exercise_cost = exercise_energy_cost(skills.fitness);
             stats.energy = (stats.energy - exercise_cost).max(0.);
             stats.health = (stats.health + 8. * skills.fitness_bonus()).min(100.);
@@ -1766,13 +2067,15 @@ pub fn handle_interaction(
             } else {
                 ""
             };
-            notif.push(format!("Exercised! +Health, +Fitness {:.2}{}{}", fit_gain, am, sp), 2.5);
+            notif.push(
+                format!("Exercised! +Health, +Fitness {:.2}{}{}", fit_gain, am, sp),
+                2.5,
+            );
         }
         ActionKind::Meditate => {
             let hap_gain = 15. + skills.social * 2.;
-            let fish_calm = extras.pet.has_pet
-                && extras.pet.kind == PetKind::Fish
-                && extras.pet.hunger < 80.;
+            let fish_calm =
+                extras.pet.has_pet && extras.pet.kind == PetKind::Fish && extras.pet.hunger < 80.;
             let (fish_hap, fish_stress, fish_tag) = if fish_calm {
                 (8_f32, 8_f32, " [Fish +Calm]")
             } else {
@@ -1784,9 +2087,10 @@ pub fn handle_interaction(
             stats.cooldown = 4.;
             notif.push(
                 format!(
-                "Meditated. +{:.0} Happiness, -Stress, Zen buff 5h.{}",
-                hap_gain + fish_hap, fish_tag
-            ),
+                    "Meditated. +{:.0} Happiness, -Stress, Zen buff 5h.{}",
+                    hap_gain + fish_hap,
+                    fish_tag
+                ),
                 3.,
             );
         }
@@ -1838,7 +2142,10 @@ pub fn handle_interaction(
                     );
                 }
             } else {
-                notif.push(format!("Bank: ${:.0} saved. Max housing! [1-8]", stats.savings), 4.);
+                notif.push(
+                    format!("Bank: ${:.0} saved. Max housing! [1-8]", stats.savings),
+                    4.,
+                );
             }
             stats.cooldown = 0.5;
         }
@@ -1880,7 +2187,8 @@ pub fn handle_interaction(
                         stats.energy = (stats.energy + 40.).min(stats.max_energy());
                         stats.health = (stats.health + 10.).min(100.);
                         stats.cooldown = 1.;
-                        notif.message = format!("Smoothie! +40 Energy +10 Health. ({}x left)", inv.smoothie);
+                        notif.message =
+                            format!("Smoothie! +40 Energy +10 Health. ({}x left)", inv.smoothie);
                     } else {
                         notif.message = "No smoothies! Craft one at home.".to_string();
                     }
@@ -1901,7 +2209,11 @@ pub fn handle_interaction(
                 HobbyKind::Gaming => (&mut extras.hobbies.gaming, "Gaming"),
                 HobbyKind::Music => (&mut extras.hobbies.music, "Music"),
             };
-            let rainy_mult = if *extras.weather == WeatherKind::Rainy { 1.25 } else { 1.0 };
+            let rainy_mult = if *extras.weather == WeatherKind::Rainy {
+                1.25
+            } else {
+                1.0
+            };
             *skill_val = (*skill_val + 0.25 * stats.skill_gain_mult() * rainy_mult).min(5.);
             let lvl = *skill_val;
             let winter_bonus = extras.season.current.indoor_bonus();
@@ -1915,14 +2227,29 @@ pub fn handle_interaction(
             } else {
                 ""
             };
-            let rb = if rainy_mult > 1.0 { " [Rainy +25% XP]" } else { "" };
-            notif.push(format!("{}! Skill: {:.2}/5. +Happiness, -Stress.{}{}", label, lvl, wb, rb), 2.5);
+            let rb = if rainy_mult > 1.0 {
+                " [Rainy +25% XP]"
+            } else {
+                ""
+            };
+            notif.push(
+                format!(
+                    "{}! Skill: {:.2}/5. +Happiness, -Stress.{}{}",
+                    label, lvl, wb, rb
+                ),
+                2.5,
+            );
         }
         ActionKind::StudyCourse => {
             sfx_kind = SfxKind::Work;
             handle_study(
-                &mut gt, &mut stats, &mut skills, &mut gs, &mut notif,
-                &extras.season, &extras.weather,
+                &mut gt,
+                &mut stats,
+                &mut skills,
+                &mut gs,
+                &mut notif,
+                &extras.season,
+                &extras.weather,
             );
         }
         ActionKind::FeedPet => {
@@ -1951,7 +2278,10 @@ pub fn handle_interaction(
             stats.happiness = (stats.happiness + 15.).min(100.);
             stats.stress = (stats.stress - 5.).max(0.);
             stats.cooldown = 1.;
-            notif.push(format!("Fed {}! +15 Happiness, -Stress.", extras.pet.name), 2.);
+            notif.push(
+                format!("Fed {}! +15 Happiness, -Stress.", extras.pet.name),
+                2.,
+            );
         }
         ActionKind::ThrowParty => {
             if stats.money < 40. {
@@ -1972,9 +2302,9 @@ pub fn handle_interaction(
             stats.cooldown = 4.;
             notif.push(
                 format!(
-                "Party thrown! +30 Happiness, +5 Rep. ({} total)",
-                extras.social_events.parties_thrown
-            ),
+                    "Party thrown! +30 Happiness, +5 Rep. ({} total)",
+                    extras.social_events.parties_thrown
+                ),
                 4.,
             );
         }
@@ -1997,9 +2327,18 @@ pub fn handle_interaction(
         ActionKind::Chat => {
             let npc_data = npc_q.get(entity).ok();
             handle_chat(
-                pe, pg, entity,
-                &mut stats, &mut skills, &mut gs, &mut inv, &mut notif,
-                &mut friendship, &mut extras.rep, &extras.season, npc_data,
+                pe,
+                pg,
+                entity,
+                &mut stats,
+                &mut skills,
+                &mut gs,
+                &mut inv,
+                &mut notif,
+                &mut friendship,
+                &mut extras.rep,
+                &extras.season,
+                npc_data,
             );
         }
         ActionKind::GymSession => {
@@ -2015,7 +2354,10 @@ pub fn handle_interaction(
                 return;
             }
             let season_mult = extras.season.current.social_mult();
-            let fit_gain = (0.25 + skills.fitness * 0.025) * gt.exercise_mult() * season_mult * stats.skill_gain_mult();
+            let fit_gain = (0.25 + skills.fitness * 0.025)
+                * gt.exercise_mult()
+                * season_mult
+                * stats.skill_gain_mult();
             stats.money -= 5.;
             stats.energy = (stats.energy - 25.).max(0.);
             stats.health = (stats.health + 12. * skills.fitness_bonus()).min(100.);
@@ -2030,7 +2372,10 @@ pub fn handle_interaction(
             } else {
                 ""
             };
-            notif.push(format!("Gym session! +Health +Fit {:.2}{}  ($5 paid)", fit_gain, am), 3.);
+            notif.push(
+                format!("Gym session! +Health +Fit {:.2}{}  ($5 paid)", fit_gain, am),
+                3.,
+            );
             sfx_kind = SfxKind::Work;
         }
         ActionKind::Cafe => {
@@ -2047,7 +2392,10 @@ pub fn handle_interaction(
             stats.hunger = (stats.hunger - 25.).max(0.);
             extras.rep.score = (extras.rep.score + 2.).min(100.);
             stats.cooldown = 1.5;
-            notif.push("Café order! +25 Energy +12 Mood -25 Hunger  ($12 paid)", 2.5);
+            notif.push(
+                "Café order! +25 Energy +12 Mood -25 Hunger  ($12 paid)",
+                2.5,
+            );
             sfx_kind = SfxKind::Eat;
         }
         ActionKind::Clinic => {
@@ -2066,7 +2414,10 @@ pub fn handle_interaction(
             stats.health = (stats.health + 35.).min(100.);
             stats.stress = (stats.stress - 8.).max(0.);
             stats.cooldown = 2.;
-            notif.push(format!("Clinic visit! +35 Health → {:.0}  ($40 paid)", stats.health), 3.);
+            notif.push(
+                format!("Clinic visit! +35 Health → {:.0}  ($40 paid)", stats.health),
+                3.,
+            );
         }
         ActionKind::EnterVehicle => {
             if extras.transport.kind != TransportKind::Car {
@@ -2101,7 +2452,10 @@ pub fn handle_interaction(
             extras.pet.fed_today = true;
             stats.happiness = (stats.happiness + 20.).min(100.);
             stats.cooldown = 1.;
-            notif.push(format!("You adopted {}! Feed daily for bonuses.", extras.pet.name), 4.);
+            notif.push(
+                format!("You adopted {}! Feed daily for bonuses.", extras.pet.name),
+                4.,
+            );
         }
         ActionKind::SleepRough => {
             stats.energy = (stats.energy + 25.).min(stats.max_energy());
@@ -2110,7 +2464,10 @@ pub fn handle_interaction(
             stats.happiness = (stats.happiness - 5.).max(0.);
             stats.sleep_debt = (stats.sleep_debt - 4.).max(0.);
             stats.cooldown = 3.;
-            notif.push("Slept rough - +25 Energy, slight +Stress, -Mood. Deposit at the Bank for a lease.", 3.5);
+            notif.push(
+                "Slept rough - +25 Energy, slight +Stress, -Mood. Deposit at the Bank for a lease.",
+                3.5,
+            );
         }
         ActionKind::Craft => {
             notif.push(
@@ -2134,13 +2491,22 @@ pub fn handle_bank_input(
     mut gt: ResMut<GameTime>,
     mut goal: ResMut<DailyGoal>,
 ) {
-    let Ok(mut bank_input) = player_bank_q.get_single_mut() else { return };
+    let Ok(mut bank_input) = player_bank_q.get_single_mut() else {
+        return;
+    };
     if !bank_input.active {
         return;
     }
 
-    let kind_str = if bank_input.kind == BankInputKind::Deposit { "Deposit" } else { "Withdraw" };
-    notif.message = format!("{} amount: ${}_ [Enter]=confirm [Esc]=cancel", kind_str, bank_input.buffer);
+    let kind_str = if bank_input.kind == BankInputKind::Deposit {
+        "Deposit"
+    } else {
+        "Withdraw"
+    };
+    notif.message = format!(
+        "{} amount: ${}_ [Enter]=confirm [Esc]=cancel",
+        kind_str, bank_input.buffer
+    );
     notif.timer = 2.0;
 
     if keys.just_pressed(KeyCode::Escape) {
@@ -2156,9 +2522,15 @@ pub fn handle_bank_input(
     }
 
     let digit_keys = [
-        (KeyCode::Digit0, '0'), (KeyCode::Digit1, '1'), (KeyCode::Digit2, '2'),
-        (KeyCode::Digit3, '3'), (KeyCode::Digit4, '4'), (KeyCode::Digit5, '5'),
-        (KeyCode::Digit6, '6'), (KeyCode::Digit7, '7'), (KeyCode::Digit8, '8'),
+        (KeyCode::Digit0, '0'),
+        (KeyCode::Digit1, '1'),
+        (KeyCode::Digit2, '2'),
+        (KeyCode::Digit3, '3'),
+        (KeyCode::Digit4, '4'),
+        (KeyCode::Digit5, '5'),
+        (KeyCode::Digit6, '6'),
+        (KeyCode::Digit7, '7'),
+        (KeyCode::Digit8, '8'),
         (KeyCode::Digit9, '9'),
     ];
     for (kc, ch) in digit_keys {
@@ -2177,7 +2549,9 @@ pub fn handle_bank_input(
         }
         match bank_input.kind {
             BankInputKind::Deposit => {
-                if let Some((new_money, new_savings)) = try_deposit(stats.money, stats.savings, amount) {
+                if let Some((new_money, new_savings)) =
+                    try_deposit(stats.money, stats.savings, amount)
+                {
                     stats.money = new_money;
                     stats.savings = new_savings;
                     stats.stress = (stats.stress - 3.).max(0.);
@@ -2192,19 +2566,30 @@ pub fn handle_bank_input(
                             return;
                         }
                     }
-                    notif.push(format!("Deposited ${:.0}. Savings: ${:.0}", amount, stats.savings), 3.);
+                    notif.push(
+                        format!("Deposited ${:.0}. Savings: ${:.0}", amount, stats.savings),
+                        3.,
+                    );
                 } else {
                     notif.push(format!("Not enough cash! (Have ${:.0})", stats.money), 2.);
                 }
             }
             BankInputKind::Withdraw => {
-                if let Some((new_savings, new_money)) = try_withdraw(stats.savings, stats.money, amount) {
+                if let Some((new_savings, new_money)) =
+                    try_withdraw(stats.savings, stats.money, amount)
+                {
                     stats.savings = new_savings;
                     stats.money = new_money;
                     gt.advance_hours(0.25);
-                    notif.push(format!("Withdrew ${:.0}. Savings: ${:.0}", amount, stats.savings), 3.);
+                    notif.push(
+                        format!("Withdrew ${:.0}. Savings: ${:.0}", amount, stats.savings),
+                        3.,
+                    );
                 } else {
-                    notif.push(format!("Not enough savings! (Have ${:.0})", stats.savings), 2.);
+                    notif.push(
+                        format!("Not enough savings! (Have ${:.0})", stats.savings),
+                        2.,
+                    );
                 }
             }
         }
@@ -2369,9 +2754,28 @@ mod tests {
 
     #[test]
     fn work_prompt_requires_three_words() {
-        let challenge = build_prompt_challenge(&PendingAction::Action(ActionKind::Work), 0, "buddy");
+        let challenge =
+            build_prompt_challenge(&PendingAction::Action(ActionKind::Work), 0, "buddy");
         assert_eq!(challenge.expected.split_whitespace().count(), 3);
         assert!(challenge.label.contains("Work"));
+    }
+
+    #[test]
+    fn display_text_shows_expected_phrase() {
+        let prompt = ActionPrompt {
+            active: true,
+            buffer: "desk".to_string(),
+            label: "Work".to_string(),
+            instruction: "type the office words in order".to_string(),
+            expected: "desk report email".to_string(),
+            retries_left: 4,
+            pending: None,
+            target: None,
+        };
+
+        let display = prompt.display_text();
+        assert!(display.contains("desk report email"));
+        assert!(display.contains("desk_"));
     }
 
     #[test]

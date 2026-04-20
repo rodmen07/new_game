@@ -370,15 +370,24 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<GameSettings>) {
         .with_children(|p| {
             p.spawn((
                 Text::new("Settings"),
-                TextFont { font_size: 40., ..default() },
+                TextFont {
+                    font_size: 40.,
+                    ..default()
+                },
                 TextColor(Color::WHITE),
-                Node { margin: UiRect::bottom(Val::Px(8.)), ..default() },
+                Node {
+                    margin: UiRect::bottom(Val::Px(8.)),
+                    ..default()
+                },
             ));
 
             // Difficulty
             p.spawn((
                 Text::new("Difficulty"),
-                TextFont { font_size: 16., ..default() },
+                TextFont {
+                    font_size: 16.,
+                    ..default()
+                },
                 TextColor(Color::srgb(0.65, 0.65, 0.72)),
             ));
             p.spawn(Node {
@@ -388,8 +397,11 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<GameSettings>) {
             })
             .with_children(|row| {
                 for d in [Difficulty::Easy, Difficulty::Normal, Difficulty::Hard] {
-                    let color =
-                        if d == settings.difficulty { BTN_PRESSED } else { BTN_NORMAL };
+                    let color = if d == settings.difficulty {
+                        BTN_PRESSED
+                    } else {
+                        BTN_NORMAL
+                    };
                     spawn_small_btn(row, d.label(), MenuButton::SetDifficulty(d), color);
                 }
             });
@@ -397,9 +409,15 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<GameSettings>) {
             // Volume
             p.spawn((
                 Text::new("Volume"),
-                TextFont { font_size: 16., ..default() },
+                TextFont {
+                    font_size: 16.,
+                    ..default()
+                },
                 TextColor(Color::srgb(0.65, 0.65, 0.72)),
-                Node { margin: UiRect::top(Val::Px(8.)), ..default() },
+                Node {
+                    margin: UiRect::top(Val::Px(8.)),
+                    ..default()
+                },
             ));
             p.spawn(Node {
                 flex_direction: FlexDirection::Row,
@@ -411,7 +429,10 @@ fn spawn_settings_menu(mut commands: Commands, settings: Res<GameSettings>) {
                 spawn_small_btn(row, "  −  ", MenuButton::VolumeDown, BTN_NORMAL);
                 row.spawn((
                     Text::new(format!("{:.1}", settings.master_volume)),
-                    TextFont { font_size: 22., ..default() },
+                    TextFont {
+                        font_size: 22.,
+                        ..default()
+                    },
                     TextColor(Color::WHITE),
                     VolumeDisplay,
                     Node {
@@ -434,7 +455,11 @@ fn update_settings_highlight(
 ) {
     for (btn, mut base, mut bg) in &mut q {
         if let MenuButton::SetDifficulty(d) = btn {
-            let color = if *d == settings.difficulty { BTN_PRESSED } else { BTN_NORMAL };
+            let color = if *d == settings.difficulty {
+                BTN_PRESSED
+            } else {
+                BTN_NORMAL
+            };
             base.0 = color;
             *bg = BackgroundColor(color);
         }

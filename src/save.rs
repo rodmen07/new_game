@@ -15,10 +15,12 @@ use crate::{
     components::{NpcId, PetKind, Player, Vehicle},
     menu::GameStartKind,
     resources::{
-        ActionPrompt, BankInput, Conditions, CrisisKind, CrisisState, DailyGoal, FestivalState, GameState, GameTime, Hobbies, HousingTier, Inventory,
-        Investment, LifeRating, LightningTimer, Milestones, NarrativeState, NearbyInteractable, Notification,
-        NpcFriendship, Pet, PlayerMovement, PlayerStats, QuestBoard, Reputation, Season, SeasonKind, Skills,
-        SocialEvents, Transport, TransportKind, VehicleState, WeatherKind, WorkStreak,
+        ActionPrompt, BankInput, Conditions, CrisisKind, CrisisState, DailyGoal, FestivalState,
+        GameState, GameTime, Hobbies, HousingTier, Inventory, Investment, LifeRating,
+        LightningTimer, Milestones, NarrativeState, NearbyInteractable, Notification,
+        NpcFriendship, Pet, PlayerMovement, PlayerStats, QuestBoard, Reputation, Season,
+        SeasonKind, Skills, SocialEvents, Transport, TransportKind, VehicleState, WeatherKind,
+        WorkStreak,
     },
 };
 
@@ -49,7 +51,9 @@ fn write_save_text(contents: &str) -> Result<(), String> {
         let Some(storage) = browser_storage() else {
             return Err("browser localStorage is unavailable".to_string());
         };
-        storage.set_item(SAVE_STORAGE_KEY, contents).map_err(|e| format!("{e:?}"))
+        storage
+            .set_item(SAVE_STORAGE_KEY, contents)
+            .map_err(|e| format!("{e:?}"))
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -626,7 +630,15 @@ pub fn reset_game(
     mut narrative: ResMut<NarrativeState>,
     mut weather: ResMut<WeatherKind>,
     mut nearby: ResMut<NearbyInteractable>,
-    mut player_state_q: Query<(&mut PlayerMovement, &mut VehicleState, &mut BankInput, &mut ActionPrompt), With<Player>>,
+    mut player_state_q: Query<
+        (
+            &mut PlayerMovement,
+            &mut VehicleState,
+            &mut BankInput,
+            &mut ActionPrompt,
+        ),
+        With<Player>,
+    >,
     mut goal: ResMut<DailyGoal>,
     mut lightning: ResMut<LightningTimer>,
     npc_q: Query<(Entity, &NpcId)>,
@@ -658,7 +670,9 @@ pub fn reset_game(
     *narrative = NarrativeState::default();
     *weather = WeatherKind::default();
     *nearby = NearbyInteractable::default();
-    if let Ok((mut movement, mut vehicle_state, mut bank_input, mut action_prompt)) = player_state_q.get_single_mut() {
+    if let Ok((mut movement, mut vehicle_state, mut bank_input, mut action_prompt)) =
+        player_state_q.get_single_mut()
+    {
         *movement = PlayerMovement::default();
         *vehicle_state = VehicleState::default();
         *bank_input = BankInput::default();
@@ -873,7 +887,12 @@ mod tests {
         data.ms_all_seasons = true;
         let json = serde_json::to_string(&data).expect("serialize");
         let restored: SaveData = serde_json::from_str(&json).expect("deserialize");
-        assert!(restored.ms_saved_100 && restored.ms_exec && restored.ms_penthouse
-            && restored.ms_all_seasons && restored.ms_party_animal);
+        assert!(
+            restored.ms_saved_100
+                && restored.ms_exec
+                && restored.ms_penthouse
+                && restored.ms_all_seasons
+                && restored.ms_party_animal
+        );
     }
 }
