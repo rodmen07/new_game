@@ -301,8 +301,7 @@ pub fn spawn_weather_particles(
         WeatherKind::Cloudy => {
             // Autumn leaves or Spring petals on cloudy days
             match season.current {
-                SeasonKind::Autumn => {
-                    if hash(frame_seed) < dt * 60.0 {
+                SeasonKind::Autumn if hash(frame_seed) < dt * 60.0 => {
                         let s = frame_seed.wrapping_add(3301);
                         let x = cx + (hash(s) - 0.5) * half_w * 2.0;
                         let y = cy + half_h + 20.0;
@@ -330,10 +329,8 @@ pub fn spawn_weather_particles(
                                 base_color: c,
                             },
                         ));
-                    }
                 }
-                SeasonKind::Spring => {
-                    if hash(frame_seed.wrapping_add(99)) < dt * 40.0 {
+                SeasonKind::Spring if hash(frame_seed.wrapping_add(99)) < dt * 40.0 => {
                         let s = frame_seed.wrapping_add(2203);
                         let x = cx + (hash(s) - 0.5) * half_w * 2.0;
                         let y = cy + half_h + 20.0;
@@ -358,7 +355,6 @@ pub fn spawn_weather_particles(
                                 base_color: pink,
                             },
                         ));
-                    }
                 }
                 _ => {}
             }
