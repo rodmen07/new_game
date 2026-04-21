@@ -3026,7 +3026,7 @@ pub fn setup(mut commands: Commands) {
     // -- Collision walls --------------------------------------------------------
 
     // World boundary
-    wall(&mut commands, 0., 510., 1200., 20.); // north (extended for back street)
+    wall(&mut commands, 0., 560., 1200., 20.); // north (extended for back street)
     wall(&mut commands, 0., -330., 1200., 20.); // south
     wall(&mut commands, -700., 75., 20., 830.); // west
     wall(&mut commands, 700., 75., 20., 830.); // east
@@ -3104,26 +3104,26 @@ pub fn setup(mut commands: Commands) {
     // -- Side alleys (connecting main road to back road on east and west) -------
     let ap = Color::srgb(0.34, 0.32, 0.28); // alley pavement
     let asw = Color::srgb(0.42, 0.40, 0.36); // alley sidewalk
-    // West alley: x=-600, from south buildings (y=-280) to back road (y=290)
-    rect(&mut commands, -600., 5., 178., 572., ap, 0.51);
-    rect(&mut commands, -508., 5., 12., 572., asw, 0.53);
-    rect(&mut commands, -692., 5., 12., 572., asw, 0.53);
-    for &ly in &[-200., -80., 80., 200.] {
+    // West alley: x=-600, from south buildings (y=-280) to APARTMENTS south face (y=380)
+    rect(&mut commands, -600., 50., 178., 660., ap, 0.51);
+    rect(&mut commands, -508., 50., 12., 660., asw, 0.53);
+    rect(&mut commands, -692., 50., 12., 660., asw, 0.53);
+    for &ly in &[-200., -80., 80., 200., 320.] {
         lamp_post(&mut commands, -610., ly);
     }
-    // East alley: x=600, from south buildings (y=-280) to back road (y=290)
-    rect(&mut commands, 600., 5., 178., 572., ap, 0.51);
-    rect(&mut commands, 508., 5., 12., 572., asw, 0.53);
-    rect(&mut commands, 692., 5., 12., 572., asw, 0.53);
-    for &ly in &[-200., -80., 80., 200.] {
+    // East alley: x=600, from south buildings (y=-280) to APARTMENTS south face (y=380)
+    rect(&mut commands, 600., 50., 178., 660., ap, 0.51);
+    rect(&mut commands, 508., 50., 12., 660., asw, 0.53);
+    rect(&mut commands, 692., 50., 12., 660., asw, 0.53);
+    for &ly in &[-200., -80., 80., 200., 320.] {
         lamp_post(&mut commands, 610., ly);
     }
 
-    // APARTMENTS zone at (0, 400)
+    // APARTMENTS zone at (0, 460)
     zone(
         &mut commands,
         0.,
-        400.,
+        460.,
         500.,
         160.,
         Color::srgb(0.62, 0.55, 0.78),
@@ -3142,7 +3142,7 @@ pub fn setup(mut commands: Commands) {
                 custom_size: Some(Vec2::new(52. * S, 44. * S)),
                 ..default()
             },
-            Transform::from_xyz((ux + 2.) * S, (396. - 2.) * S, 1.95),
+            Transform::from_xyz((ux + 2.) * S, (456. - 2.) * S, 1.95),
         ));
         commands.spawn((
             Sprite {
@@ -3150,7 +3150,7 @@ pub fn setup(mut commands: Commands) {
                 custom_size: Some(Vec2::new(48. * S, 40. * S)),
                 ..default()
             },
-            Transform::from_xyz(ux * S, 396. * S, 2.),
+            Transform::from_xyz(ux * S, 456. * S, 2.),
             Interactable {
                 action: ActionKind::RentUnit(uid),
                 prompt: format!("[E] Rent Apt {}", uid),
@@ -3164,11 +3164,11 @@ pub fn setup(mut commands: Commands) {
     }
     // APARTMENTS building walls
     let ac = Color::srgb(0.45, 0.38, 0.60);
-    vis_wall(&mut commands, 0., 480., 500., 10., ac); // north
-    vis_wall(&mut commands, -250., 400., 10., 160., ac); // west
-    vis_wall(&mut commands, 250., 400., 10., 160., ac); // east
-    vis_wall(&mut commands, -100., 320., 200., 10., ac); // south-left
-    vis_wall(&mut commands, 100., 320., 200., 10., ac); // south-right
+    vis_wall(&mut commands, 0., 540., 500., 10., ac); // north
+    vis_wall(&mut commands, -250., 460., 10., 160., ac); // west
+    vis_wall(&mut commands, 250., 460., 10., 160., ac); // east
+    vis_wall(&mut commands, -100., 380., 200., 10., ac); // south-left
+    vis_wall(&mut commands, 100., 380., 200., 10., ac); // south-right
     // doorway gap is at x=0 ± 50 (100px wide)
 
     // -- Building classification markers ---------------------------------------
