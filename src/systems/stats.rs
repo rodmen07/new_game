@@ -11,8 +11,8 @@ pub fn decay_stats(
     let dt = time.delta_secs();
     let energy_mult = weather.energy_decay_mult() * settings.difficulty.energy_decay_mult();
     let hunger_mult = settings.difficulty.hunger_mult();
-    stats.hunger = (stats.hunger + dt * 0.80 * hunger_mult).min(100.);
-    stats.energy = (stats.energy - dt * 0.55 * energy_mult).max(0.);
+    stats.modify_hunger(dt * 0.80 * hunger_mult);
+    stats.modify_energy(-dt * 0.55 * energy_mult);
     if stats.meditation_buff > 0. {
         stats.meditation_buff = (stats.meditation_buff - dt).max(0.);
     }
@@ -28,7 +28,7 @@ pub fn decay_stats(
         hap_drain += dt * 0.25 * mood_mult;
     }
     if hap_drain > 0. {
-        stats.happiness = (stats.happiness - hap_drain).max(0.);
+        stats.modify_happiness(-hap_drain);
     }
     // Pet: real-time hunger accumulation when not fed today
     if pet.has_pet && !pet.fed_today {
@@ -38,10 +38,10 @@ pub fn decay_stats(
     if pet.has_pet && pet.hunger < 80. {
         match pet.kind {
             PetKind::Dog => {
-                stats.happiness = (stats.happiness + dt * 0.5).min(100.);
+                stats.modify_happiness(dt * 0.5);
             }
             PetKind::Cat => {
-                stats.stress = (stats.stress - dt * 0.3).max(0.);
+                stats.modify_stress(-dt * 0.3);
             }
             PetKind::Fish => {}
         }
@@ -64,7 +64,7 @@ pub fn degrade_health(
         if conds.hospital_timer <= 0. {
             conds.hospital_timer = 0.;
             conds.hospitalized = false;
-            stats.health = (stats.health + 20.).min(100.);
+            stats.modify_health(20.);
             notif.push(
                 "Discharged from hospital. Take better care of yourself!",
                 6.,
@@ -87,7 +87,7 @@ pub fn degrade_health(
         gs.high_stress_today = true;
     }
     if health_drain > 0. {
-        stats.health = (stats.health - health_drain).max(0.);
+        stats.modify_health(-health_drain);
     }
     // Flag sustained high hunger (> 80) — used to trigger malnourishment after 3 days
     if stats.hunger > 80. {
@@ -99,8 +99,8 @@ pub fn degrade_health(
         conds.hospitalized = true;
         conds.hospital_timer = 6.; // 6 in-game hours of recovery
         stats.health = 5.;
-        stats.energy = (stats.energy + 30.).min(100.);
-        stats.hunger = (stats.hunger - 30.).max(0.);
+        stats.energy = (stats.energy + 30.).clamp(0., 100.);
+        stats.modify_hunger(-30.);
         stats.money = (stats.money - 500.).max(0.);
         notif.push("Hospitalised! -$500 medical bill. Resting for 6 hours.", 7.);
     }

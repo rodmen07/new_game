@@ -187,7 +187,7 @@ pub fn quest_progress_system(
                 .map(|(e, _)| e);
             if let Some(e) = npc_entity {
                 let f = friendship.levels.entry(e).or_insert(0.);
-                *f = (*f + quest.reward_friendship).min(5.);
+                *f = (*f + quest.reward_friendship).clamp(0., 5.);
             }
 
             let npc_name = match quest.npc_id {

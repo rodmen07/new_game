@@ -109,6 +109,24 @@ impl PlayerStats {
             1.0
         }
     }
+
+    // ── Bounded stat mutators ─────────────────────────────────────────────────
+    pub fn modify_health(&mut self, delta: f32) {
+        self.health = (self.health + delta).clamp(0., 100.);
+    }
+    pub fn modify_energy(&mut self, delta: f32) {
+        let max = self.max_energy();
+        self.energy = (self.energy + delta).clamp(0., max);
+    }
+    pub fn modify_happiness(&mut self, delta: f32) {
+        self.happiness = (self.happiness + delta).clamp(0., 100.);
+    }
+    pub fn modify_stress(&mut self, delta: f32) {
+        self.stress = (self.stress + delta).clamp(0., 100.);
+    }
+    pub fn modify_hunger(&mut self, delta: f32) {
+        self.hunger = (self.hunger + delta).clamp(0., 100.);
+    }
 }
 
 #[derive(Resource, Default)]
@@ -236,6 +254,20 @@ impl Skills {
             "Junior"
         }
     }
+    // ── Bounded skill mutators ────────────────────────────────────────────────
+    pub fn gain_cooking(&mut self, amount: f32) {
+        self.cooking = (self.cooking + amount).clamp(0., 5.);
+    }
+    pub fn gain_career(&mut self, amount: f32) {
+        self.career = (self.career + amount).clamp(0., 5.);
+    }
+    pub fn gain_fitness(&mut self, amount: f32) {
+        self.fitness = (self.fitness + amount).clamp(0., 5.);
+    }
+    pub fn gain_social(&mut self, amount: f32) {
+        self.social = (self.social + amount).clamp(0., 5.);
+    }
+
     pub fn work_pay(&self, streak: u32) -> f32 {
         let base = if self.career >= 5.0 {
             70.
@@ -1026,6 +1058,9 @@ pub struct Reputation {
     pub score: f32,
 }
 impl Reputation {
+    pub fn add_score(&mut self, amount: f32) {
+        self.score = (self.score + amount).clamp(0., 100.);
+    }
     pub fn chat_bonus(&self) -> f32 {
         1.0 + self.score * 0.005
     }
