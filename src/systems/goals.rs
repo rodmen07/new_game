@@ -126,7 +126,7 @@ pub fn check_daily_goal(
     if done && !goal.completed {
         goal.completed = true;
         stats.money += goal.reward_money;
-        stats.happiness = (stats.happiness + goal.reward_happiness).min(100.);
+        stats.modify_happiness(goal.reward_happiness);
         notif.push(
             format!(
                 "Goal complete! +${:.0} +{}hap",

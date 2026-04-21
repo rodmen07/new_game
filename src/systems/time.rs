@@ -604,11 +604,11 @@ fn apply_rent(
         stats.unpaid_rent_days = 0;
     } else {
         stats.unpaid_rent_days += 1;
-        stats.happiness = (stats.happiness - 20.).max(0.);
-        stats.stress = (stats.stress + 20.).min(100.);
+        stats.modify_happiness(-20.);
+        stats.modify_stress(20.);
         if stats.unpaid_rent_days >= 3 {
             stats.money = 0.;
-            stats.health = (stats.health - 20.).max(0.);
+            stats.modify_health(-20.);
             stats.unpaid_rent_days = 0;
             *housing = HousingTier::Unhoused;
             gs.just_evicted = true;
@@ -795,7 +795,7 @@ pub fn on_new_day(
     // ── Weather update ────────────────────────────────────────────────────────
     *weather = WeatherKind::from_day(gt.day);
     if weather.is_stormy() {
-        stats.happiness = (stats.happiness - 8.).max(0.);
+        stats.modify_happiness(-8.);
         notif.push(
             format!("Day {} — Stormy! -8 Mood. Stay indoors.", gt.day + 1),
             4.,
@@ -809,13 +809,13 @@ pub fn on_new_day(
     if day_extras.pet.has_pet {
         if !day_extras.pet.fed_today {
             day_extras.pet.hunger = (day_extras.pet.hunger + 30.).min(100.);
-            stats.happiness = (stats.happiness - 10.).max(0.);
+            stats.modify_happiness(-10.);
             notif.push(
                 format!("{} is hungry! Feed your pet.", day_extras.pet.name),
                 4.,
             );
         } else {
-            stats.happiness = (stats.happiness + 5.).min(100.);
+            stats.modify_happiness(5.);
         }
         day_extras.pet.fed_today = false;
     }
@@ -847,7 +847,7 @@ pub fn on_new_day(
     // ── Loan daily interest 8% ────────────────────────────────────────────────
     if stats.loan > 0. {
         stats.loan *= 1. + 0.08 * day_extras.settings.difficulty.loan_interest_mult();
-        stats.stress = (stats.stress + 5.).min(100.);
+        stats.modify_stress(5.);
         if stats.loan > 300. {
             notif.push(
                 format!("Loan is now ${:.0}! Pay it off at the Bank.", stats.loan),
@@ -860,7 +860,7 @@ pub fn on_new_day(
     if stats.money < 0. {
         let interest = stats.money.abs() * 0.05;
         stats.money -= interest;
-        stats.stress = (stats.stress + 3.).min(100.);
+        stats.modify_stress(3.);
         notif.push(
             format!(
                 "Debt interest: -${:.0}  (Balance: ${:.0})",
@@ -881,13 +881,13 @@ pub fn on_new_day(
     // ── Season indoor/outdoor bonus at day start ──────────────────────────────
     let winter_bonus = day_extras.season.current.indoor_bonus();
     if winter_bonus > 0. {
-        stats.happiness = (stats.happiness + winter_bonus).min(100.);
+        stats.modify_happiness(winter_bonus);
     }
 
     // ── Housing morning bonus ─────────────────────────────────────────────────
     let hap_bonus = housing.morning_hap();
     if hap_bonus > 0. {
-        stats.happiness = (stats.happiness + hap_bonus).min(100.);
+        stats.modify_happiness(hap_bonus);
     }
 
     // ── Rent ──────────────────────────────────────────────────────────────────
@@ -996,11 +996,11 @@ pub fn best_friend_perks(
         }
         match npc.personality {
             NpcPersonality::Cheerful => {
-                stats.happiness = (stats.happiness + 5.).min(100.);
+                stats.modify_happiness(5.);
                 perks.push("Cheerful BF: +5 Happiness");
             }
             NpcPersonality::Wise => {
-                stats.health = (stats.health + 3.).min(100.);
+                stats.modify_health(3.);
                 perks.push("Wise BF: +3 Health");
             }
             NpcPersonality::Influential => {

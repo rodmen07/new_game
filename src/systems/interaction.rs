@@ -707,7 +707,7 @@ fn handle_bank_keys(
             gt.advance_hours(0.25);
             stats.loan += 100.;
             stats.money += 100.;
-            stats.stress = (stats.stress + 10.).min(100.);
+            stats.modify_stress(10.);
             notif.message = format!("Took $100 loan (8%/day). Total: ${:.0}", stats.loan);
         } else {
             notif.message = "Loan limit reached! Repay first.".to_string();
@@ -722,7 +722,7 @@ fn handle_bank_keys(
             gt.advance_hours(0.25);
             stats.loan -= pay;
             stats.money -= pay;
-            stats.stress = (stats.stress - 5.).max(0.);
+            stats.modify_stress(-5.);
             notif.message = format!("Repaid ${:.0}. Remaining: ${:.0}", pay, stats.loan);
         } else {
             notif.message = "Nothing to repay or no cash.".to_string();
@@ -894,7 +894,7 @@ fn handle_craft_keys(
             inv.ingredient -= 2;
             stats.meals += 3;
             let gain = 0.20 * stats.skill_gain_mult();
-            skills.cooking = (skills.cooking + gain).min(5.);
+            skills.gain_cooking(gain);
             gs.eat_today += 1;
             quest_board.crafted_today += 1;
             gs.total_crafted += 1;
@@ -949,7 +949,7 @@ fn handle_craft_keys(
             inv.ingredient -= 2;
             inv.smoothie += 1;
             let gain = 0.10 * stats.skill_gain_mult();
-            skills.cooking = (skills.cooking + gain).min(5.);
+            skills.gain_cooking(gain);
             quest_board.crafted_today += 1;
             gs.total_crafted += 1;
             notif.push(
@@ -1048,15 +1048,15 @@ fn handle_work(
         }
     }
     stats.money += earned;
-    stats.energy = (stats.energy - 8.).max(0.);
-    stats.happiness = (stats.happiness - 5.).max(0.);
-    stats.stress = (stats.stress + 5.).min(100.);
-    skills.career = (skills.career + 0.15 * stats.skill_gain_mult()).min(5.);
+    stats.modify_energy(-8.);
+    stats.modify_happiness(-5.);
+    stats.modify_stress(5.);
+    skills.gain_career(0.15 * stats.skill_gain_mult());
     gs.work_today += 1;
     gs.money_earned_today += earned;
     streak.worked_today = true;
     streak.days += 1;
-    rep.score = (rep.score + 0.5).min(100.);
+    rep.add_score(0.5);
     stats.cooldown = 2.;
     let we = if gt.is_weekend() {
         " [Weekend 1.5x]"
@@ -1270,8 +1270,8 @@ fn handle_relax(
                     return;
                 }
                 stats.money -= 5.;
-                stats.happiness = (stats.happiness + 10.).min(100.);
-                skills.social = (skills.social + 0.15).min(5.);
+                stats.modify_happiness(10.);
+                skills.gain_social(0.15);
                 festival.tokens += 2;
                 festival.spring_attended = true;
                 notif.push("Made a Flower Crown! +10hap +0.15social +2 tokens", 3.);
@@ -1283,15 +1283,15 @@ fn handle_relax(
                     return;
                 }
                 stats.energy -= 10.;
-                stats.happiness = (stats.happiness + 15.).min(100.);
-                skills.fitness = (skills.fitness + 0.2).min(5.);
+                stats.modify_happiness(15.);
+                skills.gain_fitness(0.2);
                 festival.tokens += 3;
                 festival.spring_attended = true;
                 notif.push("Danced your heart out! +15hap +0.2fit +3 tokens", 3.);
             }
             (FestivalKind::SpringFair, _, _) => {
                 if pet.has_pet {
-                    rep.score = (rep.score + 5.).min(100.);
+                    rep.add_score(5.);
                     festival.tokens += 2;
                     festival.spring_attended = true;
                     notif.push(format!("{} won a ribbon! +5rep +2 tokens", pet.name), 3.);
@@ -1308,8 +1308,8 @@ fn handle_relax(
                     return;
                 }
                 stats.money -= 10.;
-                stats.hunger = (stats.hunger - 20.).max(0.);
-                skills.cooking = (skills.cooking + 0.2).min(5.);
+                stats.modify_hunger(-20.);
+                skills.gain_cooking(0.2);
                 festival.tokens += 2;
                 festival.summer_attended = true;
                 notif.push("Grilled up a feast! -20hunger +0.2cook +2 tokens", 3.);
@@ -1321,15 +1321,15 @@ fn handle_relax(
                     return;
                 }
                 stats.energy -= 15.;
-                skills.fitness = (skills.fitness + 0.3).min(5.);
-                stats.stress = (stats.stress - 10.).max(0.);
+                skills.gain_fitness(0.3);
+                stats.modify_stress(-10.);
                 festival.tokens += 3;
                 festival.summer_attended = true;
                 notif.push("Won the Swim Race! +0.3fit -10stress +3 tokens", 3.);
             }
             (FestivalKind::SummerBBQ, _, _) => {
-                stats.happiness = (stats.happiness + 20.).min(100.);
-                stats.stress = (stats.stress - 15.).max(0.);
+                stats.modify_happiness(20.);
+                stats.modify_stress(-15.);
                 festival.tokens += 1;
                 festival.summer_attended = true;
                 notif.push("Watched the fireworks! +20hap -15stress +1 token", 3.);
@@ -1341,15 +1341,15 @@ fn handle_relax(
                     return;
                 }
                 stats.energy -= 5.;
-                hobbies.painting = (hobbies.painting + 0.2).min(5.);
-                stats.happiness = (stats.happiness + 10.).min(100.);
+                hobbies.painting = (hobbies.painting + 0.2).clamp(0., 5.);
+                stats.modify_happiness(10.);
                 festival.tokens += 2;
                 festival.autumn_attended = true;
                 notif.push("Carved a pumpkin! +0.2art +10hap +2 tokens", 3.);
             }
             (FestivalKind::AutumnHarvest, _, true) => {
                 inv.ingredient += 3;
-                skills.fitness = (skills.fitness + 0.1).min(5.);
+                skills.gain_fitness(0.1);
                 festival.tokens += 2;
                 festival.autumn_attended = true;
                 notif.push("Picked apples! +3 ingredients +0.1fit +2 tokens", 3.);
@@ -1361,9 +1361,9 @@ fn handle_relax(
                     return;
                 }
                 stats.money -= 15.;
-                stats.hunger = (stats.hunger - 30.).max(0.);
-                stats.happiness = (stats.happiness + 15.).min(100.);
-                skills.cooking = (skills.cooking + 0.1).min(5.);
+                stats.modify_hunger(-30.);
+                stats.modify_happiness(15.);
+                skills.gain_cooking(0.1);
                 festival.tokens += 3;
                 festival.autumn_attended = true;
                 notif.push("Harvest Feast! -30hunger +15hap +0.1cook +3 tokens", 3.);
@@ -1375,8 +1375,8 @@ fn handle_relax(
                     return;
                 }
                 stats.energy -= 10.;
-                skills.fitness = (skills.fitness + 0.2).min(5.);
-                stats.happiness = (stats.happiness + 15.).min(100.);
+                skills.gain_fitness(0.2);
+                stats.modify_happiness(15.);
                 festival.tokens += 2;
                 festival.winter_attended = true;
                 notif.push("Ice Skating! +0.2fit +15hap +2 tokens", 3.);
@@ -1391,7 +1391,7 @@ fn handle_relax(
                 festival.tokens += 3;
                 festival.winter_attended = true;
                 for lvl in friendship.levels.values_mut() {
-                    *lvl = (*lvl + 0.5).min(5.);
+                    *lvl = (*lvl + 0.5).clamp(0., 5.);
                 }
                 notif.push("Gift Exchange! +0.5 friendship to all NPCs +3 tokens", 3.);
             }
@@ -1402,8 +1402,8 @@ fn handle_relax(
                     return;
                 }
                 stats.money -= 25.;
-                rep.score = (rep.score + 10.).min(100.);
-                stats.stress = (stats.stress - 5.).max(0.);
+                rep.add_score(10.);
+                stats.modify_stress(-5.);
                 festival.tokens += 3;
                 festival.winter_attended = true;
                 notif.push("Charity Drive! +10rep -5stress +3 tokens", 3.);
@@ -1423,10 +1423,10 @@ fn handle_relax(
     let gain = 20. * skills.social_bonus();
     let weather_bonus = weather.outdoor_hap_bonus();
     let season_bonus = season.current.outdoor_bonus();
-    stats.happiness = (stats.happiness + gain + weather_bonus + season_bonus).min(100.);
-    stats.energy = (stats.energy - 3.).max(0.);
-    stats.stress = (stats.stress - 12.).max(0.);
-    skills.fitness = (skills.fitness + 0.08).min(5.);
+    stats.modify_happiness(gain + weather_bonus + season_bonus);
+    stats.modify_energy(-3.);
+    stats.modify_stress(-12.);
+    skills.gain_fitness(0.08);
     gs.outdoor_done_today = true;
     stats.cooldown = 3.;
     let wb = if weather_bonus + season_bonus > 0. {
@@ -1490,7 +1490,7 @@ fn handle_chat(
             }
             let friend_gain = if used_gift_box { 0.6 } else { 0.3 };
             let f = friendship.levels.entry(entity).or_insert(0.);
-            *f = (*f + friend_gain).min(5.);
+            *f = (*f + friend_gain).clamp(0., 5.);
             friendship.gifted_today.insert(entity, true);
             gs.total_gifts += 1;
             stats.cooldown = 2.;
@@ -1524,8 +1524,8 @@ fn handle_chat(
                     format!("Gift to {}! +25 Happiness{}.", npc_name, gift_label),
                 ),
             };
-            stats.happiness = (stats.happiness + hap).min(100.);
-            stats.health = (stats.health + health_gain).min(100.);
+            stats.modify_happiness(hap);
+            stats.modify_health(health_gain);
             rep.score = (rep.score + rep_gain).clamp(0., 100.);
             notif.message = msg;
         } else if lvl < 2. {
@@ -1554,12 +1554,12 @@ fn handle_chat(
     };
     let rep_friend_mult = if rep.score < 15. { 0.5 } else { 1.0 };
     let hap = 15. * skills.social_bonus() * gain_mult * hap_mult;
-    *f = (*f + 0.30 * rep_friend_mult).min(5.);
+    *f = (*f + 0.30 * rep_friend_mult).clamp(0., 5.);
     let lvl = *f;
     friendship.chatted_today.insert(entity, true);
-    stats.happiness = (stats.happiness + hap).min(100.);
-    stats.stress = (stats.stress - 5.).max(0.);
-    skills.social = (skills.social + 0.15 * skill_mult * stats.skill_gain_mult()).min(5.);
+    stats.modify_happiness(hap);
+    stats.modify_stress(-5.);
+    skills.gain_social(0.15 * skill_mult * stats.skill_gain_mult());
     gs.chat_today += 1;
     stats.cooldown = 1.5;
     let base_rep = 0.8;
@@ -1568,7 +1568,7 @@ fn handle_chat(
     } else {
         0.0
     };
-    rep.score = (rep.score + base_rep + rep_bonus).min(100.);
+    rep.add_score(base_rep + rep_bonus);
     let sp = if season.current == SeasonKind::Spring {
         " [Spring social!]"
     } else {
@@ -1628,19 +1628,19 @@ fn handle_study(
     let study_gain = (0.5 + season_bonus) * stats.skill_gain_mult() * rainy_study_mult;
     let (boost_name, new_lvl) = match seed {
         0 => {
-            skills.cooking = (skills.cooking + study_gain).min(5.);
+            skills.gain_cooking(study_gain);
             ("Cooking", skills.cooking)
         }
         1 => {
-            skills.career = (skills.career + study_gain).min(5.);
+            skills.gain_career(study_gain);
             ("Career", skills.career)
         }
         2 => {
-            skills.fitness = (skills.fitness + study_gain).min(5.);
+            skills.gain_fitness(study_gain);
             ("Fitness", skills.fitness)
         }
         _ => {
-            skills.social = (skills.social + study_gain).min(5.);
+            skills.gain_social(study_gain);
             ("Social", skills.social)
         }
     };
@@ -1956,9 +1956,9 @@ pub fn handle_interaction(
             };
             let gain = base_gain * stress_mult;
             let health_gain = housing.night_health();
-            stats.energy = (stats.energy + gain).min(stats.max_energy());
-            stats.health = (stats.health + health_gain + 3.).min(100.);
-            stats.stress = (stats.stress - 15.).max(0.);
+            stats.modify_energy(gain);
+            stats.modify_health(health_gain + 3.);
+            stats.modify_stress(-15.);
             stats.sleep_debt = (stats.sleep_debt - 8.).max(0.);
             stats.cooldown = 3.;
             let tag = if gt.is_night() {
@@ -1987,11 +1987,11 @@ pub fn handle_interaction(
                 return;
             }
             let (meal_label, extra_health, extra_hap) = meal_tier(skills.cooking);
-            stats.hunger = (stats.hunger - reduction).max(0.);
-            stats.health = (stats.health + 1. + extra_health).min(100.);
-            stats.happiness = (stats.happiness + extra_hap).min(100.);
-            stats.energy = (stats.energy + breakfast_bonus).min(stats.max_energy());
-            skills.cooking = (skills.cooking + 0.10 * stats.skill_gain_mult()).min(5.);
+            stats.modify_hunger(-reduction);
+            stats.modify_health(1. + extra_health);
+            stats.modify_happiness(extra_hap);
+            stats.modify_energy(breakfast_bonus);
+            skills.gain_cooking(0.10 * stats.skill_gain_mult());
             gs.eat_today += 1;
             stats.cooldown = 2.;
             let bfast = if breakfast_bonus > 0. {
@@ -2036,12 +2036,12 @@ pub fn handle_interaction(
                 * stats.loan_penalty()
                 * extras.settings.difficulty.economy_mult();
             stats.money += earned;
-            stats.energy = (stats.energy - 8.).max(0.);
-            stats.stress = (stats.stress + 3.).min(100.);
+            stats.modify_energy(-8.);
+            stats.modify_stress(3.);
             gs.work_today += 1;
             gs.money_earned_today += earned;
             streak.worked_today = true;
-            extras.rep.score = (extras.rep.score + 0.3).min(100.);
+            extras.rep.add_score(0.3);
             stats.cooldown = 2.;
             notif.push(format!("Freelanced from home. Earned ${:.0}.", earned), 2.);
         }
@@ -2090,12 +2090,12 @@ pub fn handle_interaction(
                 * season_mult
                 * stats.skill_gain_mult();
             let exercise_cost = exercise_energy_cost(skills.fitness);
-            stats.energy = (stats.energy - exercise_cost).max(0.);
-            stats.health = (stats.health + 8. * skills.fitness_bonus()).min(100.);
-            stats.hunger = (stats.hunger + 10.).min(100.);
-            stats.happiness = (stats.happiness + 10.).min(100.);
-            stats.stress = (stats.stress - 8.).max(0.);
-            skills.fitness = (skills.fitness + fit_gain).min(5.);
+            stats.modify_energy(-exercise_cost);
+            stats.modify_health(8. * skills.fitness_bonus());
+            stats.modify_hunger(10.);
+            stats.modify_happiness(10.);
+            stats.modify_stress(-8.);
+            skills.gain_fitness(fit_gain);
             gs.exercise_today += 1;
             gs.outdoor_done_today = true;
             stats.cooldown = 3.;
@@ -2123,8 +2123,8 @@ pub fn handle_interaction(
             } else {
                 (0., 0., "")
             };
-            stats.happiness = (stats.happiness + hap_gain + fish_hap).min(100.);
-            stats.stress = (stats.stress - 25. - fish_stress).max(0.);
+            stats.modify_happiness(hap_gain + fish_hap);
+            stats.modify_stress(-25. - fish_stress);
             stats.meditation_buff = 300.;
             stats.cooldown = 4.;
             notif.push(
@@ -2137,9 +2137,9 @@ pub fn handle_interaction(
             );
         }
         ActionKind::Shower => {
-            stats.happiness = (stats.happiness + 12.).min(100.);
-            stats.health = (stats.health + 2.).min(100.);
-            stats.stress = (stats.stress - 5.).max(0.);
+            stats.modify_happiness(12.);
+            stats.modify_health(2.);
+            stats.modify_stress(-5.);
             stats.cooldown = 2.;
             notif.push("Showered! +12 Happiness, +Health, -Stress.", 2.);
         }
@@ -2196,7 +2196,7 @@ pub fn handle_interaction(
                 ItemKind::Coffee => {
                     if inv.coffee > 0 {
                         inv.coffee -= 1;
-                        stats.energy = (stats.energy + 30.).min(stats.max_energy());
+                        stats.modify_energy(30.);
                         stats.cooldown = 1.;
                         notif.message = format!("Coffee! +30 Energy. ({}x left)", inv.coffee);
                     } else {
@@ -2206,7 +2206,7 @@ pub fn handle_interaction(
                 ItemKind::Vitamins => {
                     if inv.vitamins > 0 {
                         inv.vitamins -= 1;
-                        stats.health = (stats.health + 15.).min(100.);
+                        stats.modify_health(15.);
                         stats.cooldown = 1.;
                         notif.message = format!("Vitamins! +15 Health. ({}x left)", inv.vitamins);
                     } else {
@@ -2216,7 +2216,7 @@ pub fn handle_interaction(
                 ItemKind::Books => {
                     if inv.books > 0 {
                         inv.books -= 1;
-                        skills.career = (skills.career + 0.5).min(5.);
+                        skills.gain_career(0.5);
                         stats.cooldown = 2.;
                         notif.message = format!("Read! +0.5 Career XP. ({}x left)", inv.books);
                     } else {
@@ -2226,8 +2226,8 @@ pub fn handle_interaction(
                 ItemKind::Smoothie => {
                     if inv.smoothie > 0 {
                         inv.smoothie -= 1;
-                        stats.energy = (stats.energy + 40.).min(stats.max_energy());
-                        stats.health = (stats.health + 10.).min(100.);
+                        stats.modify_energy(40.);
+                        stats.modify_health(10.);
                         stats.cooldown = 1.;
                         notif.message =
                             format!("Smoothie! +40 Energy +10 Health. ({}x left)", inv.smoothie);
@@ -2256,12 +2256,12 @@ pub fn handle_interaction(
             } else {
                 1.0
             };
-            *skill_val = (*skill_val + 0.25 * stats.skill_gain_mult() * rainy_mult).min(5.);
+            *skill_val = (*skill_val + 0.25 * stats.skill_gain_mult() * rainy_mult).clamp(0., 5.);
             let lvl = *skill_val;
             let winter_bonus = extras.season.current.indoor_bonus();
-            stats.happiness = (stats.happiness + 12. + winter_bonus).min(100.);
-            stats.stress = (stats.stress - 8.).max(0.);
-            stats.energy = (stats.energy - 10.).max(0.);
+            stats.modify_happiness(12. + winter_bonus);
+            stats.modify_stress(-8.);
+            stats.modify_energy(-10.);
             gs.hobby_today += 1;
             stats.cooldown = 2.;
             let wb = if winter_bonus > 0. {
@@ -2317,8 +2317,8 @@ pub fn handle_interaction(
             stats.money -= 5.;
             extras.pet.hunger = 0.;
             extras.pet.fed_today = true;
-            stats.happiness = (stats.happiness + 15.).min(100.);
-            stats.stress = (stats.stress - 5.).max(0.);
+            stats.modify_happiness(15.);
+            stats.modify_stress(-5.);
             stats.cooldown = 1.;
             notif.push(
                 format!("Fed {}! +15 Happiness, -Stress.", extras.pet.name),
@@ -2336,11 +2336,11 @@ pub fn handle_interaction(
             }
             stats.money -= 40.;
             stats.energy -= 20.;
-            stats.happiness = (stats.happiness + 30.).min(100.);
-            stats.stress = (stats.stress - 10.).max(0.);
+            stats.modify_happiness(30.);
+            stats.modify_stress(-10.);
             extras.social_events.parties_thrown += 1;
             extras.social_events.party_today = true;
-            extras.rep.score = (extras.rep.score + 5.).min(100.);
+            extras.rep.add_score(5.);
             stats.cooldown = 4.;
             notif.push(
                 format!(
@@ -2401,12 +2401,12 @@ pub fn handle_interaction(
                 * season_mult
                 * stats.skill_gain_mult();
             stats.money -= 5.;
-            stats.energy = (stats.energy - 25.).max(0.);
-            stats.health = (stats.health + 12. * skills.fitness_bonus()).min(100.);
-            stats.hunger = (stats.hunger + 12.).min(100.);
-            stats.happiness = (stats.happiness + 12.).min(100.);
-            stats.stress = (stats.stress - 12.).max(0.);
-            skills.fitness = (skills.fitness + fit_gain).min(5.);
+            stats.modify_energy(-25.);
+            stats.modify_health(12. * skills.fitness_bonus());
+            stats.modify_hunger(12.);
+            stats.modify_happiness(12.);
+            stats.modify_stress(-12.);
+            skills.gain_fitness(fit_gain);
             gs.exercise_today += 1;
             stats.cooldown = 3.;
             let am = if gt.exercise_mult() > 1.0 {
@@ -2429,10 +2429,10 @@ pub fn handle_interaction(
                 return;
             }
             stats.money -= 12.;
-            stats.energy = (stats.energy + 25.).min(100.);
-            stats.happiness = (stats.happiness + 12.).min(100.);
-            stats.hunger = (stats.hunger - 25.).max(0.);
-            extras.rep.score = (extras.rep.score + 2.).min(100.);
+            stats.energy = (stats.energy + 25.).clamp(0., 100.);
+            stats.modify_happiness(12.);
+            stats.modify_hunger(-25.);
+            extras.rep.add_score(2.);
             stats.cooldown = 1.5;
             notif.push(
                 "Café order! +25 Energy +12 Mood -25 Hunger  ($12 paid)",
@@ -2453,8 +2453,8 @@ pub fn handle_interaction(
                 return;
             }
             stats.money -= 40.;
-            stats.health = (stats.health + 35.).min(100.);
-            stats.stress = (stats.stress - 8.).max(0.);
+            stats.modify_health(35.);
+            stats.modify_stress(-8.);
             stats.cooldown = 2.;
             notif.push(
                 format!("Clinic visit! +35 Health → {:.0}  ($40 paid)", stats.health),
@@ -2492,7 +2492,7 @@ pub fn handle_interaction(
             extras.pet.name = kind.name().to_string();
             extras.pet.hunger = 0.;
             extras.pet.fed_today = true;
-            stats.happiness = (stats.happiness + 20.).min(100.);
+            stats.modify_happiness(20.);
             stats.cooldown = 1.;
             notif.push(
                 format!("You adopted {}! Feed daily for bonuses.", extras.pet.name),
@@ -2500,10 +2500,10 @@ pub fn handle_interaction(
             );
         }
         ActionKind::SleepRough => {
-            stats.energy = (stats.energy + 25.).min(stats.max_energy());
-            stats.health = (stats.health + 2.).min(100.);
-            stats.stress = (stats.stress + 5.).min(100.);
-            stats.happiness = (stats.happiness - 5.).max(0.);
+            stats.modify_energy(25.);
+            stats.modify_health(2.);
+            stats.modify_stress(5.);
+            stats.modify_happiness(-5.);
             stats.sleep_debt = (stats.sleep_debt - 4.).max(0.);
             stats.cooldown = 3.;
             notif.push(
@@ -2566,8 +2566,8 @@ pub fn handle_interaction(
                 notif.push("Teeth look great — no visit needed.", 2.);
             } else if stats.can_afford(50.) {
                 stats.money -= 50.;
-                stats.health = (stats.health + 15.).min(100.);
-                stats.stress = (stats.stress - 5.).max(0.);
+                stats.modify_health(15.);
+                stats.modify_stress(-5.);
                 notif.push(
                     format!("Dental visit! +15 Health → {:.0}  ($50 paid)", stats.health),
                     3.,
@@ -2580,8 +2580,8 @@ pub fn handle_interaction(
         ActionKind::EyeExam => {
             if stats.can_afford(35.) {
                 stats.money -= 35.;
-                stats.stress = (stats.stress - 8.).max(0.);
-                stats.happiness = (stats.happiness + 8.).min(100.);
+                stats.modify_stress(-8.);
+                stats.modify_happiness(8.);
                 notif.push("Eye exam done! -Stress +8 Mood  ($35 paid)", 2.5);
             } else {
                 notif.push("Need $35 for an eye exam.", 2.);
@@ -2683,14 +2683,14 @@ pub fn handle_bank_input(
                 {
                     stats.money = new_money;
                     stats.savings = new_savings;
-                    stats.stress = (stats.stress - 3.).max(0.);
+                    stats.modify_stress(-3.);
                     gt.advance_hours(0.25);
                     if matches!(&goal.kind, GoalKind::SaveMoney) && !goal.completed {
                         goal.progress = stats.savings;
                         if goal.progress >= goal.target {
                             goal.completed = true;
                             stats.money += goal.reward_money;
-                            stats.happiness = (stats.happiness + goal.reward_happiness).min(100.);
+                            stats.modify_happiness(goal.reward_happiness);
                             notif.push(format!("Deposited ${:.0}! +${:.0} +{}hap — Press [E] at bank to sign your lease.", amount, goal.reward_money, goal.reward_happiness as i32), 7.);
                             return;
                         }

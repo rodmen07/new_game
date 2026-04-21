@@ -118,7 +118,7 @@ pub fn crisis_trigger_system(
             let bill = MEDICAL_BILL_AMOUNT * dmg_mult;
             stats.health = MEDICAL_HEALTH_FLOOR;
             stats.money = (stats.money - bill).max(0.);
-            stats.energy = (stats.energy - MEDICAL_ENERGY_DRAIN).max(0.);
+            stats.modify_energy(-MEDICAL_ENERGY_DRAIN);
             notif.push(
                 format!("CRISIS: Medical emergency! Health dropped to {}, -${:.0} bill. Recover over {} days.{}",
                     MEDICAL_HEALTH_FLOOR, bill, kind.duration(), if insured { " (Insurance halved costs)" } else { "" }),
@@ -186,8 +186,8 @@ pub fn crisis_trigger_system(
         }
     }
 
-    stats.stress = (stats.stress + CRISIS_STRESS_INCREASE).min(100.);
-    stats.happiness = (stats.happiness - CRISIS_HAPPINESS_DECREASE).max(0.);
+    stats.modify_stress(CRISIS_STRESS_INCREASE);
+    stats.modify_happiness(-CRISIS_HAPPINESS_DECREASE);
 }
 
 /// Ticks down active crisis duration each day and clears when done.
