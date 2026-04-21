@@ -221,6 +221,17 @@ pub struct InteractHighlight;
 pub struct ObjectSize(pub Vec2);
 #[derive(Component)]
 pub struct PlayerIndicator;
+/// Smoothed display value for a stat bar (0–100). Lerps toward `target`
+/// each frame so bars drain/fill visibly instead of jumping instantly.
+#[derive(Component, Default)]
+pub struct BarSmooth {
+    pub displayed: f32,
+    pub target: f32,
+}
+/// Marks the top-center notification container node so the slide-in animator
+/// can locate it by query.
+#[derive(Component)]
+pub struct NotifContainer;
 #[derive(Component)]
 pub struct WeatherDrop {
     pub vel: Vec2,
