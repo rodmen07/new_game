@@ -2,6 +2,8 @@
 
 A real-time 2D life management prototype written in Rust with Bevy. You guide a single character through work, meals, rent, sleep, friendships, hobbies, pets, weather, crises, and seasonal festivals across an accelerated city sandbox, now with typed action challenges that gate moment-to-moment tasks.
 
+**Play it now in your browser:** https://rodmen07.github.io/new_game/
+
 ---
 
 ## Overview
@@ -21,7 +23,7 @@ Current implemented highlights include:
 - universal typed action prompts with seniority-based retries and subject-aware phrases before tasks resolve
 - 21 milestone goals and a daily life rating system
 
-The current baseline is verified with a successful build, a clean strict clippy run, and 149 passing tests.
+The current baseline is verified with a successful build, a clean strict clippy run, and 150 passing tests.
 
 ---
 
@@ -34,9 +36,9 @@ The current baseline is verified with a successful build, a clean strict clippy 
 | Architecture | Entity-Component-System (ECS) |
 | Rendering | Bevy 2D sprite pipeline (no external renderer) |
 | RNG | Linear congruential generator (seeded per day) |
-| Dependencies | bevy 0.15 · serde + serde_json · toml |
+| Dependencies | bevy 0.15 · bevy_tweening 0.12 · serde + serde_json · toml |
 
-Bevy's ECS drives the entire game: most shared world state lives in Resources, while some player-local state now lives on Components. Game logic runs through scheduled Systems, with custom SystemParam groups helping keep larger systems manageable.
+Bevy's ECS drives the entire game: most shared world state lives in Resources, while some player-local state now lives on Components. Game logic runs through scheduled Systems, with custom SystemParam groups helping keep larger systems manageable. `bevy_tweening` handles smooth HUD stat bar interpolation and the notification panel slide-in animation.
 
 ---
 
@@ -59,9 +61,13 @@ cargo test
 
 The first build compiles the Bevy dependency tree and can take a few minutes. Windows debug builds are tuned in Cargo.toml for more stable linking during development.
 
-### Browser build
+### Browser build (primary)
 
-The project now includes a browser-friendly build path for Bevy plus web-safe settings and save persistence.
+The game is deployed to GitHub Pages and playable without any local setup:
+
+https://rodmen07.github.io/new_game/
+
+To run the browser build locally:
 
 ```bash
 rustup target add wasm32-unknown-unknown
@@ -70,6 +76,12 @@ trunk serve --release
 ```
 
 Then open http://127.0.0.1:8080 in a modern browser.
+
+To build for deployment:
+
+```bash
+trunk build --release --public-url /new_game/
+```
 
 Notes for the web build:
 - game assets are served from the bundled assets directory
@@ -167,6 +179,7 @@ src/
 - Main menu, pause flow, and in-game settings screen for difficulty and volume
 - Universal typed action prompts for work, food, crafting, banking, chatting, pets, and other interactables, with more flavorful context-sensitive phrases and a clearly labeled target phrase while typing
 - Dual-panel HUD with goals, warnings, conditions, inventory, weather, story summary, and live typing instructions
+- Smooth animated stat bars that lerp toward their real values instead of snapping, and a notification panel that slides in from above on new messages
 - Optional ambient and weather audio that degrades gracefully if assets are missing
 - JSON save and load support with day-start autosave behavior
 
@@ -178,13 +191,13 @@ src/
 |---|---|
 | Build | Passing |
 | Clippy | Passing with cargo clippy -- -D warnings |
-| Tests | 149 passing |
+| Tests | 150 passing |
 | Save and load | Implemented |
 | Crisis system | Implemented |
 | Seasonal festivals | Implemented |
 | Settings screen | Implemented |
 | Audio fallback | Implemented |
-| Browser build | Ready through Trunk + wasm32 target |
+| Browser build | Live at rodmen07.github.io/new_game |
 | Multiplayer support | Early groundwork only |
 
 The project is currently a playable, feature-rich prototype with a clean verified Rust baseline and ongoing expansion work.
@@ -199,7 +212,6 @@ The project is currently a playable, feature-rich prototype with a clean verifie
 - More NPC depth and relationship states
 - Character archetypes and stronger replay loops
 - Art pass, tutorial flow, and accessibility improvements
-- Browser publishing and release polish
 
 ### Known follow-ups
 - Multiplayer readiness is still architectural groundwork rather than a playable mode
