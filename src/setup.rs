@@ -2,11 +2,13 @@ use crate::components::{
     ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
     DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
     LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
-    PetKind, Player, PlayerId, PlayerIndicator, TypingInstruction, TypingLabel, TypingOverlay,
+    PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
+    SkillPanel, SkillSocialBar, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
     TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordTyped,
     Vehicle,
 };
 use crate::resources::{ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills, VehicleState, WorkStreak};
+use crate::components::Furnishings;
 use bevy::prelude::*;
 
 /// World-space scale multiplier applied inside all layout helpers.
@@ -129,6 +131,7 @@ pub fn setup(mut commands: Commands) {
     spawn_collision_walls_and_roads(&mut commands);
     spawn_hud(&mut commands);
     spawn_typing_overlay(&mut commands);
+    spawn_skill_panel(&mut commands);
 }
 
 fn spawn_terrain_and_roads(commands: &mut Commands) {
@@ -3010,6 +3013,7 @@ fn spawn_player_entity(commands: &mut Commands) {
             Skills::default(),
             WorkStreak::default(),
             HousingTier::default(),
+            Furnishings::default(),
         ))
         .with_children(|p| {
             spawn_human(
@@ -3538,10 +3542,11 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             row_gap: Val::Px(24.),
             ..default()
         },
-        BackgroundColor(Color::srgba(0., 0., 0., 0.82)),
+        BackgroundColor(Color::srgba(0., 0., 0., 0.)),
         ZIndex(200),
         Visibility::Hidden,
         TypingOverlay,
+        TypingOverlayFade::default(),
     ))
     .with_children(|p| {
         // Action label (e.g., "WORK")
@@ -3603,6 +3608,62 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             TextFont { font_size: 13., ..default() },
             TextColor(Color::srgb(0.6, 0.5, 0.3)),
             TypingRetries,
+        ));
+    });
+}
+
+/// Spawns the skill tree panel. Hidden by default; toggled by Tab key.
+/// Displays a title and four labelled bars for cooking, career, fitness, social.
+pub fn spawn_skill_panel(cmd: &mut Commands) {
+    cmd.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            right: Val::Px(12.),
+            bottom: Val::Px(12.),
+            padding: UiRect::all(Val::Px(14.)),
+            flex_direction: FlexDirection::Column,
+            row_gap: Val::Px(8.),
+            min_width: Val::Px(220.),
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0., 0., 0., 0.82)),
+        BorderRadius::all(Val::Px(8.)),
+        ZIndex(100),
+        Visibility::Hidden,
+        SkillPanel,
+    ))
+    .with_children(|p| {
+        // Title
+        p.spawn((
+            Text::new("Skills  [Tab]"),
+            TextFont { font_size: 14., ..default() },
+            TextColor(Color::srgb(1., 0.85, 0.25)),
+        ));
+        skill_row(p, "Cooking  ", SkillCookingBar);
+        skill_row(p, "Career   ", SkillCareerBar);
+        skill_row(p, "Fitness  ", SkillFitnessBar);
+        skill_row(p, "Social   ", SkillSocialBar);
+    });
+}
+
+fn skill_row<M: Component>(parent: &mut ChildBuilder, label: &'static str, marker: M) {
+    parent.spawn(Node {
+        flex_direction: FlexDirection::Row,
+        align_items: AlignItems::Center,
+        column_gap: Val::Px(6.),
+        ..default()
+    })
+    .with_children(|row| {
+        row.spawn((
+            Text::new(label),
+            TextFont { font_size: 13., ..default() },
+            TextColor(Color::srgb(0.8, 0.8, 0.8)),
+        ));
+        row.spawn((
+            Text::new("·····"),
+            TextFont { font_size: 13., ..default() },
+            TextColor(Color::srgb(0.4, 0.4, 0.4)),
+            marker,
         ));
     });
 }

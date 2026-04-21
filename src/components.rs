@@ -99,6 +99,8 @@ pub enum ActionKind {
     EyeExam,
     ComputerLab,
     PrintShop,
+    /// Spend time hanging out with an NPC (requires friendship >= 3).
+    Hangout,
 }
 
 // ── Building classification ────────────────────────────────────────────────────
@@ -322,3 +324,50 @@ pub struct NpcId(pub usize);
 #[derive(Component)] pub struct TypingWordRemaining;
 #[derive(Component)] pub struct TypingInstruction;
 #[derive(Component)] pub struct TypingRetries;
+
+// ── Skill tree panel components ───────────────────────────────────────────────
+#[derive(Component)] pub struct SkillPanel;
+#[derive(Component)] pub struct SkillCookingBar;
+#[derive(Component)] pub struct SkillCareerBar;
+#[derive(Component)] pub struct SkillFitnessBar;
+#[derive(Component)] pub struct SkillSocialBar;
+
+// ── Typing overlay fade ───────────────────────────────────────────────────────
+/// Tracks the animated alpha of the typing overlay background.
+/// Fades from 0 to TARGET_ALPHA on show, snaps to 0 on hide.
+#[derive(Component)]
+pub struct TypingOverlayFade {
+    pub alpha: f32,
+}
+impl TypingOverlayFade {
+    pub const TARGET_ALPHA: f32 = 0.82;
+}
+impl Default for TypingOverlayFade {
+    fn default() -> Self { Self { alpha: 0. } }
+}
+
+// ── Apartment furnishings ─────────────────────────────────────────────────────
+/// Purchasable home upgrades that provide permanent passive buffs.
+/// - `desk`:    +15% skill XP gain
+/// - `bed`:     +10 energy on each sleep
+/// - `kitchen`: +10 extra hunger reduction on each meal
+#[derive(Component, Default)]
+pub struct Furnishings {
+    pub desk: bool,
+    pub bed: bool,
+    pub kitchen: bool,
+}
+impl Furnishings {
+    /// Skill XP multiplier from desk (1.15 if owned, else 1.0).
+    pub fn skill_mult(&self) -> f32 {
+        if self.desk { 1.15 } else { 1.0 }
+    }
+    /// Bonus energy added to sleep (10.0 if bed owned, else 0.0).
+    pub fn sleep_bonus(&self) -> f32 {
+        if self.bed { 10.0 } else { 0.0 }
+    }
+    /// Extra hunger reduction on eat (10.0 if kitchen owned, else 0.0).
+    pub fn meal_bonus(&self) -> f32 {
+        if self.kitchen { 10.0 } else { 0.0 }
+    }
+}

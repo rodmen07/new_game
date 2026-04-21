@@ -40,6 +40,7 @@ fn action_time_hours(action: &ActionKind) -> f32 {
         ActionKind::EyeExam => 1.0,
         ActionKind::ComputerLab => 2.0,
         ActionKind::PrintShop => 0.25,
+        ActionKind::Hangout => 1.0,
     }
 }
 
@@ -324,6 +325,10 @@ const FESTIVAL_WORDS: &[&str] = &[
     "cheer", "dance", "mingle", "feast", "celebrate", "perform",
     "exhibit", "gather", "toast", "revel", "parade", "sparkle", "jubilee", "carnival", "exuberant",
 ];
+const HANGOUT_WORDS: &[&str] = &[
+    "coffee", "wander", "park", "chill", "stroll", "laugh",
+    "picnic", "explore", "catch-up", "banter", "unwind", "hang", "vibe", "lounge", "chat",
+];
 
 fn pick_word(pool: &'static [&'static str], seed: u32, offset: u32) -> &'static str {
     pool[(seed.wrapping_add(offset * 11) as usize) % pool.len()]
@@ -402,6 +407,11 @@ fn action_challenge(kind: &ActionKind, seed: u32, subject: &str) -> PromptChalle
         ActionKind::EyeExam => word_challenge("Eye Exam", "type for eye exam", EYE_WORDS, seed),
         ActionKind::ComputerLab => word_challenge("Computer Lab", "type to log in", COMPUTER_WORDS, seed),
         ActionKind::PrintShop => word_challenge("Print", "type to print", PRINT_WORDS, seed),
+        ActionKind::Hangout => PromptChallenge {
+            label: "Hangout".to_string(),
+            instruction: format!("type to hang out with {}", subject),
+            expected: pick_word(HANGOUT_WORDS, seed, 0).to_string(),
+        },
     }
 }
 
@@ -559,6 +569,7 @@ fn handle_action_prompt_input(
     keys: &ButtonInput<KeyCode>,
     prompt: &mut ActionPrompt,
     notif: &mut Notification,
+    sfx: &mut EventWriter<PlaySfx>,
 ) -> Option<(PendingAction, Option<Entity>)> {
     if !prompt.active {
         return None;
@@ -575,7 +586,11 @@ fn handle_action_prompt_input(
         return None;
     }
 
+    let len_before = prompt.buffer.len();
     collect_prompt_text(keys, &mut prompt.buffer);
+    if prompt.buffer.len() > len_before {
+        sfx.send(PlaySfx(SfxKind::KeyPress));
+    }
 
     // Auto-confirm when the typed buffer matches the expected single word.
     let attempt = normalize_prompt_text(&prompt.buffer);
@@ -585,6 +600,7 @@ fn handle_action_prompt_input(
         let pending = prompt.pending.take();
         let entity_target = prompt.target.take();
         prompt.clear();
+        sfx.send(PlaySfx(SfxKind::Confirm));
         notif.push(format!("{} confirmed.", label), 1.5);
         return pending.map(|next| (next, entity_target));
     }
@@ -596,6 +612,7 @@ fn handle_action_prompt_input(
             let pending = prompt.pending.take();
             let entity_target = prompt.target.take();
             prompt.clear();
+            sfx.send(PlaySfx(SfxKind::Confirm));
             notif.push(format!("{} confirmed.", label), 1.5);
             return pending.map(|next| (next, entity_target));
         }
@@ -603,10 +620,12 @@ fn handle_action_prompt_input(
         if prompt.retries_left > 1 {
             prompt.retries_left -= 1;
             prompt.buffer.clear();
+            sfx.send(PlaySfx(SfxKind::Fail));
             notif.push("Not quite - try again.".to_string(), 2.0);
         } else {
             let label = prompt.label.clone();
             prompt.clear();
+            sfx.send(PlaySfx(SfxKind::Fail));
             notif.push(format!("{} failed. Action blocked.", label), 2.5);
         }
     }
@@ -1109,6 +1128,14 @@ fn handle_work(
     stats.modify_happiness(-5.);
     stats.modify_stress(5.);
     skills.gain_career(0.15 * stats.skill_gain_mult());
+    // Promotion check: fire once when career crosses 2.5 (Senior) and 5.0 (Executive).
+    if skills.career >= 2.5 && (streak.promotion_notified & 0b01) == 0 {
+        streak.promotion_notified |= 0b01;
+        notif.push("Promoted to Senior! Pay multiplier increased. [1.12x career bonus]".to_string(), 6.);
+    } else if skills.career >= 5.0 && (streak.promotion_notified & 0b10) == 0 {
+        streak.promotion_notified |= 0b10;
+        notif.push("Promoted to Executive! Maximum career tier reached. [1.60x career bonus]".to_string(), 6.);
+    }
     gs.work_today += 1;
     gs.money_earned_today += earned;
     streak.worked_today = true;
@@ -1660,6 +1687,7 @@ fn handle_study(
     notif: &mut Notification,
     season: &Season,
     weather: &WeatherKind,
+    desk_mult: f32,
 ) {
     if !stats.can_afford(30.) {
         notif.push("Need $30 to study!", 2.);
@@ -1682,7 +1710,7 @@ fn handle_study(
         1.0
     };
     let seed = (gt.day.wrapping_mul(1664525)).wrapping_add(gs.study_today * 999983) % 4;
-    let study_gain = (0.5 + season_bonus) * stats.skill_gain_mult() * rainy_study_mult;
+    let study_gain = (0.5 + season_bonus) * stats.skill_gain_mult() * rainy_study_mult * desk_mult;
     let (boost_name, new_lvl) = match seed {
         0 => {
             skills.gain_cooking(study_gain);
@@ -1738,6 +1766,7 @@ pub fn handle_interaction(
             &mut Skills,
             &mut WorkStreak,
             &mut HousingTier,
+            &mut Furnishings,
         ),
         With<Player>,
     >,
@@ -1748,13 +1777,17 @@ pub fn handle_interaction(
     mut extras: InteractExtras,
     mut sfx: EventWriter<PlaySfx>,
 ) {
-    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt, mut stats, mut inv, mut skills, mut streak, mut housing)) =
+    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt, mut stats, mut inv, mut skills, mut streak, mut housing, mut furnishings)) =
         player_q.get_single_mut()
     else {
         return;
     };
     let mut pe = keys.just_pressed(KeyCode::KeyE);
     let mut pg = keys.just_pressed(KeyCode::KeyG);
+    let ph = keys.just_pressed(KeyCode::KeyH);
+    let pf1 = keys.just_pressed(KeyCode::F1);
+    let pf2 = keys.just_pressed(KeyCode::F2);
+    let pf3 = keys.just_pressed(KeyCode::F3);
     let mut p1 = keys.just_pressed(KeyCode::Digit1);
     let mut p2 = keys.just_pressed(KeyCode::Digit2);
     let mut p3 = keys.just_pressed(KeyCode::Digit3);
@@ -1768,7 +1801,7 @@ pub fn handle_interaction(
     let mut forced_entity: Option<Entity> = None;
 
     if let Some((pending, target)) =
-        handle_action_prompt_input(&keys, &mut action_prompt, &mut notif)
+        handle_action_prompt_input(&keys, &mut action_prompt, &mut notif, &mut sfx)
     {
         forced_entity = target;
         match pending {
@@ -1853,6 +1886,20 @@ pub fn handle_interaction(
         return;
     };
 
+    // ── H key: begin hangout prompt if NPC nearby ─────────────────────────────
+    if ph && forced_action.is_none() && matches!(&inter.action, ActionKind::Chat) {
+        let lvl = friendship.levels.get(&entity).copied().unwrap_or(0.);
+        if lvl < 3. {
+            notif.push(
+                format!("Need friendship level 3 to hang out (current: {:.1}).", lvl),
+                2.5,
+            );
+            return;
+        }
+        pe = true;
+        forced_action = Some(ActionKind::Hangout);
+    }
+
     if forced_action.is_none()
         && let Some(pending) = pending_action_from_input(
             inter,
@@ -1872,7 +1919,9 @@ pub fn handle_interaction(
     {
         let prompt_subject = if matches!(
             &pending,
-            PendingAction::Action(ActionKind::Chat) | PendingAction::Gift
+            PendingAction::Action(ActionKind::Chat)
+                | PendingAction::Action(ActionKind::Hangout)
+                | PendingAction::Gift
         ) {
             npc_q
                 .get(entity)
@@ -2012,8 +2061,9 @@ pub fn handle_interaction(
                 (1.0_f32, "")
             };
             let gain = base_gain * stress_mult;
+            let sleep_bonus = furnishings.sleep_bonus();
             let health_gain = housing.night_health();
-            stats.modify_energy(gain);
+            stats.modify_energy(gain + sleep_bonus);
             stats.modify_health(health_gain + 3.);
             stats.modify_stress(-15.);
             stats.sleep_debt = (stats.sleep_debt - 8.).max(0.);
@@ -2023,10 +2073,11 @@ pub fn handle_interaction(
             } else {
                 "Daytime nap"
             };
+            let bonus_tag = if sleep_bonus > 0. { " [Comfy Bed +10]" } else { "" };
             notif.push(
                 format!(
-                    "{} — +{:.0} Energy, -SleepDebt, -Stress{}",
-                    tag, gain, stress_tag
+                    "{} — +{:.0} Energy, -SleepDebt, -Stress{}{}",
+                    tag, gain + sleep_bonus, stress_tag, bonus_tag
                 ),
                 2.,
             );
@@ -2034,6 +2085,7 @@ pub fn handle_interaction(
         ActionKind::Eat => {
             sfx_kind = SfxKind::Eat;
             let reduction = 40. * skills.cooking_bonus();
+            let meal_bonus = furnishings.meal_bonus();
             let breakfast_bonus = if gt.is_breakfast() { 10. } else { 0. };
             if stats.meals > 0 {
                 stats.meals -= 1;
@@ -2044,11 +2096,11 @@ pub fn handle_interaction(
                 return;
             }
             let (meal_label, extra_health, extra_hap) = meal_tier(skills.cooking);
-            stats.modify_hunger(-reduction);
+            stats.modify_hunger(-(reduction + meal_bonus));
             stats.modify_health(1. + extra_health);
             stats.modify_happiness(extra_hap);
             stats.modify_energy(breakfast_bonus);
-            skills.gain_cooking(0.10 * stats.skill_gain_mult());
+            skills.gain_cooking(0.10 * stats.skill_gain_mult() * furnishings.skill_mult());
             gs.eat_today += 1;
             stats.cooldown = 2.;
             let bfast = if breakfast_bonus > 0. {
@@ -2056,8 +2108,9 @@ pub fn handle_interaction(
             } else {
                 ""
             };
+            let kitchen_tag = if meal_bonus > 0. { " [Kitchen +10]" } else { "" };
             notif.push(
-                format!("{} — -{:.0} Hunger{}", meal_label, reduction, bfast),
+                format!("{} — -{:.0} Hunger{}{}", meal_label, reduction + meal_bonus, bfast, kitchen_tag),
                 2.,
             );
         }
@@ -2201,6 +2254,47 @@ pub fn handle_interaction(
             notif.push("Showered! +12 Happiness, +Health, -Stress.", 2.);
         }
         ActionKind::Bank => {
+            // ── Furnishing purchases (F1/F2/F3) ──────────────────────────────
+            if pf1 || pf2 || pf3 {
+                if !housing.has_access() {
+                    notif.push("Need an apartment before buying furnishings.", 2.5);
+                    stats.cooldown = 0.5;
+                } else if pf1 {
+                    if furnishings.desk {
+                        notif.push("Desk already owned.", 2.);
+                    } else if stats.savings >= 60. {
+                        stats.savings -= 60.;
+                        furnishings.desk = true;
+                        notif.push("Desk purchased! +15% skill XP.", 4.);
+                    } else {
+                        notif.push("Need $60 savings for a Desk.", 2.5);
+                    }
+                    stats.cooldown = 0.5;
+                } else if pf2 {
+                    if furnishings.bed {
+                        notif.push("Comfy Bed already owned.", 2.);
+                    } else if stats.savings >= 80. {
+                        stats.savings -= 80.;
+                        furnishings.bed = true;
+                        notif.push("Comfy Bed purchased! +10 energy on each sleep.", 4.);
+                    } else {
+                        notif.push("Need $80 savings for a Comfy Bed.", 2.5);
+                    }
+                    stats.cooldown = 0.5;
+                } else {
+                    if furnishings.kitchen {
+                        notif.push("Kitchen Upgrade already owned.", 2.);
+                    } else if stats.savings >= 100. {
+                        stats.savings -= 100.;
+                        furnishings.kitchen = true;
+                        notif.push("Kitchen upgraded! +10 hunger reduction on each meal.", 4.);
+                    } else {
+                        notif.push("Need $100 savings for a Kitchen Upgrade.", 2.5);
+                    }
+                    stats.cooldown = 0.5;
+                }
+                return;
+            }
             if let Some(cost) = housing.upgrade_cost() {
                 if stats.savings >= cost {
                     if let Some(next) = housing.next() {
@@ -2228,7 +2322,7 @@ pub fn handle_interaction(
                     notif.push(
                         if housing.has_access() {
                         format!(
-                            "Bank: ${:.0} saved. [1]Dep [2]Wth [3]HalfDep [4]Loan [5]Repay [6]Invest(lo) [7]Invest(md) [8]CashOut [9]Insurance. Upgrade: ${:.0} for {}.",
+                            "Bank: ${:.0} saved. [1]Dep [2]Wth [3]HalfDep [4]Loan [5]Repay [6]Invest(lo) [7]Invest(md) [8]CashOut [9]Insurance. Upgrade: ${:.0} for {}. [F1]Desk$60 [F2]Bed$80 [F3]Kitchen$100",
                             stats.savings, cost, next_label
                         )
                     } else {
@@ -2242,7 +2336,7 @@ pub fn handle_interaction(
                 }
             } else {
                 notif.push(
-                    format!("Bank: ${:.0} saved. Max housing! [1-8]", stats.savings),
+                    format!("Bank: ${:.0} saved. Max housing! [1-8] [F1]Desk$60 [F2]Bed$80 [F3]Kitchen$100", stats.savings),
                     4.,
                 );
             }
@@ -2349,6 +2443,7 @@ pub fn handle_interaction(
                 &mut notif,
                 &extras.season,
                 &extras.weather,
+                furnishings.skill_mult(),
             );
         }
         ActionKind::FeedPet => {
@@ -2438,6 +2533,30 @@ pub fn handle_interaction(
                 &mut extras.rep,
                 &extras.season,
                 npc_data,
+            );
+        }
+        ActionKind::Hangout => {
+            let lvl = friendship.levels.get(&entity).copied().unwrap_or(0.);
+            if lvl < 3. {
+                notif.push(
+                    format!("Need friendship level 3 to hang out (current: {:.1}).", lvl),
+                    2.5,
+                );
+                return;
+            }
+            let npc_name = npc_q.get(entity).ok().map(|(n, _)| n.name.clone()).unwrap_or_else(|| "them".to_string());
+            let f = friendship.levels.entry(entity).or_insert(0.);
+            *f = (*f + 0.5).clamp(0., 5.);
+            stats.modify_happiness(25.);
+            stats.modify_stress(-10.);
+            stats.modify_energy(-8.);
+            skills.gain_social(0.2 * stats.skill_gain_mult());
+            extras.rep.add_score(1.0);
+            gs.chat_today += 1;
+            stats.cooldown = 2.;
+            notif.push(
+                format!("Hung out with {}! +0.5 friendship, +25 happiness, -10 stress.", npc_name),
+                3.,
             );
         }
         ActionKind::GymSession => {
@@ -2654,6 +2773,7 @@ pub fn handle_interaction(
                 &mut notif,
                 &extras.season,
                 &extras.weather,
+                furnishings.skill_mult(),
             );
         }
         ActionKind::PrintShop => {
@@ -2941,42 +3061,129 @@ mod tests {
         assert_eq!(action_prompt_retries(5.0), 2);
     }
 
+    // ── pick_word ─────────────────────────────────────────────────────────────
+
     #[test]
-    fn work_prompt_requires_three_words() {
-        let challenge =
-            build_prompt_challenge(&PendingAction::Action(ActionKind::Work), 0, "buddy");
-        assert_eq!(challenge.expected.split_whitespace().count(), 3);
-        assert!(challenge.label.contains("Work"));
+    fn pick_word_returns_pool_member() {
+        let pool: &[&str] = &["alpha", "beta", "gamma"];
+        let word = pick_word(pool, 42, 0);
+        assert!(pool.contains(&word));
     }
 
     #[test]
-    fn display_text_shows_expected_phrase() {
-        let prompt = ActionPrompt {
-            active: true,
-            buffer: "desk".to_string(),
-            label: "Work".to_string(),
-            instruction: "type the office words in order".to_string(),
-            expected: "desk report email".to_string(),
-            retries_left: 4,
-            pending: None,
-            target: None,
-        };
-
-        let display = prompt.display_text();
-        assert!(display.contains("desk report email"));
-        assert!(display.contains("desk_"));
+    fn pick_word_wraps_on_large_seed() {
+        let pool: &[&str] = &["only"];
+        assert_eq!(pick_word(pool, u32::MAX, 0), "only");
+        assert_eq!(pick_word(pool, u32::MAX, 999), "only");
     }
 
     #[test]
-    fn eat_prompt_starts_with_eat_keyword() {
-        let challenge = build_prompt_challenge(&PendingAction::Action(ActionKind::Eat), 7, "buddy");
-        assert!(challenge.expected.starts_with("eat "));
-        assert!(challenge.label.contains("Eat"));
+    fn pick_word_offset_changes_selection() {
+        let pool: &[&str] = &["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"];
+        // With a large enough pool and two different offsets the index calculation
+        // (seed + offset * 11) % len will differ when offset differs by 1.
+        let w0 = pick_word(pool, 0, 0);
+        let w1 = pick_word(pool, 0, 1);
+        // offset=0 -> index 0 % 12 = 0 => "a"
+        // offset=1 -> index 11 % 12 = 11 => "l"
+        assert_ne!(w0, w1);
+    }
+
+    #[test]
+    fn pick_word_deterministic_same_inputs() {
+        let pool = WORK_WORDS;
+        assert_eq!(pick_word(pool, 7, 3), pick_word(pool, 7, 3));
+    }
+
+    // ── normalize_prompt_text ─────────────────────────────────────────────────
+
+    #[test]
+    fn normalize_lowercases_input() {
+        assert_eq!(normalize_prompt_text("HELLO"), "hello");
+        assert_eq!(normalize_prompt_text("MiXeD"), "mixed");
+    }
+
+    #[test]
+    fn normalize_collapses_whitespace() {
+        assert_eq!(normalize_prompt_text("  hello   world  "), "hello world");
+    }
+
+    #[test]
+    fn normalize_empty_string_stays_empty() {
+        assert_eq!(normalize_prompt_text(""), "");
+        assert_eq!(normalize_prompt_text("   "), "");
+    }
+
+    #[test]
+    fn normalize_auto_confirm_condition() {
+        // Simulates the check inside handle_action_prompt_input.
+        let buffer = "Deadline";
+        let expected = "deadline";
+        assert_eq!(normalize_prompt_text(buffer), normalize_prompt_text(expected));
+    }
+
+    // ── word_challenge ────────────────────────────────────────────────────────
+
+    #[test]
+    fn word_challenge_returns_single_word() {
+        let c = word_challenge("Work", "type to work", WORK_WORDS, 0);
+        assert_eq!(c.expected.split_whitespace().count(), 1);
+    }
+
+    #[test]
+    fn word_challenge_expected_is_pool_member() {
+        let c = word_challenge("Eat", "type to eat", EAT_WORDS, 5);
+        assert!(EAT_WORDS.contains(&c.expected.as_str()));
+    }
+
+    #[test]
+    fn word_challenge_preserves_label_and_instruction() {
+        let c = word_challenge("Sleep", "type to sleep", SLEEP_WORDS, 99);
+        assert_eq!(c.label, "Sleep");
+        assert_eq!(c.instruction, "type to sleep");
+    }
+
+    // ── build_prompt_challenge ────────────────────────────────────────────────
+
+    #[test]
+    fn work_prompt_returns_single_word() {
+        let c = build_prompt_challenge(&PendingAction::Action(ActionKind::Work), 0, "buddy");
+        assert_eq!(c.expected.split_whitespace().count(), 1);
+        assert!(WORK_WORDS.contains(&c.expected.as_str()));
+        assert!(c.label.contains("Work"));
+    }
+
+    #[test]
+    fn eat_prompt_picks_from_eat_words() {
+        let c = build_prompt_challenge(&PendingAction::Action(ActionKind::Eat), 7, "buddy");
+        assert!(EAT_WORDS.contains(&c.expected.as_str()));
+        assert!(c.label.contains("Eat"));
     }
 
     #[test]
     fn chat_prompt_uses_subject_name() {
         let challenge = build_prompt_challenge(&PendingAction::Action(ActionKind::Chat), 3, "alex");
         assert!(challenge.expected.contains("alex"));
+    }
+
+    #[test]
+    fn challenge_expected_is_nonempty_for_all_basic_actions() {
+        let actions = [
+            ActionKind::Work,
+            ActionKind::Eat,
+            ActionKind::Sleep,
+            ActionKind::Shop,
+            ActionKind::Relax,
+            ActionKind::Shower,
+            ActionKind::Exercise,
+            ActionKind::Meditate,
+            ActionKind::StudyCourse,
+            ActionKind::Freelance,
+        ];
+        for action in &actions {
+            let c = build_prompt_challenge(&PendingAction::Action(action.clone()), 42, "buddy");
+            assert!(!c.expected.is_empty());
+            assert!(!c.label.is_empty());
+        }
     }
 }

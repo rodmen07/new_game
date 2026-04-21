@@ -161,6 +161,7 @@ fn main() {
                 tick_notification,
                 update_hud,
                 update_typing_overlay,
+                update_skill_panel,
                 update_day_night,
             )
                 .chain()
@@ -171,6 +172,11 @@ fn main() {
             Update,
             animate_notification
                 .after(tick_notification)
+                .run_if(in_state(AppState::Playing)),
+        )
+        .add_systems(
+            Update,
+            toggle_skill_panel
                 .run_if(in_state(AppState::Playing)),
         )
         .add_systems(

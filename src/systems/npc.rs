@@ -92,6 +92,34 @@ pub fn npc_wander(
 /// NPC half-extents for AABB collision (matches player size).
 const NPC_HALF: Vec2 = Vec2::new(9., 9.);
 
+/// Computes the minimum-translation correction to push `entity_pos` out of a
+/// collider rectangle. Returns `None` when there is no overlap.
+///
+/// Both positions are centres; half-extents describe half the width/height.
+pub(crate) fn resolve_aabb_push(
+    entity_pos: Vec2,
+    entity_half: Vec2,
+    collider_pos: Vec2,
+    collider_half: Vec2,
+) -> Option<Vec2> {
+    let dx = entity_pos.x - collider_pos.x;
+    let dy = entity_pos.y - collider_pos.y;
+    let overlap_x = (entity_half.x + collider_half.x) - dx.abs();
+    let overlap_y = (entity_half.y + collider_half.y) - dy.abs();
+
+    if overlap_x <= 0. || overlap_y <= 0. {
+        return None;
+    }
+
+    if overlap_x < overlap_y {
+        let sign = if dx >= 0. { 1. } else { -1. };
+        Some(Vec2::new(overlap_x * sign, 0.))
+    } else {
+        let sign = if dy >= 0. { 1. } else { -1. };
+        Some(Vec2::new(0., overlap_y * sign))
+    }
+}
+
 /// Resolves AABB collisions between all NPCs and `Collider` entities.
 /// Single-pass resolution is sufficient since NPCs move slowly.
 pub fn npc_collisions(
@@ -99,23 +127,12 @@ pub fn npc_collisions(
     colliders_q: Query<(&Transform, &Collider), Without<Npc>>,
 ) {
     for mut ntf in &mut npc_q {
+        let npc_pos = ntf.translation.truncate();
         for (ctf, collider) in &colliders_q {
-            let ch = collider.0;
-            let dx = ntf.translation.x - ctf.translation.x;
-            let dy = ntf.translation.y - ctf.translation.y;
-            let overlap_x = (NPC_HALF.x + ch.x) - dx.abs();
-            let overlap_y = (NPC_HALF.y + ch.y) - dy.abs();
-
-            if overlap_x <= 0. || overlap_y <= 0. {
-                continue;
-            }
-
-            if overlap_x < overlap_y {
-                let sign = if dx >= 0. { 1. } else { -1. };
-                ntf.translation.x += overlap_x * sign;
-            } else {
-                let sign = if dy >= 0. { 1. } else { -1. };
-                ntf.translation.y += overlap_y * sign;
+            let collider_pos = ctf.translation.truncate();
+            if let Some(delta) = resolve_aabb_push(npc_pos, NPC_HALF, collider_pos, collider.0) {
+                ntf.translation.x += delta.x;
+                ntf.translation.y += delta.y;
             }
         }
     }
@@ -201,10 +218,11 @@ pub fn update_npc_prompts(
         } else {
             ""
         };
+        let hangout_tag = if lvl >= 3 { " | [H] Hangout" } else { "" };
         inter.prompt = if lvl >= 2 {
             format!(
-                "[E] Chat | [G] Gift -> {} [{}]{}{}",
-                npc.name, tier, ptag, quest_tag
+                "[E] Chat | [G] Gift -> {} [{}]{}{}{}",
+                npc.name, tier, ptag, quest_tag, hangout_tag
             )
         } else {
             format!(
@@ -234,5 +252,66 @@ pub fn detect_nearby(
             nearby.entity = Some(entity);
             nearby.prompt = inter.prompt.clone();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_aabb_push;
+    use bevy::math::Vec2;
+
+    // ── resolve_aabb_push ─────────────────────────────────────────────────────
+
+    #[test]
+    fn no_overlap_returns_none() {
+        // Entity at (0,0) half (5,5) vs collider at (20,0) half (5,5) - well clear
+        let result = resolve_aabb_push(Vec2::ZERO, Vec2::splat(5.), Vec2::new(20., 0.), Vec2::splat(5.));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn overlap_from_right_pushes_entity_right() {
+        // Entity centre at (8,0), collider centre at (0,0), both half=(5,5)
+        // overlap_x = 10-8 = 2, overlap_y = 10-0 = 10 => push along x
+        let delta = resolve_aabb_push(Vec2::new(8., 0.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.)).unwrap();
+        assert!(delta.x > 0., "should push right, got {delta:?}");
+        assert!((delta.y).abs() < f32::EPSILON, "y component should be zero");
+        assert!((delta.x - 2.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn overlap_from_left_pushes_entity_left() {
+        let delta = resolve_aabb_push(Vec2::new(-8., 0.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.)).unwrap();
+        assert!(delta.x < 0.);
+        assert!((delta.x + 2.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn overlap_from_above_pushes_entity_up() {
+        // Vertical overlap is smaller -> push along y
+        // Entity at (0,8), collider at (0,0), both half=(5,5)
+        // overlap_x = 10-0 = 10, overlap_y = 10-8 = 2 => push along y
+        let delta = resolve_aabb_push(Vec2::new(0., 8.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.)).unwrap();
+        assert!(delta.y > 0.);
+        assert!((delta.y - 2.).abs() < f32::EPSILON);
+        assert!((delta.x).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn exact_boundary_no_overlap() {
+        // overlap_x = 10 - 10 = 0 -> no overlap
+        let result = resolve_aabb_push(Vec2::new(10., 0.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.));
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn asymmetric_half_extents() {
+        // entity half=(4,4), collider half=(6,6), entity at (9,0)
+        // overlap_x = (4+6) - 9 = 1, overlap_y = 10 - 0 = 10 => push along x
+        let delta = resolve_aabb_push(
+            Vec2::new(9., 0.), Vec2::new(4., 4.),
+            Vec2::ZERO, Vec2::new(6., 6.),
+        ).unwrap();
+        assert!((delta.x - 1.).abs() < f32::EPSILON);
     }
 }
