@@ -101,7 +101,7 @@ pub fn degrade_health(
         stats.health = 5.;
         stats.energy = (stats.energy + 30.).clamp(0., 100.);
         stats.modify_hunger(-30.);
-        stats.money = (stats.money - 500.).max(0.);
+        stats.money = (stats.money - 500.).max(-crate::constants::DEBT_LIMIT);
         notif.push("Hospitalised! -$500 medical bill. Resting for 6 hours.", 7.);
     }
 }
