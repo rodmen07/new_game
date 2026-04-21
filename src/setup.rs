@@ -2,9 +2,11 @@ use crate::components::{
     ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
     DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
     LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
-    PetKind, Player, PlayerId, PlayerIndicator, Vehicle,
+    PetKind, Player, PlayerId, PlayerIndicator, TypingInstruction, TypingLabel, TypingOverlay,
+    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordTyped,
+    Vehicle,
 };
-use crate::resources::{ActionPrompt, BankInput, PlayerMovement, VehicleState};
+use crate::resources::{ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills, VehicleState, WorkStreak};
 use bevy::prelude::*;
 
 /// World-space scale multiplier applied inside all layout helpers.
@@ -118,10 +120,21 @@ fn spawn_human(p: &mut ChildBuilder, outfit: Color, pants: Color, skin: Color, h
 
 pub fn setup(mut commands: Commands) {
     commands.spawn((Camera2d, MainCamera));
+    spawn_terrain_and_roads(&mut commands);
+    spawn_buildings_and_zones(&mut commands);
+    spawn_vehicle(&mut commands);
+    spawn_world_objects(&mut commands);
+    spawn_npcs(&mut commands);
+    spawn_player_entity(&mut commands);
+    spawn_collision_walls_and_roads(&mut commands);
+    spawn_hud(&mut commands);
+    spawn_typing_overlay(&mut commands);
+}
 
+fn spawn_terrain_and_roads(commands: &mut Commands) {
     // ── Ground ────────────────────────────────────────────────────────────────
     rect(
-        &mut commands,
+        commands,
         0.,
         0.,
         3000.,
@@ -149,7 +162,7 @@ pub fn setup(mut commands: Commands) {
         (-260., 170., 38., 24.),
     ] {
         rect(
-            &mut commands,
+            commands,
             px,
             py,
             pw,
@@ -161,12 +174,12 @@ pub fn setup(mut commands: Commands) {
 
     // -- Sidewalks along horizontal road ----------------------------------------
     let sw = Color::srgb(0.42, 0.40, 0.36);
-    rect(&mut commands, 0., 72., 3000., 14., sw, 0.62);
-    rect(&mut commands, 0., -72., 3000., 14., sw, 0.62);
+    rect(commands, 0., 72., 3000., 14., sw, 0.62);
+    rect(commands, 0., -72., 3000., 14., sw, 0.62);
 
     // -- Horizontal road --------------------------------------------------------
     rect(
-        &mut commands,
+        commands,
         0.,
         0.,
         3000.,
@@ -176,7 +189,7 @@ pub fn setup(mut commands: Commands) {
     );
     // Road edge lines
     rect(
-        &mut commands,
+        commands,
         0.,
         55.,
         3000.,
@@ -185,7 +198,7 @@ pub fn setup(mut commands: Commands) {
         0.6,
     );
     rect(
-        &mut commands,
+        commands,
         0.,
         -55.,
         3000.,
@@ -197,7 +210,7 @@ pub fn setup(mut commands: Commands) {
     for i in -17i32..=17 {
         let x = i as f32 * 40.;
         rect(
-            &mut commands,
+            commands,
             x,
             0.,
             18.,
@@ -220,13 +233,15 @@ pub fn setup(mut commands: Commands) {
         (170., -76.),
         (340., -76.),
     ] {
-        lamp_post(&mut commands, lx, ly);
+        lamp_post(commands, lx, ly);
     }
+}
 
+fn spawn_buildings_and_zones(commands: &mut Commands) {
     // -- Zones ------------------------------------------------------------------
     // North row (center_y=180, 150x200, doors face south at y=80)
     zone(
-        &mut commands,
+        commands,
         -425.,
         180.,
         150.,
@@ -235,7 +250,7 @@ pub fn setup(mut commands: Commands) {
         "HOME",
     );
     zone(
-        &mut commands,
+        commands,
         -255.,
         180.,
         150.,
@@ -244,7 +259,7 @@ pub fn setup(mut commands: Commands) {
         "WELLNESS",
     );
     zone(
-        &mut commands,
+        commands,
         -85.,
         180.,
         150.,
@@ -253,7 +268,7 @@ pub fn setup(mut commands: Commands) {
         "LIBRARY",
     );
     zone(
-        &mut commands,
+        commands,
         85.,
         180.,
         150.,
@@ -262,7 +277,7 @@ pub fn setup(mut commands: Commands) {
         "PARK",
     );
     zone(
-        &mut commands,
+        commands,
         425.,
         180.,
         150.,
@@ -272,7 +287,7 @@ pub fn setup(mut commands: Commands) {
     );
     // South row (center_y=-180, 150x200, doors face north at y=-80)
     zone(
-        &mut commands,
+        commands,
         -425.,
         -180.,
         150.,
@@ -281,7 +296,7 @@ pub fn setup(mut commands: Commands) {
         "BANK",
     );
     zone(
-        &mut commands,
+        commands,
         -255.,
         -180.,
         150.,
@@ -290,7 +305,7 @@ pub fn setup(mut commands: Commands) {
         "CLINIC",
     );
     zone(
-        &mut commands,
+        commands,
         -85.,
         -180.,
         150.,
@@ -299,7 +314,7 @@ pub fn setup(mut commands: Commands) {
         "STORE",
     );
     zone(
-        &mut commands,
+        commands,
         85.,
         -180.,
         150.,
@@ -308,7 +323,7 @@ pub fn setup(mut commands: Commands) {
         "CAFÉ",
     );
     zone(
-        &mut commands,
+        commands,
         255.,
         -180.,
         150.,
@@ -317,7 +332,7 @@ pub fn setup(mut commands: Commands) {
         "ADOPTION",
     );
     zone(
-        &mut commands,
+        commands,
         425.,
         -180.,
         150.,
@@ -331,7 +346,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME (-425, 180, 150x160) - warm residential
     rect(
-        &mut commands,
+        commands,
         -425.,
         256.,
         150.,
@@ -340,9 +355,9 @@ pub fn setup(mut commands: Commands) {
         1.15,
     ); // roof ridge
     for wx in [-470., -425., -380.] {
-        rect(&mut commands, wx, 225., 22., 16., wc, 1.2);
+        rect(commands, wx, 225., 22., 16., wc, 1.2);
         rect(
-            &mut commands,
+            commands,
             wx,
             225.,
             26.,
@@ -352,7 +367,7 @@ pub fn setup(mut commands: Commands) {
         );
     }
     rect(
-        &mut commands,
+        commands,
         -425.,
         104.,
         16.,
@@ -361,7 +376,7 @@ pub fn setup(mut commands: Commands) {
         1.2,
     ); // door
     rect(
-        &mut commands,
+        commands,
         -425.,
         104.,
         20.,
@@ -372,7 +387,7 @@ pub fn setup(mut commands: Commands) {
     for i in 0..3i32 {
         let fy = 120. + i as f32 * 45.;
         rect(
-            &mut commands,
+            commands,
             -425.,
             fy,
             140.,
@@ -384,7 +399,7 @@ pub fn setup(mut commands: Commands) {
 
     // WELLNESS (-255, 180, 150x160) - health/spa
     rect(
-        &mut commands,
+        commands,
         -255.,
         256.,
         150.,
@@ -393,10 +408,10 @@ pub fn setup(mut commands: Commands) {
         1.15,
     );
     for wx in [-295., -215.] {
-        rect(&mut commands, wx, 225., 22., 16., wc, 1.2);
+        rect(commands, wx, 225., 22., 16., wc, 1.2);
     }
     rect(
-        &mut commands,
+        commands,
         -255.,
         245.,
         14.,
@@ -405,7 +420,7 @@ pub fn setup(mut commands: Commands) {
         1.25,
     ); // cross h
     rect(
-        &mut commands,
+        commands,
         -255.,
         242.,
         4.,
@@ -416,7 +431,7 @@ pub fn setup(mut commands: Commands) {
     for i in 0..3i32 {
         let wy = 130. + i as f32 * 40.;
         rect(
-            &mut commands,
+            commands,
             -255.,
             wy,
             140.,
@@ -428,7 +443,7 @@ pub fn setup(mut commands: Commands) {
 
     // LIBRARY (-85, 180, 150x160) - arched entrance
     rect(
-        &mut commands,
+        commands,
         -85.,
         256.,
         150.,
@@ -437,7 +452,7 @@ pub fn setup(mut commands: Commands) {
         1.15,
     );
     rect(
-        &mut commands,
+        commands,
         -97.,
         135.,
         10.,
@@ -446,7 +461,7 @@ pub fn setup(mut commands: Commands) {
         1.2,
     ); // pillar L
     rect(
-        &mut commands,
+        commands,
         -73.,
         135.,
         10.,
@@ -455,7 +470,7 @@ pub fn setup(mut commands: Commands) {
         1.2,
     ); // pillar R
     rect(
-        &mut commands,
+        commands,
         -85.,
         157.,
         36.,
@@ -464,7 +479,7 @@ pub fn setup(mut commands: Commands) {
         1.2,
     ); // arch top
     rect(
-        &mut commands,
+        commands,
         -85.,
         103.,
         100.,
@@ -475,7 +490,7 @@ pub fn setup(mut commands: Commands) {
     for i in 0..3i32 {
         let lx = -145. + i as f32 * 30.;
         rect(
-            &mut commands,
+            commands,
             lx,
             170.,
             3.,
@@ -487,7 +502,7 @@ pub fn setup(mut commands: Commands) {
 
     // PARK (85, 180, 150x160) - open green, no facade walls
     rect(
-        &mut commands,
+        commands,
         85.,
         110.,
         20.,
@@ -503,9 +518,9 @@ pub fn setup(mut commands: Commands) {
         (30., 140., Color::srgb(1.00, 0.70, 0.25)),
         (140., 140., Color::srgb(0.55, 0.90, 0.55)),
     ] {
-        rect(&mut commands, fx, fy, 10., 7., fc, 3.1);
+        rect(commands, fx, fy, 10., 7., fc, 3.1);
         rect(
-            &mut commands,
+            commands,
             fx + 5.,
             fy - 3.,
             7.,
@@ -515,7 +530,7 @@ pub fn setup(mut commands: Commands) {
         );
     }
     rect(
-        &mut commands,
+        commands,
         50.,
         165.,
         22.,
@@ -524,7 +539,7 @@ pub fn setup(mut commands: Commands) {
         1.2,
     ); // bench decor
     rect(
-        &mut commands,
+        commands,
         50.,
         168.,
         22.,
@@ -535,7 +550,7 @@ pub fn setup(mut commands: Commands) {
 
     // OFFICE (425, 180, 150x160) - corporate glass
     rect(
-        &mut commands,
+        commands,
         425.,
         256.,
         150.,
@@ -545,9 +560,9 @@ pub fn setup(mut commands: Commands) {
     );
     for wx in [380., 410., 440., 470.] {
         for wy in [240., 210., 170.] {
-            rect(&mut commands, wx, wy, 16., 12., wc, 1.2);
+            rect(commands, wx, wy, 16., 12., wc, 1.2);
             rect(
-                &mut commands,
+                commands,
                 wx,
                 wy,
                 20.,
@@ -558,7 +573,7 @@ pub fn setup(mut commands: Commands) {
         }
     }
     rect(
-        &mut commands,
+        commands,
         425.,
         105.,
         30.,
@@ -567,7 +582,7 @@ pub fn setup(mut commands: Commands) {
         1.2,
     ); // glass entrance
     rect(
-        &mut commands,
+        commands,
         425.,
         105.,
         34.,
@@ -578,7 +593,7 @@ pub fn setup(mut commands: Commands) {
     for i in 0..3i32 {
         let fx = 360. + i as f32 * 45.;
         rect(
-            &mut commands,
+            commands,
             fx,
             180.,
             3.,
@@ -590,7 +605,7 @@ pub fn setup(mut commands: Commands) {
 
     // BANK (-425, -180, 150x160) - dignified columns
     rect(
-        &mut commands,
+        commands,
         -425.,
         -104.,
         150.,
@@ -600,7 +615,7 @@ pub fn setup(mut commands: Commands) {
     ); // cornice
     for cx in [-475., -450., -400., -375.] {
         rect(
-            &mut commands,
+            commands,
             cx,
             -170.,
             8.,
@@ -611,7 +626,7 @@ pub fn setup(mut commands: Commands) {
     }
     for (sy, swidth) in [(-240., 120.), (-246., 130.), (-252., 140.)] {
         rect(
-            &mut commands,
+            commands,
             -425.,
             sy,
             swidth,
@@ -623,7 +638,7 @@ pub fn setup(mut commands: Commands) {
     for i in 0..3i32 {
         let fy = -230. + i as f32 * 35.;
         rect(
-            &mut commands,
+            commands,
             -425.,
             fy,
             140.,
@@ -635,7 +650,7 @@ pub fn setup(mut commands: Commands) {
 
     // CLINIC (-255, -180, 150x160) - medical
     rect(
-        &mut commands,
+        commands,
         -255.,
         -104.,
         150.,
@@ -643,10 +658,10 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.70, 0.75, 0.72),
         1.15,
     );
-    rect(&mut commands, -295., -150., 36., 24., wc, 1.2);
-    rect(&mut commands, -215., -150., 36., 24., wc, 1.2);
+    rect(commands, -295., -150., 36., 24., wc, 1.2);
+    rect(commands, -215., -150., 36., 24., wc, 1.2);
     rect(
-        &mut commands,
+        commands,
         -255.,
         -120.,
         14.,
@@ -655,7 +670,7 @@ pub fn setup(mut commands: Commands) {
         1.22,
     ); // cross h
     rect(
-        &mut commands,
+        commands,
         -255.,
         -123.,
         4.,
@@ -664,7 +679,7 @@ pub fn setup(mut commands: Commands) {
         1.22,
     ); // cross v
     rect(
-        &mut commands,
+        commands,
         -255.,
         -98.,
         36.,
@@ -675,7 +690,7 @@ pub fn setup(mut commands: Commands) {
 
     // STORE (-85, -180, 150x160) - shop facade
     rect(
-        &mut commands,
+        commands,
         -85.,
         -104.,
         150.,
@@ -683,10 +698,10 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.22, 0.38, 0.45),
         1.15,
     );
-    rect(&mut commands, -125., -140., 42., 30., wc, 1.2); // display L
-    rect(&mut commands, -45., -140., 42., 30., wc, 1.2); // display R
+    rect(commands, -125., -140., 42., 30., wc, 1.2); // display L
+    rect(commands, -45., -140., 42., 30., wc, 1.2); // display R
     rect(
-        &mut commands,
+        commands,
         -85.,
         -110.,
         110.,
@@ -697,7 +712,7 @@ pub fn setup(mut commands: Commands) {
 
     // CAFÉ (85, -180, 150x160) - warm eatery
     rect(
-        &mut commands,
+        commands,
         85.,
         -104.,
         150.,
@@ -706,7 +721,7 @@ pub fn setup(mut commands: Commands) {
         1.15,
     );
     rect(
-        &mut commands,
+        commands,
         85.,
         -114.,
         120.,
@@ -714,10 +729,10 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.88, 0.55, 0.18),
         1.20,
     ); // awning
-    rect(&mut commands, 45., -145., 40., 26., wc, 1.2); // window L
-    rect(&mut commands, 125., -145., 40., 26., wc, 1.2); // window R
+    rect(commands, 45., -145., 40., 26., wc, 1.2); // window L
+    rect(commands, 125., -145., 40., 26., wc, 1.2); // window R
     rect(
-        &mut commands,
+        commands,
         85.,
         -98.,
         8.,
@@ -728,7 +743,7 @@ pub fn setup(mut commands: Commands) {
 
     // ADOPTION (255, -180, 150x160) - animal shelter
     rect(
-        &mut commands,
+        commands,
         255.,
         -104.,
         150.,
@@ -737,7 +752,7 @@ pub fn setup(mut commands: Commands) {
         1.15,
     );
     rect(
-        &mut commands,
+        commands,
         210.,
         -120.,
         8.,
@@ -746,7 +761,7 @@ pub fn setup(mut commands: Commands) {
         1.20,
     ); // cat silhouette
     rect(
-        &mut commands,
+        commands,
         222.,
         -118.,
         5.,
@@ -755,7 +770,7 @@ pub fn setup(mut commands: Commands) {
         1.20,
     );
     rect(
-        &mut commands,
+        commands,
         300.,
         -122.,
         16.,
@@ -764,7 +779,7 @@ pub fn setup(mut commands: Commands) {
         1.20,
     ); // fish
     rect(
-        &mut commands,
+        commands,
         220.,
         -225.,
         26.,
@@ -773,7 +788,7 @@ pub fn setup(mut commands: Commands) {
         1.18,
     ); // kennel L
     rect(
-        &mut commands,
+        commands,
         220.,
         -216.,
         26.,
@@ -782,7 +797,7 @@ pub fn setup(mut commands: Commands) {
         1.19,
     );
     rect(
-        &mut commands,
+        commands,
         290.,
         -225.,
         26.,
@@ -791,7 +806,7 @@ pub fn setup(mut commands: Commands) {
         1.18,
     ); // kennel R
     rect(
-        &mut commands,
+        commands,
         290.,
         -216.,
         26.,
@@ -802,7 +817,7 @@ pub fn setup(mut commands: Commands) {
 
     // GARAGE (425, -180, 150x160) - roller door
     rect(
-        &mut commands,
+        commands,
         425.,
         -125.,
         120.,
@@ -812,7 +827,7 @@ pub fn setup(mut commands: Commands) {
     ); // door panel
     for gy in [-110., -125., -140., -155., -170.] {
         rect(
-            &mut commands,
+            commands,
             425.,
             gy,
             116.,
@@ -822,7 +837,7 @@ pub fn setup(mut commands: Commands) {
         );
     }
     rect(
-        &mut commands,
+        commands,
         425.,
         -105.,
         150.,
@@ -830,7 +845,9 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.35, 0.33, 0.38),
         1.05,
     ); // parking area
+}
 
+fn spawn_vehicle(commands: &mut Commands) {
     // -- Car entity (near GARAGE, hidden until purchased) -----------------------
     commands
         .spawn((
@@ -876,10 +893,12 @@ pub fn setup(mut commands: Commands) {
                 ));
             }
         });
+}
 
+fn spawn_world_objects(commands: &mut Commands) {
     // -- Park pond --------------------------------------------------------------
     rect(
-        &mut commands,
+        commands,
         55.,
         215.,
         40.,
@@ -888,7 +907,7 @@ pub fn setup(mut commands: Commands) {
         1.08,
     );
     rect(
-        &mut commands,
+        commands,
         55.,
         215.,
         44.,
@@ -897,7 +916,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     );
     rect(
-        &mut commands,
+        commands,
         52.,
         212.,
         22.,
@@ -910,7 +929,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME interior - bedroom rug, dining table, sofa
     rect(
-        &mut commands,
+        commands,
         -465.,
         220.,
         50.,
@@ -919,7 +938,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     ); // rug outer
     rect(
-        &mut commands,
+        commands,
         -465.,
         220.,
         42.,
@@ -928,7 +947,7 @@ pub fn setup(mut commands: Commands) {
         1.07,
     ); // rug inner
     rect(
-        &mut commands,
+        commands,
         -405.,
         145.,
         30.,
@@ -937,7 +956,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     ); // table
     rect(
-        &mut commands,
+        commands,
         -405.,
         145.,
         26.,
@@ -947,7 +966,7 @@ pub fn setup(mut commands: Commands) {
     );
     for cx in [-416., -394.] {
         rect(
-            &mut commands,
+            commands,
             cx,
             137.,
             8.,
@@ -956,7 +975,7 @@ pub fn setup(mut commands: Commands) {
             1.06,
         ); // chairs
         rect(
-            &mut commands,
+            commands,
             cx,
             153.,
             8.,
@@ -966,7 +985,7 @@ pub fn setup(mut commands: Commands) {
         );
     }
     rect(
-        &mut commands,
+        commands,
         -492.,
         180.,
         14.,
@@ -975,7 +994,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     ); // sofa
     rect(
-        &mut commands,
+        commands,
         -492.,
         180.,
         10.,
@@ -986,7 +1005,7 @@ pub fn setup(mut commands: Commands) {
 
     // OFFICE interior - desk area, filing cabinets
     rect(
-        &mut commands,
+        commands,
         455.,
         200.,
         36.,
@@ -995,7 +1014,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     );
     rect(
-        &mut commands,
+        commands,
         455.,
         200.,
         32.,
@@ -1004,7 +1023,7 @@ pub fn setup(mut commands: Commands) {
         1.08,
     );
     rect(
-        &mut commands,
+        commands,
         375.,
         230.,
         14.,
@@ -1013,7 +1032,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     );
     rect(
-        &mut commands,
+        commands,
         375.,
         230.,
         10.,
@@ -1025,7 +1044,7 @@ pub fn setup(mut commands: Commands) {
     // STORE interior - shelving rows
     for sy in [-210., -180., -150.] {
         rect(
-            &mut commands,
+            commands,
             -85.,
             sy,
             100.,
@@ -1034,7 +1053,7 @@ pub fn setup(mut commands: Commands) {
             1.06,
         );
         rect(
-            &mut commands,
+            commands,
             -85.,
             sy,
             96.,
@@ -1047,7 +1066,7 @@ pub fn setup(mut commands: Commands) {
     // LIBRARY interior - book rows
     for lx in [-130., -100., -70., -40.] {
         rect(
-            &mut commands,
+            commands,
             lx,
             210.,
             8.,
@@ -1059,7 +1078,7 @@ pub fn setup(mut commands: Commands) {
 
     // BANK interior - marble floor
     rect(
-        &mut commands,
+        commands,
         -425.,
         -180.,
         130.,
@@ -1068,7 +1087,7 @@ pub fn setup(mut commands: Commands) {
         1.03,
     );
     rect(
-        &mut commands,
+        commands,
         -425.,
         -180.,
         126.,
@@ -1079,7 +1098,7 @@ pub fn setup(mut commands: Commands) {
 
     // GARAGE interior - concrete floor
     rect(
-        &mut commands,
+        commands,
         425.,
         -180.,
         130.,
@@ -1090,7 +1109,7 @@ pub fn setup(mut commands: Commands) {
 
     // WELLNESS interior - exercise mats
     rect(
-        &mut commands,
+        commands,
         -285.,
         170.,
         36.,
@@ -1099,7 +1118,7 @@ pub fn setup(mut commands: Commands) {
         1.06,
     );
     rect(
-        &mut commands,
+        commands,
         -225.,
         170.,
         36.,
@@ -1110,7 +1129,7 @@ pub fn setup(mut commands: Commands) {
 
     // CLINIC interior - tiles
     rect(
-        &mut commands,
+        commands,
         -255.,
         -180.,
         130.,
@@ -1121,7 +1140,7 @@ pub fn setup(mut commands: Commands) {
 
     // CAFÉ interior - warm floor
     rect(
-        &mut commands,
+        commands,
         85.,
         -180.,
         130.,
@@ -1132,7 +1151,7 @@ pub fn setup(mut commands: Commands) {
 
     // ADOPTION interior - warm purple
     rect(
-        &mut commands,
+        commands,
         255.,
         -180.,
         130.,
@@ -1145,7 +1164,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - BED (-470, 235)
     obj(
-        &mut commands,
+        commands,
         -470.,
         235.,
         40.,
@@ -1155,7 +1174,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Sleep",
     );
     rect(
-        &mut commands,
+        commands,
         -470.,
         235.,
         36.,
@@ -1164,7 +1183,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -482.,
         238.,
         10.,
@@ -1173,7 +1192,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -470.,
         238.,
         10.,
@@ -1182,7 +1201,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -460.,
         231.,
         18.,
@@ -1193,7 +1212,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - FRIDGE (-370, 135)
     obj(
-        &mut commands,
+        commands,
         -370.,
         135.,
         20.,
@@ -1203,7 +1222,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Eat",
     );
     rect(
-        &mut commands,
+        commands,
         -370.,
         143.,
         16.,
@@ -1212,7 +1231,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -370.,
         125.,
         16.,
@@ -1221,7 +1240,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -363.,
         143.,
         2.,
@@ -1232,7 +1251,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - SHOWER (-362, 245)
     obj(
-        &mut commands,
+        commands,
         -362.,
         245.,
         18.,
@@ -1242,7 +1261,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Shower",
     );
     rect(
-        &mut commands,
+        commands,
         -362.,
         245.,
         14.,
@@ -1251,7 +1270,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -362.,
         253.,
         8.,
@@ -1260,7 +1279,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -362.,
         237.,
         4.,
@@ -1271,7 +1290,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - MEDITATION (-480, 120)
     obj(
-        &mut commands,
+        commands,
         -480.,
         120.,
         20.,
@@ -1281,7 +1300,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Meditate",
     );
     rect(
-        &mut commands,
+        commands,
         -480.,
         120.,
         16.,
@@ -1290,7 +1309,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -480.,
         120.,
         8.,
@@ -1299,7 +1318,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -480.,
         120.,
         3.,
@@ -1310,7 +1329,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - FREELANCE DESK (-440, 190)
     obj(
-        &mut commands,
+        commands,
         -440.,
         190.,
         34.,
@@ -1320,7 +1339,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Freelance Desk - work from home",
     );
     rect(
-        &mut commands,
+        commands,
         -440.,
         190.,
         30.,
@@ -1329,7 +1348,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -450.,
         193.,
         10.,
@@ -1338,7 +1357,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -450.,
         193.,
         8.,
@@ -1347,7 +1366,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -440.,
         188.,
         14.,
@@ -1356,7 +1375,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -430.,
         191.,
         4.,
@@ -1367,7 +1386,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - COFFEE (-490, 215)
     obj(
-        &mut commands,
+        commands,
         -490.,
         215.,
         14.,
@@ -1377,7 +1396,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Drink Coffee",
     );
     rect(
-        &mut commands,
+        commands,
         -490.,
         219.,
         10.,
@@ -1386,7 +1405,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -490.,
         213.,
         10.,
@@ -1395,7 +1414,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -487.,
         210.,
         4.,
@@ -1406,7 +1425,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - VITAMINS (-490, 195)
     obj(
-        &mut commands,
+        commands,
         -490.,
         195.,
         14.,
@@ -1416,7 +1435,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Take Vitamins",
     );
     rect(
-        &mut commands,
+        commands,
         -490.,
         197.,
         6.,
@@ -1425,7 +1444,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -490.,
         201.,
         4.,
@@ -1434,7 +1453,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -490.,
         195.,
         4.,
@@ -1445,7 +1464,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - BOOKSHELF (-490, 170)
     obj(
-        &mut commands,
+        commands,
         -490.,
         170.,
         14.,
@@ -1455,7 +1474,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Read Book",
     );
     rect(
-        &mut commands,
+        commands,
         -494.,
         170.,
         4.,
@@ -1464,7 +1483,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -490.,
         170.,
         4.,
@@ -1473,7 +1492,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -486.,
         170.,
         4.,
@@ -1484,7 +1503,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - EASEL (-390, 235)
     obj(
-        &mut commands,
+        commands,
         -390.,
         235.,
         16.,
@@ -1494,7 +1513,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Paint (Painting skill)",
     );
     rect(
-        &mut commands,
+        commands,
         -390.,
         239.,
         10.,
@@ -1503,7 +1522,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -393.,
         241.,
         3.,
@@ -1512,7 +1531,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -388.,
         242.,
         3.,
@@ -1521,7 +1540,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -390.,
         227.,
         3.,
@@ -1532,7 +1551,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - GAMING (-390, 205)
     obj(
-        &mut commands,
+        commands,
         -390.,
         205.,
         16.,
@@ -1542,7 +1561,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Game (Gaming skill)",
     );
     rect(
-        &mut commands,
+        commands,
         -390.,
         208.,
         12.,
@@ -1551,7 +1570,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -390.,
         208.,
         8.,
@@ -1560,7 +1579,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -390.,
         200.,
         8.,
@@ -1571,7 +1590,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - PIANO (-390, 175)
     obj(
-        &mut commands,
+        commands,
         -390.,
         175.,
         16.,
@@ -1581,7 +1600,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Play Music (Music skill)",
     );
     rect(
-        &mut commands,
+        commands,
         -390.,
         178.,
         12.,
@@ -1591,7 +1610,7 @@ pub fn setup(mut commands: Commands) {
     );
     for bk in [-394., -390., -386.] {
         rect(
-            &mut commands,
+            commands,
             bk,
             179.,
             2.,
@@ -1601,7 +1620,7 @@ pub fn setup(mut commands: Commands) {
         );
     }
     rect(
-        &mut commands,
+        commands,
         -390.,
         169.,
         10.,
@@ -1612,7 +1631,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - PET BOWL (-425, 115)
     obj(
-        &mut commands,
+        commands,
         -425.,
         115.,
         14.,
@@ -1622,7 +1641,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Pet Bowl - Feed/Adopt pet ($5 feed / $50 adopt)",
     );
     rect(
-        &mut commands,
+        commands,
         -425.,
         115.,
         10.,
@@ -1631,7 +1650,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -425.,
         115.,
         6.,
@@ -1642,7 +1661,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - CRAFT STATION (-410, 145)
     obj(
-        &mut commands,
+        commands,
         -410.,
         145.,
         20.,
@@ -1652,7 +1671,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Craft Station [1]Cook [2]GiftBox [3]Smoothie",
     );
     rect(
-        &mut commands,
+        commands,
         -410.,
         147.,
         16.,
@@ -1661,7 +1680,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -414.,
         149.,
         5.,
@@ -1670,7 +1689,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -406.,
         149.,
         5.,
@@ -1681,7 +1700,7 @@ pub fn setup(mut commands: Commands) {
 
     // HOME - PARTY CORNER (-365, 248)
     obj(
-        &mut commands,
+        commands,
         -365.,
         248.,
         20.,
@@ -1691,7 +1710,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Party Corner - Throw a party! ($40)",
     );
     rect(
-        &mut commands,
+        commands,
         -365.,
         250.,
         14.,
@@ -1700,7 +1719,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -365.,
         253.,
         7.,
@@ -1709,7 +1728,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -365.,
         256.,
         2.,
@@ -1718,7 +1737,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -365.,
         258.,
         3.,
@@ -1727,7 +1746,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -371.,
         243.,
         3.,
@@ -1736,7 +1755,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -359.,
         244.,
         3.,
@@ -1747,7 +1766,7 @@ pub fn setup(mut commands: Commands) {
 
     // OFFICE - WORK DESK (425, 180)
     obj(
-        &mut commands,
+        commands,
         425.,
         180.,
         44.,
@@ -1757,7 +1776,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Work",
     );
     rect(
-        &mut commands,
+        commands,
         425.,
         180.,
         40.,
@@ -1766,7 +1785,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         413.,
         183.,
         12.,
@@ -1775,7 +1794,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         413.,
         183.,
         9.,
@@ -1784,7 +1803,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         413.,
         176.,
         4.,
@@ -1793,7 +1812,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         427.,
         180.,
         16.,
@@ -1802,7 +1821,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         439.,
         184.,
         8.,
@@ -1811,7 +1830,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         439.,
         175.,
         4.,
@@ -1822,7 +1841,7 @@ pub fn setup(mut commands: Commands) {
 
     // STORE - SHOP COUNTER (-85, -180)
     obj(
-        &mut commands,
+        commands,
         -85.,
         -180.,
         56.,
@@ -1832,7 +1851,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Shop",
     );
     rect(
-        &mut commands,
+        commands,
         -85.,
         -177.,
         50.,
@@ -1841,7 +1860,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -103.,
         -180.,
         10.,
@@ -1850,7 +1869,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -103.,
         -177.,
         8.,
@@ -1859,7 +1878,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -71.,
         -181.,
         7.,
@@ -1868,7 +1887,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -63.,
         -181.,
         7.,
@@ -1879,7 +1898,7 @@ pub fn setup(mut commands: Commands) {
 
     // PARK - SHELTER (40, 245) rough sleeping
     obj(
-        &mut commands,
+        commands,
         40.,
         245.,
         36.,
@@ -1889,7 +1908,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Sleep here (rough rest)",
     );
     rect(
-        &mut commands,
+        commands,
         40.,
         247.,
         30.,
@@ -1898,7 +1917,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         40.,
         252.,
         32.,
@@ -1909,7 +1928,7 @@ pub fn setup(mut commands: Commands) {
 
     // PARK - BENCH (85, 160) relax
     obj(
-        &mut commands,
+        commands,
         85.,
         160.,
         40.,
@@ -1919,7 +1938,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Relax",
     );
     rect(
-        &mut commands,
+        commands,
         85.,
         163.,
         34.,
@@ -1928,7 +1947,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         85.,
         157.,
         34.,
@@ -1937,7 +1956,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         70.,
         159.,
         3.,
@@ -1946,7 +1965,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         100.,
         159.,
         3.,
@@ -1957,7 +1976,7 @@ pub fn setup(mut commands: Commands) {
 
     // PARK - PULL-UP BAR (130, 140) exercise
     obj(
-        &mut commands,
+        commands,
         130.,
         140.,
         20.,
@@ -1967,7 +1986,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Exercise",
     );
     rect(
-        &mut commands,
+        commands,
         121.,
         146.,
         3.,
@@ -1976,7 +1995,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         139.,
         146.,
         3.,
@@ -1985,7 +2004,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         130.,
         154.,
         18.,
@@ -1994,7 +2013,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         130.,
         134.,
         14.,
@@ -2005,7 +2024,7 @@ pub fn setup(mut commands: Commands) {
 
     // BANK - TELLER COUNTER (-425, -180)
     obj(
-        &mut commands,
+        commands,
         -425.,
         -180.,
         36.,
@@ -2015,7 +2034,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Bank  [1-8] actions",
     );
     rect(
-        &mut commands,
+        commands,
         -425.,
         -175.,
         32.,
@@ -2024,7 +2043,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -425.,
         -180.,
         20.,
@@ -2033,7 +2052,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -425.,
         -187.,
         18.,
@@ -2044,7 +2063,7 @@ pub fn setup(mut commands: Commands) {
 
     // LIBRARY - READING DESK (-85, 180)
     obj(
-        &mut commands,
+        commands,
         -85.,
         180.,
         40.,
@@ -2054,7 +2073,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Study - $30 + 20 energy -> +0.5 random skill",
     );
     rect(
-        &mut commands,
+        commands,
         -85.,
         182.,
         36.,
@@ -2063,7 +2082,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -85.,
         183.,
         16.,
@@ -2072,7 +2091,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -85.,
         183.,
         2.,
@@ -2081,7 +2100,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -75.,
         184.,
         4.,
@@ -2092,7 +2111,7 @@ pub fn setup(mut commands: Commands) {
 
     // GARAGE - WORKBENCH (425, -180)
     obj(
-        &mut commands,
+        commands,
         425.,
         -180.,
         40.,
@@ -2102,7 +2121,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Transport  [1] Bike $80sav  [2] Car $300sav",
     );
     rect(
-        &mut commands,
+        commands,
         425.,
         -178.,
         36.,
@@ -2111,7 +2130,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         413.,
         -184.,
         10.,
@@ -2120,7 +2139,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         413.,
         -184.,
         6.,
@@ -2129,7 +2148,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         431.,
         -179.,
         12.,
@@ -2138,7 +2157,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         437.,
         -178.,
         4.,
@@ -2149,7 +2168,7 @@ pub fn setup(mut commands: Commands) {
 
     // WELLNESS - TREADMILL (-290, 210)
     obj(
-        &mut commands,
+        commands,
         -290.,
         210.,
         38.,
@@ -2159,7 +2178,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Gym - $5 fee, +Health/Fitness (better than park)",
     );
     rect(
-        &mut commands,
+        commands,
         -290.,
         210.,
         34.,
@@ -2168,7 +2187,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -290.,
         208.,
         28.,
@@ -2177,7 +2196,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -301.,
         214.,
         3.,
@@ -2186,7 +2205,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -279.,
         214.,
         3.,
@@ -2195,7 +2214,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -290.,
         218.,
         8.,
@@ -2206,7 +2225,7 @@ pub fn setup(mut commands: Commands) {
 
     // WELLNESS - CAFÉ COUNTER (-220, 210)
     obj(
-        &mut commands,
+        commands,
         -220.,
         210.,
         38.,
@@ -2216,7 +2235,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Café - $12, +25 Energy +12 Mood",
     );
     rect(
-        &mut commands,
+        commands,
         -220.,
         213.,
         34.,
@@ -2225,7 +2244,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -230.,
         210.,
         8.,
@@ -2234,7 +2253,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -230.,
         214.,
         6.,
@@ -2243,7 +2262,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -214.,
         209.,
         4.,
@@ -2252,7 +2271,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -208.,
         209.,
         4.,
@@ -2263,7 +2282,7 @@ pub fn setup(mut commands: Commands) {
 
     // WELLNESS - CLINIC BED (-255, 140)
     obj(
-        &mut commands,
+        commands,
         -255.,
         140.,
         36.,
@@ -2273,7 +2292,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Clinic - $40, restore +35 Health",
     );
     rect(
-        &mut commands,
+        commands,
         -255.,
         140.,
         32.,
@@ -2282,7 +2301,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -267.,
         143.,
         8.,
@@ -2291,7 +2310,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -253.,
         137.,
         16.,
@@ -2300,7 +2319,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -255.,
         143.,
         8.,
@@ -2309,7 +2328,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -255.,
         140.,
         3.,
@@ -2320,7 +2339,7 @@ pub fn setup(mut commands: Commands) {
 
     // CAFÉ - COUNTER (85, -180)
     obj(
-        &mut commands,
+        commands,
         85.,
         -180.,
         40.,
@@ -2330,7 +2349,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Café - $12, +25 Energy +12 Mood",
     );
     rect(
-        &mut commands,
+        commands,
         85.,
         -177.,
         36.,
@@ -2339,7 +2358,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         75.,
         -180.,
         8.,
@@ -2348,7 +2367,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         93.,
         -182.,
         4.,
@@ -2359,7 +2378,7 @@ pub fn setup(mut commands: Commands) {
 
     // CLINIC - BED (-255, -180)
     obj(
-        &mut commands,
+        commands,
         -255.,
         -180.,
         36.,
@@ -2369,7 +2388,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Clinic - $40, restore +35 Health",
     );
     rect(
-        &mut commands,
+        commands,
         -255.,
         -180.,
         32.,
@@ -2378,7 +2397,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         -267.,
         -177.,
         8.,
@@ -2387,7 +2406,7 @@ pub fn setup(mut commands: Commands) {
         2.2,
     );
     rect(
-        &mut commands,
+        commands,
         -255.,
         -185.,
         14.,
@@ -2396,7 +2415,7 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
     rect(
-        &mut commands,
+        commands,
         -255.,
         -182.,
         3.,
@@ -2407,7 +2426,7 @@ pub fn setup(mut commands: Commands) {
 
     // ADOPTION - three stations
     obj(
-        &mut commands,
+        commands,
         220.,
         -170.,
         24.,
@@ -2417,7 +2436,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Adopt Cat - $300",
     );
     rect(
-        &mut commands,
+        commands,
         220.,
         -170.,
         18.,
@@ -2426,7 +2445,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         220.,
         -165.,
         7.,
@@ -2436,7 +2455,7 @@ pub fn setup(mut commands: Commands) {
     );
 
     obj(
-        &mut commands,
+        commands,
         255.,
         -170.,
         24.,
@@ -2446,7 +2465,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Adopt Dog - $300",
     );
     rect(
-        &mut commands,
+        commands,
         255.,
         -170.,
         18.,
@@ -2455,7 +2474,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         255.,
         -165.,
         8.,
@@ -2465,7 +2484,7 @@ pub fn setup(mut commands: Commands) {
     );
 
     obj(
-        &mut commands,
+        commands,
         290.,
         -200.,
         20.,
@@ -2475,7 +2494,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Adopt Fish - $300",
     );
     rect(
-        &mut commands,
+        commands,
         290.,
         -200.,
         16.,
@@ -2484,7 +2503,7 @@ pub fn setup(mut commands: Commands) {
         2.1,
     );
     rect(
-        &mut commands,
+        commands,
         290.,
         -198.,
         6.,
@@ -2497,7 +2516,7 @@ pub fn setup(mut commands: Commands) {
 
     // OFFICE (425, 180): three extra work desks
     obj(
-        &mut commands,
+        commands,
         395.,
         220.,
         34.,
@@ -2507,7 +2526,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Work (desk 2)",
     );
     obj(
-        &mut commands,
+        commands,
         455.,
         220.,
         34.,
@@ -2517,7 +2536,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Work (desk 3)",
     );
     obj(
-        &mut commands,
+        commands,
         425.,
         135.,
         34.,
@@ -2529,7 +2548,7 @@ pub fn setup(mut commands: Commands) {
 
     // LIBRARY (-85, 180): computer terminal, media room, tutoring desk
     obj(
-        &mut commands,
+        commands,
         -120.,
         220.,
         28.,
@@ -2539,7 +2558,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Computer Lab — browse / research",
     );
     obj(
-        &mut commands,
+        commands,
         -50.,
         220.,
         28.,
@@ -2549,7 +2568,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Media Room — chill & watch",
     );
     obj(
-        &mut commands,
+        commands,
         -85.,
         135.,
         30.,
@@ -2559,7 +2578,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Tutoring — $30 study session",
     );
     obj(
-        &mut commands,
+        commands,
         -55.,
         180.,
         24.,
@@ -2571,7 +2590,7 @@ pub fn setup(mut commands: Commands) {
 
     // WELLNESS (-255, 180): yoga mat, sauna, pharmacy counter
     obj(
-        &mut commands,
+        commands,
         -290.,
         135.,
         28.,
@@ -2581,7 +2600,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Yoga Mat — $5 fitness session",
     );
     obj(
-        &mut commands,
+        commands,
         -220.,
         135.,
         22.,
@@ -2591,7 +2610,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Sauna — relax & destress",
     );
     obj(
-        &mut commands,
+        commands,
         -255.,
         175.,
         24.,
@@ -2603,7 +2622,7 @@ pub fn setup(mut commands: Commands) {
 
     // STORE (-85, -180): deli counter, bulk goods, pharmacy aisle
     obj(
-        &mut commands,
+        commands,
         -120.,
         -140.,
         28.,
@@ -2613,7 +2632,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Deli Counter [1-4]",
     );
     obj(
-        &mut commands,
+        commands,
         -50.,
         -140.,
         28.,
@@ -2623,7 +2642,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Bulk Goods [1-4]",
     );
     obj(
-        &mut commands,
+        commands,
         -85.,
         -218.,
         28.,
@@ -2635,7 +2654,7 @@ pub fn setup(mut commands: Commands) {
 
     // CAFÉ (85, -180): patio seat, barista bar, pastry display
     obj(
-        &mut commands,
+        commands,
         55.,
         -140.,
         28.,
@@ -2645,7 +2664,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Patio Seat — relax outdoors",
     );
     obj(
-        &mut commands,
+        commands,
         120.,
         -140.,
         28.,
@@ -2655,7 +2674,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Barista Bar — $12 order",
     );
     obj(
-        &mut commands,
+        commands,
         85.,
         -218.,
         24.,
@@ -2667,7 +2686,7 @@ pub fn setup(mut commands: Commands) {
 
     // BANK (-425, -180): ATM, loan officer, investment advisor
     obj(
-        &mut commands,
+        commands,
         -465.,
         -135.,
         18.,
@@ -2677,7 +2696,7 @@ pub fn setup(mut commands: Commands) {
         "[E] ATM  [1]Dep [2]Wth",
     );
     obj(
-        &mut commands,
+        commands,
         -385.,
         -135.,
         24.,
@@ -2687,7 +2706,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Loan Officer  [4]Loan [5]Repay",
     );
     obj(
-        &mut commands,
+        commands,
         -425.,
         -220.,
         28.,
@@ -2699,7 +2718,7 @@ pub fn setup(mut commands: Commands) {
 
     // CLINIC (-255, -180): dental chair, eye exam, pharmacy window
     obj(
-        &mut commands,
+        commands,
         -295.,
         -140.,
         28.,
@@ -2709,7 +2728,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Dental Chair",
     );
     obj(
-        &mut commands,
+        commands,
         -215.,
         -140.,
         28.,
@@ -2719,7 +2738,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Eye Exam Station",
     );
     obj(
-        &mut commands,
+        commands,
         -255.,
         -218.,
         26.,
@@ -2731,7 +2750,7 @@ pub fn setup(mut commands: Commands) {
 
     // GARAGE (425, -180): gas pump, service bay, parts shelf
     obj(
-        &mut commands,
+        commands,
         395.,
         -140.,
         20.,
@@ -2741,7 +2760,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Gas Pump — fill up",
     );
     obj(
-        &mut commands,
+        commands,
         455.,
         -140.,
         30.,
@@ -2751,7 +2770,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Service Bay — repair vehicle",
     );
     obj(
-        &mut commands,
+        commands,
         425.,
         -220.,
         28.,
@@ -2763,7 +2782,7 @@ pub fn setup(mut commands: Commands) {
 
     // PARK (85, 180): sports court, playground, food cart (additional content)
     obj(
-        &mut commands,
+        commands,
         115.,
         215.,
         32.,
@@ -2773,7 +2792,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Sports Court — Exercise",
     );
     obj(
-        &mut commands,
+        commands,
         55.,
         215.,
         30.,
@@ -2783,7 +2802,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Playground — kids area, Relax",
     );
     obj(
-        &mut commands,
+        commands,
         85.,
         125.,
         24.,
@@ -2795,7 +2814,7 @@ pub fn setup(mut commands: Commands) {
 
     // ADOPTION (255, -180): training area, vet check (in addition to adopt stations)
     obj(
-        &mut commands,
+        commands,
         220.,
         -210.,
         24.,
@@ -2805,7 +2824,7 @@ pub fn setup(mut commands: Commands) {
         "[E] Training Area — exercise with pet",
     );
     obj(
-        &mut commands,
+        commands,
         290.,
         -165.,
         22.,
@@ -2824,7 +2843,7 @@ pub fn setup(mut commands: Commands) {
         (85., 230., 12.),
     ] {
         rect(
-            &mut commands,
+            commands,
             x + 3.,
             y - s * 0.62,
             s * 1.0,
@@ -2833,7 +2852,7 @@ pub fn setup(mut commands: Commands) {
             2.9,
         );
         rect(
-            &mut commands,
+            commands,
             x,
             y - s * 0.5 + 3.,
             s * 0.35,
@@ -2842,7 +2861,7 @@ pub fn setup(mut commands: Commands) {
             2.95,
         );
         rect(
-            &mut commands,
+            commands,
             x,
             y,
             s,
@@ -2852,7 +2871,7 @@ pub fn setup(mut commands: Commands) {
         );
         let hs = s * 0.65;
         rect(
-            &mut commands,
+            commands,
             x - s * 0.09,
             y + s * 0.07,
             hs,
@@ -2862,7 +2881,7 @@ pub fn setup(mut commands: Commands) {
         );
         let ss = s * 0.30;
         rect(
-            &mut commands,
+            commands,
             x - s * 0.20,
             y + s * 0.18,
             ss,
@@ -2871,7 +2890,9 @@ pub fn setup(mut commands: Commands) {
             3.1,
         );
     }
+}
 
+fn spawn_npcs(commands: &mut Commands) {
     // NPC zone constants (pre-scale coords × S = world coords)
     let _home_z = Vec2::new(-425. * S, 180. * S);
     let office_z = Vec2::new(425. * S, 180. * S);
@@ -2881,7 +2902,7 @@ pub fn setup(mut commands: Commands) {
     let garage_z = Vec2::new(425. * S, -180. * S);
 
     spawn_npc(
-        &mut commands,
+        commands,
         "Alex",
         0,
         Color::srgb(0.80, 0.22, 0.22),
@@ -2896,7 +2917,7 @@ pub fn setup(mut commands: Commands) {
         office_z,
     );
     spawn_npc(
-        &mut commands,
+        commands,
         "Sam",
         1,
         Color::srgb(0.22, 0.68, 0.32),
@@ -2911,7 +2932,7 @@ pub fn setup(mut commands: Commands) {
         office_z,
     );
     spawn_npc(
-        &mut commands,
+        commands,
         "Mia",
         2,
         Color::srgb(0.58, 0.32, 0.88),
@@ -2926,7 +2947,7 @@ pub fn setup(mut commands: Commands) {
         store_z,
     );
     spawn_npc(
-        &mut commands,
+        commands,
         "Jordan",
         3,
         Color::srgb(0.95, 0.70, 0.10),
@@ -2941,7 +2962,7 @@ pub fn setup(mut commands: Commands) {
         store_z,
     );
     spawn_npc(
-        &mut commands,
+        commands,
         "Taylor",
         4,
         Color::srgb(0.20, 0.45, 0.80),
@@ -2956,7 +2977,7 @@ pub fn setup(mut commands: Commands) {
         library_z,
     );
     spawn_npc(
-        &mut commands,
+        commands,
         "Casey",
         5,
         Color::srgb(0.10, 0.68, 0.62),
@@ -2970,7 +2991,9 @@ pub fn setup(mut commands: Commands) {
         office_z,
         office_z,
     );
+}
 
+fn spawn_player_entity(commands: &mut Commands) {
     commands
         .spawn((
             Transform::from_xyz(0., 0., 10.),
@@ -2982,6 +3005,11 @@ pub fn setup(mut commands: Commands) {
             VehicleState::default(),
             BankInput::default(),
             ActionPrompt::default(),
+            PlayerStats::default(),
+            Inventory::default(),
+            Skills::default(),
+            WorkStreak::default(),
+            HousingTier::default(),
         ))
         .with_children(|p| {
             spawn_human(
@@ -3022,17 +3050,19 @@ pub fn setup(mut commands: Commands) {
         Transform::from_xyz(0., 0., 1.98),
         InteractHighlight,
     ));
+}
 
+fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     // -- Collision walls --------------------------------------------------------
 
     // World boundary
-    wall(&mut commands, 0., 560., 1200., 20.); // north (extended for back street)
-    wall(&mut commands, 0., -330., 1200., 20.); // south
-    wall(&mut commands, -700., 75., 20., 830.); // west
-    wall(&mut commands, 700., 75., 20., 830.); // east
+    wall(commands, 0., 560., 1200., 20.); // north (extended for back street)
+    wall(commands, 0., -330., 1200., 20.); // south
+    wall(commands, -700., 75., 20., 830.); // west
+    wall(commands, 700., 75., 20., 830.); // east
 
     // Pond obstacle (park)
-    wall(&mut commands, 55., 215., 44., 34.);
+    wall(commands, 55., 215., 44., 34.);
 
     // Tree obstacles (park canopy footprints)
     for (tx, ty, ts) in [
@@ -3042,15 +3072,15 @@ pub fn setup(mut commands: Commands) {
         (140., 135., 12.),
         (85., 230., 12.),
     ] {
-        wall(&mut commands, tx, ty, ts * 0.75, ts * 0.75);
+        wall(commands, tx, ty, ts * 0.75, ts * 0.75);
     }
 
     // -- Back road (north, y=290) + APARTMENTS --------------------------------
     let bsw = Color::srgb(0.42, 0.40, 0.36); // sidewalk
-    rect(&mut commands, 0., 290., 3000., 14., bsw, 0.62); // south sidewalk
-    rect(&mut commands, 0., 370., 3000., 14., bsw, 0.62); // north sidewalk
+    rect(commands, 0., 290., 3000., 14., bsw, 0.62); // south sidewalk
+    rect(commands, 0., 370., 3000., 14., bsw, 0.62); // north sidewalk
     rect(
-        &mut commands,
+        commands,
         0.,
         330.,
         3000.,
@@ -3060,7 +3090,7 @@ pub fn setup(mut commands: Commands) {
     );
     // Back road edge lines
     rect(
-        &mut commands,
+        commands,
         0.,
         357.,
         3000.,
@@ -3069,7 +3099,7 @@ pub fn setup(mut commands: Commands) {
         0.6,
     );
     rect(
-        &mut commands,
+        commands,
         0.,
         303.,
         3000.,
@@ -3081,7 +3111,7 @@ pub fn setup(mut commands: Commands) {
     for i in -17i32..=17 {
         let x = i as f32 * 40.;
         rect(
-            &mut commands,
+            commands,
             x,
             330.,
             18.,
@@ -3098,30 +3128,30 @@ pub fn setup(mut commands: Commands) {
         (170., 305.),
         (340., 305.),
     ] {
-        lamp_post(&mut commands, lx, ly);
+        lamp_post(commands, lx, ly);
     }
 
     // -- Side alleys (connecting main road to back road on east and west) -------
     let ap = Color::srgb(0.34, 0.32, 0.28); // alley pavement
     let asw = Color::srgb(0.42, 0.40, 0.36); // alley sidewalk
     // West alley: x=-600, from south buildings (y=-280) to APARTMENTS south face (y=380)
-    rect(&mut commands, -600., 50., 178., 660., ap, 0.51);
-    rect(&mut commands, -508., 50., 12., 660., asw, 0.53);
-    rect(&mut commands, -692., 50., 12., 660., asw, 0.53);
+    rect(commands, -600., 50., 178., 660., ap, 0.51);
+    rect(commands, -508., 50., 12., 660., asw, 0.53);
+    rect(commands, -692., 50., 12., 660., asw, 0.53);
     for &ly in &[-200., -80., 80., 200., 320.] {
-        lamp_post(&mut commands, -610., ly);
+        lamp_post(commands, -610., ly);
     }
     // East alley: x=600, from south buildings (y=-280) to APARTMENTS south face (y=380)
-    rect(&mut commands, 600., 50., 178., 660., ap, 0.51);
-    rect(&mut commands, 508., 50., 12., 660., asw, 0.53);
-    rect(&mut commands, 692., 50., 12., 660., asw, 0.53);
+    rect(commands, 600., 50., 178., 660., ap, 0.51);
+    rect(commands, 508., 50., 12., 660., asw, 0.53);
+    rect(commands, 692., 50., 12., 660., asw, 0.53);
     for &ly in &[-200., -80., 80., 200., 320.] {
-        lamp_post(&mut commands, 610., ly);
+        lamp_post(commands, 610., ly);
     }
 
     // APARTMENTS zone at (0, 460)
     zone(
-        &mut commands,
+        commands,
         0.,
         460.,
         500.,
@@ -3164,11 +3194,11 @@ pub fn setup(mut commands: Commands) {
     }
     // APARTMENTS building walls
     let ac = Color::srgb(0.45, 0.38, 0.60);
-    vis_wall(&mut commands, 0., 540., 500., 10., ac); // north
-    vis_wall(&mut commands, -250., 460., 10., 160., ac); // west
-    vis_wall(&mut commands, 250., 460., 10., 160., ac); // east
-    vis_wall(&mut commands, -100., 380., 200., 10., ac); // south-left
-    vis_wall(&mut commands, 100., 380., 200., 10., ac); // south-right
+    vis_wall(commands, 0., 540., 500., 10., ac); // north
+    vis_wall(commands, -250., 460., 10., 160., ac); // west
+    vis_wall(commands, 250., 460., 10., 160., ac); // east
+    vis_wall(commands, -100., 380., 200., 10., ac); // south-left
+    vis_wall(commands, 100., 380., 200., 10., ac); // south-right
     // doorway gap is at x=0 ± 50 (100px wide)
 
     // -- Building classification markers ---------------------------------------
@@ -3225,111 +3255,109 @@ pub fn setup(mut commands: Commands) {
     // HOME (-425, 180, 150x200) - south door at x=-425
     let c = Color::srgb(0.50, 0.36, 0.22);
     let f = Color::srgb(0.62, 0.44, 0.28);
-    vis_wall(&mut commands, -425., 280., 150., 10., c); // north
-    vis_wall(&mut commands, -500., 180., 10., 200., c); // west
-    vis_wall(&mut commands, -350., 180., 10., 200., c); // east
-    vis_wall(&mut commands, -475., 80., 50., 10., c); // south-left
-    vis_wall(&mut commands, -375., 80., 50., 10., c); // south-right
-    rect(&mut commands, -450., 82., 8., 10., f, 1.5);
-    rect(&mut commands, -400., 82., 8., 10., f, 1.5);
+    vis_wall(commands, -425., 280., 150., 10., c); // north
+    vis_wall(commands, -500., 180., 10., 200., c); // west
+    vis_wall(commands, -350., 180., 10., 200., c); // east
+    vis_wall(commands, -475., 80., 50., 10., c); // south-left
+    vis_wall(commands, -375., 80., 50., 10., c); // south-right
+    rect(commands, -450., 82., 8., 10., f, 1.5);
+    rect(commands, -400., 82., 8., 10., f, 1.5);
 
     // WELLNESS (-255, 180, 150x200) - south door at x=-255
     let c = Color::srgb(0.22, 0.46, 0.40);
-    vis_wall(&mut commands, -255., 280., 150., 10., c); // north
-    vis_wall(&mut commands, -330., 180., 10., 200., c); // west
-    vis_wall(&mut commands, -180., 180., 10., 200., c); // east
-    vis_wall(&mut commands, -305., 80., 50., 10., c); // south-left
-    vis_wall(&mut commands, -205., 80., 50., 10., c); // south-right
-    rect(&mut commands, -280., 82., 8., 10., f, 1.5);
-    rect(&mut commands, -230., 82., 8., 10., f, 1.5);
+    vis_wall(commands, -255., 280., 150., 10., c); // north
+    vis_wall(commands, -330., 180., 10., 200., c); // west
+    vis_wall(commands, -180., 180., 10., 200., c); // east
+    vis_wall(commands, -305., 80., 50., 10., c); // south-left
+    vis_wall(commands, -205., 80., 50., 10., c); // south-right
+    rect(commands, -280., 82., 8., 10., f, 1.5);
+    rect(commands, -230., 82., 8., 10., f, 1.5);
 
     // LIBRARY (-85, 180, 150x200) - south door at x=-85
     let c = Color::srgb(0.18, 0.28, 0.44);
     let f = Color::srgb(0.26, 0.38, 0.56);
-    vis_wall(&mut commands, -85., 280., 150., 10., c); // north
-    vis_wall(&mut commands, -160., 180., 10., 200., c); // west
-    vis_wall(&mut commands, -10., 180., 10., 200., c); // east
-    vis_wall(&mut commands, -135., 80., 50., 10., c); // south-left
-    vis_wall(&mut commands, -35., 80., 50., 10., c); // south-right
-    rect(&mut commands, -110., 82., 8., 10., f, 1.5);
-    rect(&mut commands, -60., 82., 8., 10., f, 1.5);
+    vis_wall(commands, -85., 280., 150., 10., c); // north
+    vis_wall(commands, -160., 180., 10., 200., c); // west
+    vis_wall(commands, -10., 180., 10., 200., c); // east
+    vis_wall(commands, -135., 80., 50., 10., c); // south-left
+    vis_wall(commands, -35., 80., 50., 10., c); // south-right
+    rect(commands, -110., 82., 8., 10., f, 1.5);
+    rect(commands, -60., 82., 8., 10., f, 1.5);
 
     // PARK (85, 180, 150x160) - open, no walls
 
     // OFFICE (425, 180, 150x200) - south door at x=425
     let c = Color::srgb(0.25, 0.32, 0.45);
     let f = Color::srgb(0.35, 0.44, 0.60);
-    vis_wall(&mut commands, 425., 280., 150., 10., c); // north
-    vis_wall(&mut commands, 350., 180., 10., 200., c); // west
-    vis_wall(&mut commands, 500., 180., 10., 200., c); // east
-    vis_wall(&mut commands, 375., 80., 50., 10., c); // south-left
-    vis_wall(&mut commands, 475., 80., 50., 10., c); // south-right
-    rect(&mut commands, 400., 82., 8., 10., f, 1.5);
-    rect(&mut commands, 450., 82., 8., 10., f, 1.5);
+    vis_wall(commands, 425., 280., 150., 10., c); // north
+    vis_wall(commands, 350., 180., 10., 200., c); // west
+    vis_wall(commands, 500., 180., 10., 200., c); // east
+    vis_wall(commands, 375., 80., 50., 10., c); // south-left
+    vis_wall(commands, 475., 80., 50., 10., c); // south-right
+    rect(commands, 400., 82., 8., 10., f, 1.5);
+    rect(commands, 450., 82., 8., 10., f, 1.5);
 
     // BANK (-425, -180, 150x200) - north door at x=-425
     let c = Color::srgb(0.40, 0.34, 0.20);
     let f = Color::srgb(0.55, 0.48, 0.30);
-    vis_wall(&mut commands, -425., -280., 150., 10., c); // south
-    vis_wall(&mut commands, -500., -180., 10., 200., c); // west
-    vis_wall(&mut commands, -350., -180., 10., 200., c); // east
-    vis_wall(&mut commands, -475., -80., 50., 10., c); // north-left
-    vis_wall(&mut commands, -375., -80., 50., 10., c); // north-right
-    rect(&mut commands, -450., -82., 8., 10., f, 1.5);
-    rect(&mut commands, -400., -82., 8., 10., f, 1.5);
+    vis_wall(commands, -425., -280., 150., 10., c); // south
+    vis_wall(commands, -500., -180., 10., 200., c); // west
+    vis_wall(commands, -350., -180., 10., 200., c); // east
+    vis_wall(commands, -475., -80., 50., 10., c); // north-left
+    vis_wall(commands, -375., -80., 50., 10., c); // north-right
+    rect(commands, -450., -82., 8., 10., f, 1.5);
+    rect(commands, -400., -82., 8., 10., f, 1.5);
 
     // CLINIC (-255, -180, 150x200) - north door at x=-255
     let c = Color::srgb(0.60, 0.68, 0.65);
-    vis_wall(&mut commands, -255., -280., 150., 10., c); // south
-    vis_wall(&mut commands, -330., -180., 10., 200., c); // west
-    vis_wall(&mut commands, -180., -180., 10., 200., c); // east
-    vis_wall(&mut commands, -305., -80., 50., 10., c); // north-left
-    vis_wall(&mut commands, -205., -80., 50., 10., c); // north-right
-    rect(&mut commands, -280., -82., 8., 10., f, 1.5);
-    rect(&mut commands, -230., -82., 8., 10., f, 1.5);
+    vis_wall(commands, -255., -280., 150., 10., c); // south
+    vis_wall(commands, -330., -180., 10., 200., c); // west
+    vis_wall(commands, -180., -180., 10., 200., c); // east
+    vis_wall(commands, -305., -80., 50., 10., c); // north-left
+    vis_wall(commands, -205., -80., 50., 10., c); // north-right
+    rect(commands, -280., -82., 8., 10., f, 1.5);
+    rect(commands, -230., -82., 8., 10., f, 1.5);
 
     // STORE (-85, -180, 150x200) - north door at x=-85
     let c = Color::srgb(0.20, 0.36, 0.42);
     let f = Color::srgb(0.28, 0.48, 0.56);
-    vis_wall(&mut commands, -85., -280., 150., 10., c); // south
-    vis_wall(&mut commands, -160., -180., 10., 200., c); // west
-    vis_wall(&mut commands, -10., -180., 10., 200., c); // east
-    vis_wall(&mut commands, -135., -80., 50., 10., c); // north-left
-    vis_wall(&mut commands, -35., -80., 50., 10., c); // north-right
-    rect(&mut commands, -110., -82., 8., 10., f, 1.5);
-    rect(&mut commands, -60., -82., 8., 10., f, 1.5);
+    vis_wall(commands, -85., -280., 150., 10., c); // south
+    vis_wall(commands, -160., -180., 10., 200., c); // west
+    vis_wall(commands, -10., -180., 10., 200., c); // east
+    vis_wall(commands, -135., -80., 50., 10., c); // north-left
+    vis_wall(commands, -35., -80., 50., 10., c); // north-right
+    rect(commands, -110., -82., 8., 10., f, 1.5);
+    rect(commands, -60., -82., 8., 10., f, 1.5);
 
     // CAFÉ (85, -180, 150x200) - north door at x=85
     let c = Color::srgb(0.60, 0.48, 0.28);
     let f = Color::srgb(0.72, 0.58, 0.38);
-    vis_wall(&mut commands, 85., -280., 150., 10., c); // south
-    vis_wall(&mut commands, 10., -180., 10., 200., c); // west
-    vis_wall(&mut commands, 160., -180., 10., 200., c); // east
-    vis_wall(&mut commands, 35., -80., 50., 10., c); // north-left
-    vis_wall(&mut commands, 135., -80., 50., 10., c); // north-right
-    rect(&mut commands, 60., -82., 8., 10., f, 1.5);
-    rect(&mut commands, 110., -82., 8., 10., f, 1.5);
+    vis_wall(commands, 85., -280., 150., 10., c); // south
+    vis_wall(commands, 10., -180., 10., 200., c); // west
+    vis_wall(commands, 160., -180., 10., 200., c); // east
+    vis_wall(commands, 35., -80., 50., 10., c); // north-left
+    vis_wall(commands, 135., -80., 50., 10., c); // north-right
+    rect(commands, 60., -82., 8., 10., f, 1.5);
+    rect(commands, 110., -82., 8., 10., f, 1.5);
 
     // ADOPTION (255, -180, 150x200) - north door at x=255
     let c = Color::srgb(0.44, 0.34, 0.58);
     let f = Color::srgb(0.56, 0.44, 0.70);
-    vis_wall(&mut commands, 255., -280., 150., 10., c); // south
-    vis_wall(&mut commands, 180., -180., 10., 200., c); // west
-    vis_wall(&mut commands, 330., -180., 10., 200., c); // east
-    vis_wall(&mut commands, 205., -80., 50., 10., c); // north-left
-    vis_wall(&mut commands, 305., -80., 50., 10., c); // north-right
-    rect(&mut commands, 230., -82., 8., 10., f, 1.5);
-    rect(&mut commands, 280., -82., 8., 10., f, 1.5);
+    vis_wall(commands, 255., -280., 150., 10., c); // south
+    vis_wall(commands, 180., -180., 10., 200., c); // west
+    vis_wall(commands, 330., -180., 10., 200., c); // east
+    vis_wall(commands, 205., -80., 50., 10., c); // north-left
+    vis_wall(commands, 305., -80., 50., 10., c); // north-right
+    rect(commands, 230., -82., 8., 10., f, 1.5);
+    rect(commands, 280., -82., 8., 10., f, 1.5);
 
     // GARAGE (425, -180, 150x200) - north door at x=425, 70px wide for car
     let c = Color::srgb(0.26, 0.24, 0.32);
-    vis_wall(&mut commands, 425., -280., 150., 10., c); // south
-    vis_wall(&mut commands, 350., -180., 10., 200., c); // west
-    vis_wall(&mut commands, 500., -180., 10., 200., c); // east
-    vis_wall(&mut commands, 370., -80., 40., 10., c); // north-left  (350 to 390)
-    vis_wall(&mut commands, 480., -80., 40., 10., c); // north-right (460 to 500)
-
-    spawn_hud(&mut commands);
+    vis_wall(commands, 425., -280., 150., 10., c); // south
+    vis_wall(commands, 350., -180., 10., 200., c); // west
+    vis_wall(commands, 500., -180., 10., 200., c); // east
+    vis_wall(commands, 370., -80., 40., 10., c); // north-left  (350 to 390)
+    vis_wall(commands, 480., -80., 40., 10., c); // north-right (460 to 500)
 }
 
 fn rect(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color, z: f32) {
@@ -3498,6 +3526,87 @@ fn spawn_npc(
     ));
 }
 
+pub fn spawn_typing_overlay(cmd: &mut Commands) {
+    cmd.spawn((
+        Node {
+            width: Val::Percent(100.),
+            height: Val::Percent(100.),
+            position_type: PositionType::Absolute,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
+            row_gap: Val::Px(24.),
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0., 0., 0., 0.82)),
+        ZIndex(200),
+        Visibility::Hidden,
+        TypingOverlay,
+    ))
+    .with_children(|p| {
+        // Action label (e.g., "WORK")
+        p.spawn((
+            Text::new(""),
+            TextFont { font_size: 22., ..default() },
+            TextColor(Color::srgb(1., 0.85, 0.25)),
+            TypingLabel,
+        ));
+        // Word row: typed | current char in highlight box | remaining
+        p.spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            ..default()
+        })
+        .with_children(|row| {
+            // Typed chars (green)
+            row.spawn((
+                Text::new(""),
+                TextFont { font_size: 72., ..default() },
+                TextColor(Color::srgb(0.3, 1., 0.4)),
+                TypingWordTyped,
+            ));
+            // Current char highlight box
+            row.spawn((
+                Node {
+                    padding: UiRect::axes(Val::Px(3.), Val::Px(1.)),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.95, 0.95, 0.8)),
+                TypingWordCurrentBox,
+            ))
+            .with_children(|b| {
+                b.spawn((
+                    Text::new(""),
+                    TextFont { font_size: 72., ..default() },
+                    TextColor(Color::srgb(0.05, 0.05, 0.05)),
+                    TypingWordCurrent,
+                ));
+            });
+            // Remaining chars (gray)
+            row.spawn((
+                Text::new(""),
+                TextFont { font_size: 72., ..default() },
+                TextColor(Color::srgb(0.45, 0.45, 0.45)),
+                TypingWordRemaining,
+            ));
+        });
+        // Instruction text
+        p.spawn((
+            Text::new(""),
+            TextFont { font_size: 15., ..default() },
+            TextColor(Color::srgb(0.7, 0.7, 0.7)),
+            TypingInstruction,
+        ));
+        // Retries / cancel hint
+        p.spawn((
+            Text::new(""),
+            TextFont { font_size: 13., ..default() },
+            TextColor(Color::srgb(0.6, 0.5, 0.3)),
+            TypingRetries,
+        ));
+    });
+}
+
 pub fn spawn_hud(cmd: &mut Commands) {
     cmd.spawn(Node {
         width: Val::Percent(100.),
@@ -3506,8 +3615,15 @@ pub fn spawn_hud(cmd: &mut Commands) {
         ..default()
     })
     .with_children(|root| {
-        // Left panel
-        root.spawn((
+        spawn_hud_left_panel(root);
+        spawn_hud_right_panel(root);
+        spawn_hud_notification_area(root);
+        spawn_hud_prompt_overlay(root);
+    });
+}
+
+fn spawn_hud_left_panel(root: &mut ChildBuilder) {
+    root.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 left: Val::Px(12.),
@@ -3607,9 +3723,10 @@ pub fn spawn_hud(cmd: &mut Commands) {
                 HudLabel::Inventory,
             );
         });
+}
 
-        // Right panel
-        root.spawn((
+fn spawn_hud_right_panel(root: &mut ChildBuilder) {
+    root.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 right: Val::Px(12.),
@@ -3814,9 +3931,10 @@ pub fn spawn_hud(cmd: &mut Commands) {
                 HudLabel::Milestones,
             );
         });
+}
 
-        // Notification center-top
-        root.spawn((
+fn spawn_hud_notification_area(root: &mut ChildBuilder) {
+    root.spawn((
             Node {
                 position_type: PositionType::Absolute,
                 top: Val::Px(12.),
@@ -3844,9 +3962,10 @@ pub fn spawn_hud(cmd: &mut Commands) {
                 ));
             });
         });
+}
 
-        // Prompt bottom-center
-        root.spawn(Node {
+fn spawn_hud_prompt_overlay(root: &mut ChildBuilder) {
+    root.spawn(Node {
             position_type: PositionType::Absolute,
             bottom: Val::Px(18.),
             left: Val::Px(0.),
@@ -3874,7 +3993,6 @@ pub fn spawn_hud(cmd: &mut Commands) {
                 ));
             });
         });
-    });
 }
 
 fn htxt(parent: &mut ChildBuilder, text: &str, size: f32, color: Color, label: HudLabel) {

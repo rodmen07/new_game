@@ -125,12 +125,14 @@ pub fn quest_offer_system(
 pub fn quest_progress_system(
     mut quest_board: ResMut<QuestBoard>,
     mut gs: ResMut<GameState>,
-    inv: Res<Inventory>,
-    mut stats: ResMut<PlayerStats>,
+    mut player_q: Query<(&Inventory, &mut PlayerStats), With<LocalPlayer>>,
     mut friendship: ResMut<NpcFriendship>,
     mut notif: ResMut<Notification>,
     npc_q: Query<(Entity, &NpcId)>,
 ) {
+    let Ok((inv, mut stats)) = player_q.get_single_mut() else {
+        return;
+    };
     let mut any_completed = false;
     let crafted_today = quest_board.crafted_today;
 

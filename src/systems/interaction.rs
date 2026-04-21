@@ -122,299 +122,366 @@ fn action_prompt_retries(career: f32) -> u8 {
     }
 }
 
+// ── Word banks — one random word is picked per challenge ──────────────────────
+const WORK_WORDS: &[&str] = &[
+    "deadline", "pivot", "synergy", "workflow", "sprint", "standup",
+    "backlog", "invoice", "quarterly", "metric", "onboard", "milestone",
+    "overtime", "feedback", "proposal", "agenda", "pipeline", "deploy",
+    "dashboard", "offsite",
+];
+const FREELANCE_WORDS: &[&str] = &[
+    "invoice", "client", "remote", "contract", "revise", "proposal",
+    "deadline", "pitch", "project", "retainer", "markup", "estimate",
+    "draft", "scope", "deliver", "iterate", "approval", "mockup", "handoff", "billing",
+];
+const EAT_WORDS: &[&str] = &[
+    "bowl", "sandwich", "noodles", "salad", "stew", "toast", "wrap",
+    "burrito", "ramen", "curry", "falafel", "pasta", "taco", "grains", "broth",
+];
+const SLEEP_WORDS: &[&str] = &[
+    "slumber", "doze", "nap", "recharge", "rest", "snooze", "unwind",
+    "hibernate", "drift", "recover", "pillow", "blanket", "drowsy", "twilight", "dream",
+];
+const SHOP_WORDS: &[&str] = &[
+    "groceries", "staples", "rations", "supplies", "provisions",
+    "checkout", "essentials", "stock", "cart", "purchase",
+    "restock", "budget", "basket", "aisle", "coupon",
+];
+const RELAX_WORDS: &[&str] = &[
+    "park", "bench", "garden", "shade", "breeze", "sunset",
+    "wander", "lounge", "stroll", "unwind", "meadow", "birdsong",
+    "hammock", "leisure", "picnic",
+];
+const SHOWER_WORDS: &[&str] = &[
+    "rinse", "scrub", "lather", "freshen", "cleanse", "refresh",
+    "steam", "towel", "exfoliate", "hygiene", "soapy", "warm",
+    "drench", "nozzle", "squeaky",
+];
+const EXERCISE_WORDS: &[&str] = &[
+    "sprint", "squat", "burpee", "pushup", "plank", "lunge",
+    "crunch", "pullup", "deadlift", "jog", "interval", "tempo",
+    "stride", "circuit", "rally",
+];
+const MEDITATE_WORDS: &[&str] = &[
+    "breathe", "focus", "clarity", "stillness", "balance", "center",
+    "mindful", "inhale", "exhale", "serenity", "grounded", "aware",
+    "presence", "tranquil", "quiet",
+];
+const STUDY_WORDS: &[&str] = &[
+    "chapter", "lecture", "notes", "review", "research", "quiz",
+    "outline", "flashcard", "summary", "concept", "thesis", "annotate",
+    "memorize", "syllabus", "focus",
+];
+const GYM_WORDS: &[&str] = &[
+    "bench", "barbell", "squat", "deadlift", "cable", "dumbbell",
+    "rack", "spotter", "shrug", "curl", "incline", "crunch",
+    "lateral", "cardio", "reps",
+];
+const CAFE_WORDS: &[&str] = &[
+    "latte", "espresso", "mocha", "cortado", "cappuccino", "drip",
+    "matcha", "oat", "americano", "ristretto", "lungo",
+    "macchiato", "chai", "froth", "coldbrew",
+];
+const CLINIC_WORDS: &[&str] = &[
+    "checkup", "vitals", "bloodwork", "prescription", "diagnosis",
+    "triage", "consult", "referral", "dosage", "followup",
+    "symptom", "physician", "wellness", "recovery", "screening",
+];
+const VEHICLE_WORDS: &[&str] = &[
+    "ignition", "clutch", "throttle", "reverse", "neutral",
+    "cruise", "gear", "accelerate", "signal", "merge",
+    "navigate", "steer", "parallel", "overtake", "brake",
+];
+const PARTY_WORDS: &[&str] = &[
+    "gather", "toast", "celebrate", "invite", "mingle", "cheer",
+    "festive", "decorate", "groove", "confetti", "clink", "revel",
+    "playlist", "welcome", "candles",
+];
+const GARAGE_WORDS: &[&str] = &[
+    "wrench", "torque", "socket", "lube", "patch", "inflate",
+    "tighten", "flush", "grease", "align", "calibrate", "overhaul",
+    "seal", "replace", "inspect",
+];
+const PRINT_WORDS: &[&str] = &[
+    "collate", "format", "export", "submit", "staple", "laminate",
+    "photocopy", "scan", "layout", "margins", "duplex", "toner",
+    "spool", "queue", "printout",
+];
+const COMPUTER_WORDS: &[&str] = &[
+    "compile", "debug", "deploy", "commit", "merge", "refactor",
+    "lint", "optimize", "profile", "review", "branch", "clone",
+    "iterate", "document", "build",
+];
+const DENTAL_WORDS: &[&str] = &[
+    "floss", "rinse", "brace", "crown", "polish", "cavity",
+    "enamel", "retainer", "bridge", "scale", "plaque", "fluoride",
+    "whitening", "molar", "gum",
+];
+const EYE_WORDS: &[&str] = &[
+    "focus", "dilate", "contrast", "distance", "strain", "clarity",
+    "glare", "chart", "lens", "pupil", "retina", "blink",
+    "optometry", "acuity", "peripheral",
+];
+const RENT_WORDS: &[&str] = &[
+    "lease", "sign", "commit", "settle", "reside", "occupy",
+    "tenant", "secure", "contract", "deposit", "landlord", "furnish",
+    "movein", "clauses", "renew",
+];
+const GAS_WORDS: &[&str] = &[
+    "fuel", "refill", "tank", "pump", "gasoline", "diesel",
+    "unleaded", "nozzle", "octane", "premium", "regular",
+    "station", "receipt", "gallons", "liters",
+];
+const REPAIR_WORDS: &[&str] = &[
+    "weld", "patch", "bolt", "tighten", "replace", "overhaul",
+    "seal", "solder", "rebuild", "service", "grease", "swap",
+    "calibrate", "inspect", "restore",
+];
+const ITEM_COFFEE_WORDS: &[&str] = &[
+    "espresso", "latte", "brew", "arabica", "roast", "java",
+    "buzz", "caffeine", "drip", "aroma", "percolate", "grounds",
+    "crema", "filter", "mug",
+];
+const ITEM_VITAMINS_WORDS: &[&str] = &[
+    "vitamin", "supplement", "capsule", "zinc", "omega", "boost",
+    "daily", "nutrient", "mineral", "biotin", "probiotic", "collagen",
+    "immunity", "antioxidant", "dose",
+];
+const ITEM_BOOKS_WORDS: &[&str] = &[
+    "chapter", "novel", "passage", "volume", "excerpt", "prose",
+    "absorb", "bookmark", "narrative", "plot", "insight", "words",
+    "knowledge", "reading", "index",
+];
+const ITEM_INGREDIENT_WORDS: &[&str] = &[
+    "carrot", "basil", "ginger", "garlic", "thyme", "cumin",
+    "pepper", "zest", "saffron", "oregano", "paprika", "turmeric",
+    "coriander", "cinnamon", "chili",
+];
+const ITEM_GIFTBOX_WORDS: &[&str] = &[
+    "ribbon", "wrap", "package", "bundle", "seal", "bow",
+    "surprise", "keepsake", "token", "gesture", "giving", "present",
+    "cherish", "celebrate", "memories",
+];
+const ITEM_SMOOTHIE_WORDS: &[&str] = &[
+    "berry", "blend", "mango", "tropical", "citrus", "kale",
+    "protein", "frothy", "spinach", "avocado", "coconut", "ginger",
+    "peach", "pineapple", "flax",
+];
+const PAINTING_WORDS: &[&str] = &[
+    "canvas", "stroke", "palette", "acrylic", "texture", "blend",
+    "layer", "hue", "sketch", "detail", "pigment", "easel",
+    "chiaroscuro", "impasto", "glaze",
+];
+const GAMING_WORDS: &[&str] = &[
+    "respawn", "loot", "quest", "dungeon", "boss", "combo",
+    "stealth", "level", "vault", "dodge", "craft",
+    "rally", "trigger", "snipe", "grind",
+];
+const MUSIC_WORDS: &[&str] = &[
+    "chord", "rhythm", "melody", "tempo", "harmony", "riff",
+    "verse", "bridge", "scale", "groove", "strum", "pitch",
+    "dynamics", "accent", "cadence",
+];
+const BANK_DEPOSIT_WORDS: &[&str] = &[
+    "deposit", "save", "stash", "secure", "lodge", "store", "fund", "contribute",
+];
+const BANK_WITHDRAW_WORDS: &[&str] = &[
+    "withdraw", "collect", "redeem", "retrieve", "cash", "pocket", "access", "release",
+];
+const BANK_INVEST_WORDS: &[&str] = &[
+    "invest", "growth", "yield", "compound", "dividend", "stake", "hedge", "diversify",
+];
+const BANK_LOAN_WORDS: &[&str] = &["borrow", "loan", "credit", "advance", "finance", "collateral"];
+const BANK_HALF_WORDS: &[&str] = &["partial", "split", "half", "divide", "portion", "share"];
+const BANK_REPAY_WORDS: &[&str] = &["repay", "settle", "clear", "return", "payoff", "discharge"];
+const BANK_CASHOUT_WORDS: &[&str] = &["cashout", "liquidate", "redeem", "convert", "exit", "encash"];
+const BANK_INSURE_WORDS: &[&str] = &["insure", "coverage", "protect", "policy", "safeguard", "shield"];
+const GIFT_WORDS: &[&str] = &[
+    "present", "token", "keepsake", "souvenir", "surprise", "offering",
+    "gesture", "bouquet", "charm", "trinket", "memento", "cherish",
+];
+const BIKE_WORDS: &[&str] = &[
+    "pedal", "chain", "saddle", "commute", "gear", "spoke",
+    "handlebar", "brake", "cycle", "sprint",
+];
+const CAR_WORDS: &[&str] = &[
+    "ignition", "clutch", "navigate", "accelerate", "signal",
+    "reverse", "cruise", "steer", "parallel", "drive",
+];
+const SERVICE_WORDS: &[&str] = &[
+    "service", "inspect", "lube", "filter", "align", "tune",
+    "replace", "torque", "flush", "overhaul",
+];
+const COOK_WORDS: &[&str] = &[
+    "stir", "chop", "saute", "simmer", "blanch", "season", "dice",
+    "roast", "fold", "reduce", "whisk", "baste", "caramelize", "puree", "flambe",
+];
+const SMOOTHIE_WORDS: &[&str] = &[
+    "blend", "puree", "pour", "chill", "freeze", "whisk", "crush",
+    "shake", "swirl", "mix", "liquefy", "froth", "churn", "emulsify", "strain",
+];
+const FESTIVAL_WORDS: &[&str] = &[
+    "cheer", "dance", "mingle", "feast", "celebrate", "perform",
+    "exhibit", "gather", "toast", "revel", "parade", "sparkle", "jubilee", "carnival", "exuberant",
+];
+
+fn pick_word(pool: &'static [&'static str], seed: u32, offset: u32) -> &'static str {
+    pool[(seed.wrapping_add(offset * 11) as usize) % pool.len()]
+}
+
+fn word_challenge(label: &str, instruction: &str, words: &'static [&'static str], seed: u32) -> PromptChallenge {
+    PromptChallenge {
+        label: label.to_string(),
+        instruction: instruction.to_string(),
+        expected: pick_word(words, seed, 0).to_string(),
+    }
+}
+
 fn build_prompt_challenge(
     pending: &PendingAction,
     seed: u32,
     subject_name: &str,
 ) -> PromptChallenge {
-    const OFFICE_WORDS: &[&str] = &[
-        "desk",
-        "report",
-        "email",
-        "meeting",
-        "budget",
-        "client",
-        "memo",
-        "office",
-        "printer",
-        "spreadsheet",
-    ];
-    const FOOD_WORDS: &[&str] = &["soup", "sandwich", "noodles", "salad", "stew", "toast"];
-    const INGREDIENT_WORDS: &[&str] = &["carrot", "rice", "herb", "tomato", "pepper", "onion"];
-    const DRINK_WORDS: &[&str] = &["latte", "tea", "mocha", "juice"];
-    let pick = |pool: &'static [&'static str], offset: u32| -> &'static str {
-        pool[(seed.wrapping_add(offset * 11) as usize) % pool.len()]
-    };
     let subject = if subject_name.trim().is_empty() {
         "friend".to_string()
     } else {
         subject_name.trim().to_lowercase()
     };
-
     match pending {
-        PendingAction::Action(ActionKind::Work) => PromptChallenge {
-            label: "Work".to_string(),
-            instruction: "type the office words in order".to_string(),
-            expected: format!(
-                "{} {} {}",
-                pick(OFFICE_WORDS, 1),
-                pick(OFFICE_WORDS, 2),
-                pick(OFFICE_WORDS, 3)
-            ),
-        },
-        PendingAction::Action(ActionKind::Freelance) => PromptChallenge {
-            label: "Freelance".to_string(),
-            instruction: "type the remote work words".to_string(),
-            expected: format!(
-                "{} {} {}",
-                pick(OFFICE_WORDS, 4),
-                pick(OFFICE_WORDS, 5),
-                pick(OFFICE_WORDS, 6)
-            ),
-        },
-        PendingAction::Action(ActionKind::Eat) => PromptChallenge {
-            label: "Eat".to_string(),
-            instruction: "type the meal command".to_string(),
-            expected: format!("eat {}", pick(FOOD_WORDS, 1)),
-        },
-        PendingAction::Action(ActionKind::Sleep) => PromptChallenge {
-            label: "Sleep".to_string(),
-            instruction: "type the rest command".to_string(),
-            expected: "sleep now".to_string(),
-        },
-        PendingAction::Action(ActionKind::SleepRough) => PromptChallenge {
-            label: "Shelter".to_string(),
-            instruction: "type the shelter command".to_string(),
-            expected: "rest shelter".to_string(),
-        },
-        PendingAction::Action(ActionKind::Shop) => PromptChallenge {
-            label: "Shop".to_string(),
-            instruction: "type the supply command".to_string(),
-            expected: "buy supplies".to_string(),
-        },
-        PendingAction::Action(ActionKind::Relax) => PromptChallenge {
-            label: "Relax".to_string(),
-            instruction: "type the park command".to_string(),
-            expected: format!("relax {}", pick(&["park", "bench", "garden", "shade"], 2)),
-        },
-        PendingAction::Action(ActionKind::Shower) => PromptChallenge {
-            label: "Shower".to_string(),
-            instruction: "type the clean up command".to_string(),
-            expected: "wash clean".to_string(),
-        },
-        PendingAction::Action(ActionKind::Chat) => PromptChallenge {
+        PendingAction::Action(kind) => action_challenge(kind, seed, &subject),
+        PendingAction::Gift => social_challenge(&subject, seed),
+        PendingAction::Bank(slot) => finance_challenge(*slot, seed),
+        PendingAction::Transport(slot) => transport_challenge(*slot, seed),
+        PendingAction::Craft(slot) => craft_challenge(*slot, seed),
+        PendingAction::Festival(slot) => festival_challenge(*slot, seed),
+    }
+}
+
+fn action_challenge(kind: &ActionKind, seed: u32, subject: &str) -> PromptChallenge {
+    match kind {
+        ActionKind::Chat => PromptChallenge {
             label: "Chat".to_string(),
-            instruction: format!("greet {}", subject),
-            expected: format!("hello {}", subject),
+            instruction: format!("type to greet {}", subject),
+            expected: subject.to_string(),
         },
-        PendingAction::Action(ActionKind::Exercise) => PromptChallenge {
-            label: "Exercise".to_string(),
-            instruction: "type the training command".to_string(),
-            expected: "train cardio".to_string(),
-        },
-        PendingAction::Action(ActionKind::Meditate) => PromptChallenge {
-            label: "Meditate".to_string(),
-            instruction: "type the focus words".to_string(),
-            expected: "breathe stay calm".to_string(),
-        },
-        PendingAction::Action(ActionKind::Bank) => PromptChallenge {
-            label: "Bank".to_string(),
-            instruction: "type the banking command".to_string(),
-            expected: "bank open".to_string(),
-        },
-        PendingAction::Action(ActionKind::UseItem(ItemKind::Coffee)) => PromptChallenge {
-            label: "Coffee".to_string(),
-            instruction: "type the coffee action".to_string(),
-            expected: "drink coffee".to_string(),
-        },
-        PendingAction::Action(ActionKind::UseItem(ItemKind::Vitamins)) => PromptChallenge {
-            label: "Vitamins".to_string(),
-            instruction: "type the vitamin action".to_string(),
-            expected: "take vitamins".to_string(),
-        },
-        PendingAction::Action(ActionKind::UseItem(ItemKind::Books)) => PromptChallenge {
-            label: "Books".to_string(),
-            instruction: "type the reading action".to_string(),
-            expected: "read book".to_string(),
-        },
-        PendingAction::Action(ActionKind::UseItem(ItemKind::Ingredient)) => PromptChallenge {
-            label: "Ingredient".to_string(),
-            instruction: "type the bag check".to_string(),
-            expected: "check ingredient".to_string(),
-        },
-        PendingAction::Action(ActionKind::UseItem(ItemKind::GiftBox)) => PromptChallenge {
-            label: "Gift Box".to_string(),
-            instruction: "type the gift action".to_string(),
-            expected: "open gift".to_string(),
-        },
-        PendingAction::Action(ActionKind::UseItem(ItemKind::Smoothie)) => PromptChallenge {
-            label: "Smoothie".to_string(),
-            instruction: "type the smoothie action".to_string(),
-            expected: "drink smoothie".to_string(),
-        },
-        PendingAction::Action(ActionKind::Hobby(HobbyKind::Painting)) => PromptChallenge {
-            label: "Painting".to_string(),
-            instruction: "type the art command".to_string(),
-            expected: "paint canvas".to_string(),
-        },
-        PendingAction::Action(ActionKind::Hobby(HobbyKind::Gaming)) => PromptChallenge {
-            label: "Gaming".to_string(),
-            instruction: "type the game command".to_string(),
-            expected: "play game".to_string(),
-        },
-        PendingAction::Action(ActionKind::Hobby(HobbyKind::Music)) => PromptChallenge {
-            label: "Music".to_string(),
-            instruction: "type the music command".to_string(),
-            expected: "play music".to_string(),
-        },
-        PendingAction::Action(ActionKind::StudyCourse) => PromptChallenge {
-            label: "Study".to_string(),
-            instruction: "type the study command".to_string(),
-            expected: "study notes".to_string(),
-        },
-        PendingAction::Action(ActionKind::FeedPet) => PromptChallenge {
+        ActionKind::FeedPet => PromptChallenge {
             label: "Feed Pet".to_string(),
-            instruction: format!("type the pet command for {}", subject),
-            expected: format!("feed {}", subject),
+            instruction: format!("type to feed {}", subject),
+            expected: subject.to_string(),
         },
-        PendingAction::Action(ActionKind::ThrowParty) => PromptChallenge {
-            label: "Party".to_string(),
-            instruction: "type the host command".to_string(),
-            expected: "host party".to_string(),
-        },
-        PendingAction::Action(ActionKind::BuyTransport) => PromptChallenge {
-            label: "Transport".to_string(),
-            instruction: "type the garage command".to_string(),
-            expected: "visit garage".to_string(),
-        },
-        PendingAction::Action(ActionKind::GymSession) => PromptChallenge {
-            label: "Gym".to_string(),
-            instruction: "type the gym command".to_string(),
-            expected: "lift strong".to_string(),
-        },
-        PendingAction::Action(ActionKind::Cafe) => PromptChallenge {
-            label: "Cafe".to_string(),
-            instruction: "type the cafe order".to_string(),
-            expected: format!("order {}", pick(DRINK_WORDS, 3)),
-        },
-        PendingAction::Action(ActionKind::Clinic) => PromptChallenge {
-            label: "Clinic".to_string(),
-            instruction: "type the health command".to_string(),
-            expected: "check health".to_string(),
-        },
-        PendingAction::Action(ActionKind::EnterVehicle) => PromptChallenge {
-            label: "Vehicle".to_string(),
-            instruction: "type the engine command".to_string(),
-            expected: "start engine".to_string(),
-        },
-        PendingAction::Action(ActionKind::AdoptPet(kind)) => PromptChallenge {
+        ActionKind::AdoptPet(k) => PromptChallenge {
             label: "Adopt Pet".to_string(),
-            instruction: "type the adoption command".to_string(),
-            expected: format!("adopt {}", kind.label().to_lowercase()),
+            instruction: "type to adopt".to_string(),
+            expected: k.label().to_lowercase(),
         },
-        PendingAction::Action(ActionKind::Craft) => PromptChallenge {
-            label: "Craft".to_string(),
-            instruction: "type the crafting command".to_string(),
-            expected: "craft item".to_string(),
-        },
-        PendingAction::Action(ActionKind::RentUnit(id)) => PromptChallenge {
-            label: format!("Rent Apt {}", id),
-            instruction: "type the rental command".to_string(),
-            expected: "sign lease".to_string(),
-        },
-        PendingAction::Action(ActionKind::GasUp) => PromptChallenge {
-            label: "Gas Up".to_string(),
-            instruction: "type the fuel command".to_string(),
-            expected: "fill tank".to_string(),
-        },
-        PendingAction::Action(ActionKind::RepairVehicle) => PromptChallenge {
-            label: "Repair".to_string(),
-            instruction: "type the repair command".to_string(),
-            expected: "fix vehicle".to_string(),
-        },
-        PendingAction::Action(ActionKind::DentalVisit) => PromptChallenge {
-            label: "Dental".to_string(),
-            instruction: "type the dental command".to_string(),
-            expected: "open wide".to_string(),
-        },
-        PendingAction::Action(ActionKind::EyeExam) => PromptChallenge {
-            label: "Eye Exam".to_string(),
-            instruction: "type the exam command".to_string(),
-            expected: "read chart".to_string(),
-        },
-        PendingAction::Action(ActionKind::ComputerLab) => PromptChallenge {
-            label: "Computer Lab".to_string(),
-            instruction: "type the login command".to_string(),
-            expected: "study notes".to_string(),
-        },
-        PendingAction::Action(ActionKind::PrintShop) => PromptChallenge {
-            label: "Print".to_string(),
-            instruction: "type the print command".to_string(),
-            expected: "print doc".to_string(),
-        },
-        PendingAction::Gift => PromptChallenge {
-            label: "Gift".to_string(),
-            instruction: format!("give a gift to {}", subject),
-            expected: format!("give {} gift", subject),
-        },
-        PendingAction::Bank(slot) => {
-            let (label, expected) = match slot {
-                1 => ("Deposit", "bank deposit"),
-                2 => ("Withdraw", "bank withdraw"),
-                3 => ("Half Deposit", "bank half"),
-                4 => ("Loan", "bank loan"),
-                5 => ("Repay", "bank repay"),
-                6 => ("Invest", "bank invest"),
-                7 => ("Medium Invest", "bank medium"),
-                8 => ("Cash Out", "bank cashout"),
-                _ => ("Insurance", "bank insure"),
-            };
-            PromptChallenge {
-                label: label.to_string(),
-                instruction: "type the banking action".to_string(),
-                expected: expected.to_string(),
-            }
-        }
-        PendingAction::Transport(slot) => {
-            let (label, expected) = match slot {
-                1 => ("Buy Bike", "buy bike"),
-                2 => ("Buy Car", "buy car"),
-                _ => ("Service", "service engine"),
-            };
-            PromptChallenge {
-                label: label.to_string(),
-                instruction: "type the transport action".to_string(),
-                expected: expected.to_string(),
-            }
-        }
-        PendingAction::Craft(slot) => {
-            let (label, expected): (&str, String) = match slot {
-                1 => ("Cook", format!("add {}", pick(INGREDIENT_WORDS, 4))),
-                2 => ("Gift Box", "wrap ribbon".to_string()),
-                _ => (
-                    "Smoothie",
-                    format!("blend {}", pick(&["berry", "banana", "mango", "melon"], 5)),
-                ),
-            };
-            PromptChallenge {
-                label: label.to_string(),
-                instruction: "type the crafting action".to_string(),
-                expected,
-            }
-        }
-        PendingAction::Festival(slot) => {
-            let (label, expected) = match slot {
-                1 => ("Festival", "join festival"),
-                2 => ("Festival", "play festival"),
-                3 => ("Festival", "enjoy festival"),
-                _ => ("Festival", "redeem token"),
-            };
-            PromptChallenge {
-                label: label.to_string(),
-                instruction: "type the festival action".to_string(),
-                expected: expected.to_string(),
-            }
-        }
+        ActionKind::RentUnit(_) => word_challenge("Rent", "type to rent", RENT_WORDS, seed),
+        ActionKind::UseItem(item) => item_challenge(item, seed),
+        ActionKind::Hobby(hobby) => hobby_challenge(hobby, seed),
+        ActionKind::Work => word_challenge("Work", "type to work", WORK_WORDS, seed),
+        ActionKind::Freelance => word_challenge("Freelance", "type to freelance", FREELANCE_WORDS, seed),
+        ActionKind::Eat => word_challenge("Eat", "type to eat", EAT_WORDS, seed),
+        ActionKind::Sleep => word_challenge("Sleep", "type to sleep", SLEEP_WORDS, seed),
+        ActionKind::SleepRough => word_challenge("Shelter", "type to shelter", SLEEP_WORDS, seed),
+        ActionKind::Shop => word_challenge("Shop", "type to shop", SHOP_WORDS, seed),
+        ActionKind::Relax => word_challenge("Relax", "type to relax", RELAX_WORDS, seed),
+        ActionKind::Shower => word_challenge("Shower", "type to shower", SHOWER_WORDS, seed),
+        ActionKind::Exercise => word_challenge("Exercise", "type to exercise", EXERCISE_WORDS, seed),
+        ActionKind::Meditate => word_challenge("Meditate", "type to meditate", MEDITATE_WORDS, seed),
+        ActionKind::Bank => word_challenge("Bank", "type to open bank", &["vault", "access", "enter", "open"], seed),
+        ActionKind::StudyCourse => word_challenge("Study", "type to study", STUDY_WORDS, seed),
+        ActionKind::ThrowParty => word_challenge("Party", "type to host", PARTY_WORDS, seed),
+        ActionKind::BuyTransport => word_challenge("Transport", "type for garage", GARAGE_WORDS, seed),
+        ActionKind::GymSession => word_challenge("Gym", "type to train", GYM_WORDS, seed),
+        ActionKind::Cafe => word_challenge("Cafe", "type to order", CAFE_WORDS, seed),
+        ActionKind::Clinic => word_challenge("Clinic", "type for checkup", CLINIC_WORDS, seed),
+        ActionKind::EnterVehicle => word_challenge("Vehicle", "type to drive", VEHICLE_WORDS, seed),
+        ActionKind::Craft => word_challenge("Craft", "type to craft", COOK_WORDS, seed),
+        ActionKind::GasUp => word_challenge("Gas Up", "type to refuel", GAS_WORDS, seed),
+        ActionKind::RepairVehicle => word_challenge("Repair", "type to repair", REPAIR_WORDS, seed),
+        ActionKind::DentalVisit => word_challenge("Dental", "type for dental", DENTAL_WORDS, seed),
+        ActionKind::EyeExam => word_challenge("Eye Exam", "type for eye exam", EYE_WORDS, seed),
+        ActionKind::ComputerLab => word_challenge("Computer Lab", "type to log in", COMPUTER_WORDS, seed),
+        ActionKind::PrintShop => word_challenge("Print", "type to print", PRINT_WORDS, seed),
+    }
+}
+
+fn item_challenge(item: &ItemKind, seed: u32) -> PromptChallenge {
+    match item {
+        ItemKind::Coffee => word_challenge("Coffee", "type to drink coffee", ITEM_COFFEE_WORDS, seed),
+        ItemKind::Vitamins => word_challenge("Vitamins", "type to take vitamins", ITEM_VITAMINS_WORDS, seed),
+        ItemKind::Books => word_challenge("Books", "type to read", ITEM_BOOKS_WORDS, seed),
+        ItemKind::Ingredient => word_challenge("Ingredient", "type to use ingredient", ITEM_INGREDIENT_WORDS, seed),
+        ItemKind::GiftBox => word_challenge("Gift Box", "type to open gift", ITEM_GIFTBOX_WORDS, seed),
+        ItemKind::Smoothie => word_challenge("Smoothie", "type to drink smoothie", ITEM_SMOOTHIE_WORDS, seed),
+    }
+}
+
+fn hobby_challenge(hobby: &HobbyKind, seed: u32) -> PromptChallenge {
+    match hobby {
+        HobbyKind::Painting => word_challenge("Painting", "type to paint", PAINTING_WORDS, seed),
+        HobbyKind::Gaming => word_challenge("Gaming", "type to game", GAMING_WORDS, seed),
+        HobbyKind::Music => word_challenge("Music", "type to play music", MUSIC_WORDS, seed),
+    }
+}
+
+fn social_challenge(subject: &str, seed: u32) -> PromptChallenge {
+    PromptChallenge {
+        label: "Gift".to_string(),
+        instruction: format!("type to give a gift to {}", subject),
+        expected: pick_word(GIFT_WORDS, seed, 0).to_string(),
+    }
+}
+
+fn finance_challenge(slot: u8, seed: u32) -> PromptChallenge {
+    let (label, words): (&str, &[&str]) = match slot {
+        1 => ("Deposit", BANK_DEPOSIT_WORDS),
+        2 => ("Withdraw", BANK_WITHDRAW_WORDS),
+        3 => ("Half Deposit", BANK_HALF_WORDS),
+        4 => ("Loan", BANK_LOAN_WORDS),
+        5 => ("Repay", BANK_REPAY_WORDS),
+        6 => ("Invest", BANK_INVEST_WORDS),
+        7 => ("Medium Invest", BANK_INVEST_WORDS),
+        8 => ("Cash Out", BANK_CASHOUT_WORDS),
+        _ => ("Insurance", BANK_INSURE_WORDS),
+    };
+    PromptChallenge {
+        label: label.to_string(),
+        instruction: "type to confirm banking".to_string(),
+        expected: pick_word(words, seed, slot as u32).to_string(),
+    }
+}
+
+fn transport_challenge(slot: u8, seed: u32) -> PromptChallenge {
+    let (label, words): (&str, &[&str]) = match slot {
+        1 => ("Buy Bike", BIKE_WORDS),
+        2 => ("Buy Car", CAR_WORDS),
+        _ => ("Service", SERVICE_WORDS),
+    };
+    PromptChallenge {
+        label: label.to_string(),
+        instruction: "type to confirm transport".to_string(),
+        expected: pick_word(words, seed, slot as u32).to_string(),
+    }
+}
+
+fn craft_challenge(slot: u8, seed: u32) -> PromptChallenge {
+    let (label, words): (&str, &[&str]) = match slot {
+        1 => ("Cook", COOK_WORDS),
+        2 => ("Gift Box", ITEM_GIFTBOX_WORDS),
+        _ => ("Smoothie", SMOOTHIE_WORDS),
+    };
+    PromptChallenge {
+        label: label.to_string(),
+        instruction: "type to craft".to_string(),
+        expected: pick_word(words, seed, slot as u32).to_string(),
+    }
+}
+
+fn festival_challenge(slot: u8, seed: u32) -> PromptChallenge {
+    PromptChallenge {
+        label: "Festival".to_string(),
+        instruction: "type to join the festival".to_string(),
+        expected: pick_word(FESTIVAL_WORDS, seed, slot as u32).to_string(),
     }
 }
 
@@ -464,9 +531,6 @@ fn collect_prompt_text(keys: &ButtonInput<KeyCode>, buffer: &mut String) {
     for (kc, ch) in letters {
         append_prompt_char(keys, buffer, kc, ch);
     }
-    if keys.just_pressed(KeyCode::Space) && !buffer.ends_with(' ') && !buffer.is_empty() {
-        buffer.push(' ');
-    }
 }
 
 fn begin_action_prompt(
@@ -488,10 +552,7 @@ fn begin_action_prompt(
     prompt.retries_left = action_prompt_retries(skills.career);
     prompt.pending = Some(pending);
     prompt.target = Some(target);
-    notif.push(
-        format!("{} challenge - type: {}", prompt.label, prompt.expected),
-        4.,
-    );
+    notif.push(format!("{} challenge!", prompt.label), 1.5);
 }
 
 fn handle_action_prompt_input(
@@ -502,22 +563,6 @@ fn handle_action_prompt_input(
     if !prompt.active {
         return None;
     }
-
-    let tries_label = if prompt.retries_left == 1 {
-        "try"
-    } else {
-        "tries"
-    };
-    notif.message = format!(
-        "{} - {} | target phrase: {} | {} {} left | {}_",
-        prompt.label,
-        prompt.instruction,
-        prompt.expected,
-        prompt.retries_left,
-        tries_label,
-        prompt.buffer
-    );
-    notif.timer = 1.0;
 
     if keys.just_pressed(KeyCode::Escape) {
         prompt.clear();
@@ -532,21 +577,33 @@ fn handle_action_prompt_input(
 
     collect_prompt_text(keys, &mut prompt.buffer);
 
+    // Auto-confirm when the typed buffer matches the expected single word.
+    let attempt = normalize_prompt_text(&prompt.buffer);
+    let target = normalize_prompt_text(&prompt.expected);
+    if !target.is_empty() && attempt == target {
+        let label = prompt.label.clone();
+        let pending = prompt.pending.take();
+        let entity_target = prompt.target.take();
+        prompt.clear();
+        notif.push(format!("{} confirmed.", label), 1.5);
+        return pending.map(|next| (next, entity_target));
+    }
+
+    // Keep Enter as a manual fallback confirm.
     if keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter) {
-        let attempt = normalize_prompt_text(&prompt.buffer);
-        if attempt == normalize_prompt_text(&prompt.expected) {
+        if attempt == target {
             let label = prompt.label.clone();
             let pending = prompt.pending.take();
-            let target = prompt.target.take();
+            let entity_target = prompt.target.take();
             prompt.clear();
             notif.push(format!("{} confirmed.", label), 1.5);
-            return pending.map(|next| (next, target));
+            return pending.map(|next| (next, entity_target));
         }
 
         if prompt.retries_left > 1 {
             prompt.retries_left -= 1;
             prompt.buffer.clear();
-            notif.push(format!("Not quite. Try again: {}", prompt.expected), 2.5);
+            notif.push("Not quite - try again.".to_string(), 2.0);
         } else {
             let label = prompt.label.clone();
             prompt.clear();
@@ -1676,22 +1733,22 @@ pub fn handle_interaction(
             &mut VehicleState,
             &mut BankInput,
             &mut ActionPrompt,
+            &mut PlayerStats,
+            &mut Inventory,
+            &mut Skills,
+            &mut WorkStreak,
+            &mut HousingTier,
         ),
         With<Player>,
     >,
     mut gt: ResMut<GameTime>,
-    mut stats: ResMut<PlayerStats>,
-    mut inv: ResMut<Inventory>,
-    mut skills: ResMut<Skills>,
     mut friendship: ResMut<NpcFriendship>,
     mut gs: ResMut<GameState>,
     mut notif: ResMut<Notification>,
-    mut streak: ResMut<WorkStreak>,
-    mut housing: ResMut<HousingTier>,
     mut extras: InteractExtras,
     mut sfx: EventWriter<PlaySfx>,
 ) {
-    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt)) =
+    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt, mut stats, mut inv, mut skills, mut streak, mut housing)) =
         player_q.get_single_mut()
     else {
         return;
@@ -2615,7 +2672,7 @@ pub fn handle_interaction(
 pub fn handle_bank_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut player_bank_q: Query<&mut BankInput, With<Player>>,
-    mut stats: ResMut<PlayerStats>,
+    mut player_stats_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut notif: ResMut<Notification>,
     mut gt: ResMut<GameTime>,
     mut goal: ResMut<DailyGoal>,
@@ -2626,6 +2683,9 @@ pub fn handle_bank_input(
     if !bank_input.active {
         return;
     }
+    let Ok(mut stats) = player_stats_q.get_single_mut() else {
+        return;
+    };
 
     let kind_str = if bank_input.kind == BankInputKind::Deposit {
         "Deposit"

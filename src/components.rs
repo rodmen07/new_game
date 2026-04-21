@@ -312,3 +312,13 @@ pub enum BodyPart {
 /// Alex=0, Sam=1, Mia=2, Jordan=3, Taylor=4, Casey=5.
 #[derive(Component, Clone, Copy)]
 pub struct NpcId(pub usize);
+
+// ── Typing overlay components ─────────────────────────────────────────────────
+#[derive(Component)] pub struct TypingOverlay;
+#[derive(Component)] pub struct TypingLabel;
+#[derive(Component)] pub struct TypingWordTyped;
+#[derive(Component)] pub struct TypingWordCurrentBox;
+#[derive(Component)] pub struct TypingWordCurrent;
+#[derive(Component)] pub struct TypingWordRemaining;
+#[derive(Component)] pub struct TypingInstruction;
+#[derive(Component)] pub struct TypingRetries;

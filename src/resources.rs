@@ -35,7 +35,7 @@ impl Default for PlayerMovement {
 
 // ── PlayerStats ───────────────────────────────────────────────────────────────
 
-#[derive(Resource)]
+#[derive(Component)]
 pub struct PlayerStats {
     pub energy: f32,
     pub hunger: f32,
@@ -129,7 +129,7 @@ impl PlayerStats {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Component, Default)]
 pub struct Inventory {
     pub coffee: u32,
     pub vitamins: u32,
@@ -225,7 +225,7 @@ impl GameTime {
 
 // ── Skills ────────────────────────────────────────────────────────────────────
 
-#[derive(Resource, Default)]
+#[derive(Component, Default)]
 pub struct Skills {
     pub cooking: f32,
     pub career: f32,
@@ -291,7 +291,7 @@ impl Skills {
 
 // ── WorkStreak ────────────────────────────────────────────────────────────────
 
-#[derive(Resource, Default)]
+#[derive(Component, Default)]
 pub struct WorkStreak {
     pub days: u32,
     pub worked_today: bool,
@@ -299,7 +299,7 @@ pub struct WorkStreak {
 
 // ── HousingTier ───────────────────────────────────────────────────────────────
 
-#[derive(Resource, Default, Clone, PartialEq)]
+#[derive(Component, Default, Clone, PartialEq)]
 pub enum HousingTier {
     #[default]
     Unhoused,
@@ -1290,14 +1290,9 @@ impl ActionPrompt {
         self.target = None;
     }
 
+    #[allow(dead_code)]
     pub fn display_text(&self) -> String {
-        if !self.active {
-            return String::new();
-        }
-        format!(
-            "{} challenge - {}\nTarget phrase: {}\nType: {}_\nRetries: {}  [Enter] confirm [Esc] cancel",
-            self.label, self.instruction, self.expected, self.buffer, self.retries_left
-        )
+        String::new() // typing overlay handles display
     }
 }
 
@@ -1385,7 +1380,6 @@ pub struct DayExtras<'w> {
     pub social_events: ResMut<'w, SocialEvents>,
     pub season: ResMut<'w, Season>,
     pub save_writer: EventWriter<'w, SaveRequest>,
-    pub inv: ResMut<'w, Inventory>,
     pub settings: Res<'w, GameSettings>,
     pub quest_board: ResMut<'w, QuestBoard>,
     pub crisis: Res<'w, CrisisState>,

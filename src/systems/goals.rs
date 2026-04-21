@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
+use crate::components::LocalPlayer;
 use crate::resources::*;
 use bevy::prelude::*;
 
@@ -79,8 +80,7 @@ pub fn compute_goal_progress(
 pub fn check_daily_goal(
     mut goal: ResMut<DailyGoal>,
     gs: Res<GameState>,
-    mut stats: ResMut<PlayerStats>,
-    streak: Res<WorkStreak>,
+    mut player_q: Query<(&mut PlayerStats, &WorkStreak), With<LocalPlayer>>,
     friendship: Res<NpcFriendship>,
     mut notif: ResMut<Notification>,
     hobbies: Res<Hobbies>,
@@ -93,6 +93,9 @@ pub fn check_daily_goal(
     if goal.completed || goal.failed {
         return;
     }
+    let Ok((mut stats, streak)) = player_q.get_single_mut() else {
+        return;
+    };
 
     let best_friendship = friendship.levels.values().cloned().fold(0f32, f32::max);
     let (raw_progress, done) = compute_goal_progress(
@@ -142,10 +145,8 @@ pub fn check_daily_goal(
 
 pub fn check_milestones(
     mut ms: ResMut<Milestones>,
-    stats: Res<PlayerStats>,
+    player_q: Query<(&PlayerStats, &Skills, &WorkStreak, &HousingTier), With<LocalPlayer>>,
     gs: Res<GameState>,
-    skills: Res<Skills>,
-    streak: Res<WorkStreak>,
     gt: Res<GameTime>,
     friendship: Res<NpcFriendship>,
     invest: Res<Investment>,
@@ -154,10 +155,12 @@ pub fn check_milestones(
     pet: Res<Pet>,
     social_events: Res<SocialEvents>,
     transport: Res<Transport>,
-    housing: Res<HousingTier>,
     mut notif: ResMut<Notification>,
     ms_extras: MilestoneExtras,
 ) {
+    let Ok((stats, skills, streak, housing)) = player_q.get_single() else {
+        return;
+    };
     macro_rules! unlock {
         ($flag:expr, $name:expr) => {
             if !$flag {

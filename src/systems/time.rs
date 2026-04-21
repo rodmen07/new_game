@@ -1,7 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::audio::{PlaySfx, SfxKind};
-use crate::components::{Npc, NpcPersonality, Player};
+use crate::components::{LocalPlayer, Npc, NpcPersonality, Player};
 use crate::constants::TIME_SCALE;
 use crate::resources::*;
 use bevy::prelude::*;
@@ -767,15 +767,12 @@ fn apply_daily_event(
 
 pub fn on_new_day(
     mut gt: ResMut<GameTime>,
-    mut stats: ResMut<PlayerStats>,
+    mut player_q: Query<(&mut PlayerStats, &mut Skills, &mut WorkStreak, &mut HousingTier, &mut Inventory), With<LocalPlayer>>,
     mut gs: ResMut<GameState>,
     mut goal: ResMut<DailyGoal>,
     mut notif: ResMut<Notification>,
     mut rating: ResMut<LifeRating>,
-    mut streak: ResMut<WorkStreak>,
     mut friendship: ResMut<NpcFriendship>,
-    mut housing: ResMut<HousingTier>,
-    mut skills: ResMut<Skills>,
     mut weather: ResMut<WeatherKind>,
     hobbies: Res<Hobbies>,
     mut conds: ResMut<Conditions>,
@@ -787,6 +784,12 @@ pub fn on_new_day(
         return;
     }
     gt.prev_day = gt.day;
+
+    let Ok((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+        player_q.get_single_mut()
+    else {
+        return;
+    };
 
     rating.sample(&stats, &skills);
 
@@ -913,15 +916,15 @@ pub fn on_new_day(
     decay_friendships(&mut friendship, &skills);
 
     // ── Coffee expiry (perishable) ────────────────────────────────────────────
-    if day_extras.inv.coffee > 0 {
-        day_extras.inv.coffee_age += 1;
-        if day_extras.inv.coffee_age >= 5 {
-            day_extras.inv.coffee -= 1;
-            day_extras.inv.coffee_age = 0;
+    if inv.coffee > 0 {
+        inv.coffee_age += 1;
+        if inv.coffee_age >= 5 {
+            inv.coffee -= 1;
+            inv.coffee_age = 0;
             notif.push("A coffee went stale and was tossed!", 3.);
         }
     } else {
-        day_extras.inv.coffee_age = 0;
+        inv.coffee_age = 0;
     }
 
     // ── Skill decay — use it or lose it (0.01/day, floor 0.5) ───────────────
@@ -978,7 +981,7 @@ pub fn apply_eviction_teleport(
 pub fn best_friend_perks(
     gt: Res<GameTime>,
     mut gs: ResMut<GameState>,
-    mut stats: ResMut<PlayerStats>,
+    mut player_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut rep: ResMut<Reputation>,
     mut notif: ResMut<Notification>,
     friendship: Res<NpcFriendship>,
@@ -989,6 +992,10 @@ pub fn best_friend_perks(
         return;
     }
     gs.bf_perk_day = gt.day;
+
+    let Ok(mut stats) = player_q.get_single_mut() else {
+        return;
+    };
 
     let mut perks: Vec<&str> = Vec::new();
     for (entity, npc) in &npc_q {

@@ -12,7 +12,7 @@ use bevy::{ecs::system::SystemParam, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::{NpcId, PetKind, Player, Vehicle},
+    components::{LocalPlayer, NpcId, PetKind, Player, Vehicle},
     menu::GameStartKind,
     resources::{
         ActionPrompt, BankInput, Conditions, CrisisKind, CrisisState, DailyGoal, FestivalState,
@@ -250,15 +250,11 @@ pub struct SaveData {
 // ── SystemParam groups (Bevy 16-param limit) ──────────────────────────────────
 
 #[derive(SystemParam)]
-pub struct SaveParamsA<'w> {
-    pub stats: Res<'w, PlayerStats>,
+pub struct SaveParamsA<'w, 's> {
     pub gt: Res<'w, GameTime>,
-    pub skills: Res<'w, Skills>,
-    pub streak: Res<'w, WorkStreak>,
-    pub housing: Res<'w, HousingTier>,
-    pub inv: Res<'w, Inventory>,
     pub ms: Res<'w, Milestones>,
     pub rating: Res<'w, LifeRating>,
+    pub player_q: Query<'w, 's, (&'static PlayerStats, &'static Skills, &'static WorkStreak, &'static HousingTier, &'static Inventory), With<LocalPlayer>>,
 }
 
 #[derive(SystemParam)]
@@ -277,15 +273,11 @@ pub struct SaveParamsB<'w> {
 }
 
 #[derive(SystemParam)]
-pub struct ApplyParamsA<'w> {
-    pub stats: ResMut<'w, PlayerStats>,
+pub struct ApplyParamsA<'w, 's> {
     pub gt: ResMut<'w, GameTime>,
-    pub skills: ResMut<'w, Skills>,
-    pub streak: ResMut<'w, WorkStreak>,
-    pub housing: ResMut<'w, HousingTier>,
-    pub inv: ResMut<'w, Inventory>,
     pub ms: ResMut<'w, Milestones>,
     pub rating: ResMut<'w, LifeRating>,
+    pub player_q: Query<'w, 's, (&'static mut PlayerStats, &'static mut Skills, &'static mut WorkStreak, &'static mut HousingTier, &'static mut Inventory), With<LocalPlayer>>,
 }
 
 #[derive(SystemParam)]
@@ -333,6 +325,10 @@ pub fn handle_save(
     }
     events.clear();
 
+    let Ok((stats, skills, streak, housing, inv)) = a.player_q.get_single() else {
+        return;
+    };
+
     let mut npc_friendship = [0f32; 6];
     for (entity, npc_id) in &npc_q {
         if npc_id.0 < 6 {
@@ -341,32 +337,32 @@ pub fn handle_save(
     }
 
     let data = SaveData {
-        energy: a.stats.energy,
-        hunger: a.stats.hunger,
-        happiness: a.stats.happiness,
-        health: a.stats.health,
-        stress: a.stats.stress,
-        sleep_debt: a.stats.sleep_debt,
-        money: a.stats.money,
-        savings: a.stats.savings,
-        loan: a.stats.loan,
-        meals: a.stats.meals,
-        unpaid_rent_days: a.stats.unpaid_rent_days,
-        meditation_buff: a.stats.meditation_buff,
+        energy: stats.energy,
+        hunger: stats.hunger,
+        happiness: stats.happiness,
+        health: stats.health,
+        stress: stats.stress,
+        sleep_debt: stats.sleep_debt,
+        money: stats.money,
+        savings: stats.savings,
+        loan: stats.loan,
+        meals: stats.meals,
+        unpaid_rent_days: stats.unpaid_rent_days,
+        meditation_buff: stats.meditation_buff,
         day: a.gt.day,
-        skill_cooking: a.skills.cooking,
-        skill_career: a.skills.career,
-        skill_fitness: a.skills.fitness,
-        skill_social: a.skills.social,
-        streak_days: a.streak.days,
-        housing: u8::from(&*a.housing),
-        inv_coffee: a.inv.coffee,
-        inv_vitamins: a.inv.vitamins,
-        inv_books: a.inv.books,
-        inv_coffee_age: a.inv.coffee_age,
-        inv_ingredient: a.inv.ingredient,
-        inv_gift_box: a.inv.gift_box,
-        inv_smoothie: a.inv.smoothie,
+        skill_cooking: skills.cooking,
+        skill_career: skills.career,
+        skill_fitness: skills.fitness,
+        skill_social: skills.social,
+        streak_days: streak.days,
+        housing: u8::from(&*housing),
+        inv_coffee: inv.coffee,
+        inv_vitamins: inv.vitamins,
+        inv_books: inv.books,
+        inv_coffee_age: inv.coffee_age,
+        inv_ingredient: inv.ingredient,
+        inv_gift_box: inv.gift_box,
+        inv_smoothie: inv.smoothie,
         ms_saved_100: a.ms.saved_100,
         ms_exec: a.ms.exec,
         ms_best_friend: a.ms.best_friend,
@@ -466,19 +462,25 @@ pub fn apply_save_data(
     }
     let Some(data) = pending.0.take() else { return };
 
+    let Ok((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+        a.player_q.get_single_mut()
+    else {
+        return;
+    };
+
     // ── PlayerStats ───────────────────────────────────────────────────────────
-    a.stats.energy = data.energy;
-    a.stats.hunger = data.hunger;
-    a.stats.happiness = data.happiness;
-    a.stats.health = data.health;
-    a.stats.stress = data.stress;
-    a.stats.sleep_debt = data.sleep_debt;
-    a.stats.money = data.money;
-    a.stats.savings = data.savings;
-    a.stats.loan = data.loan;
-    a.stats.meals = data.meals;
-    a.stats.unpaid_rent_days = data.unpaid_rent_days;
-    a.stats.meditation_buff = data.meditation_buff;
+    stats.energy = data.energy;
+    stats.hunger = data.hunger;
+    stats.happiness = data.happiness;
+    stats.health = data.health;
+    stats.stress = data.stress;
+    stats.sleep_debt = data.sleep_debt;
+    stats.money = data.money;
+    stats.savings = data.savings;
+    stats.loan = data.loan;
+    stats.meals = data.meals;
+    stats.unpaid_rent_days = data.unpaid_rent_days;
+    stats.meditation_buff = data.meditation_buff;
 
     // ── GameTime ──────────────────────────────────────────────────────────────
     a.gt.day = data.day;
@@ -486,25 +488,25 @@ pub fn apply_save_data(
     a.gt.hours = 8.; // start each loaded session in the morning
 
     // ── Skills ────────────────────────────────────────────────────────────────
-    a.skills.cooking = data.skill_cooking;
-    a.skills.career = data.skill_career;
-    a.skills.fitness = data.skill_fitness;
-    a.skills.social = data.skill_social;
+    skills.cooking = data.skill_cooking;
+    skills.career = data.skill_career;
+    skills.fitness = data.skill_fitness;
+    skills.social = data.skill_social;
 
     // ── WorkStreak ────────────────────────────────────────────────────────────
-    a.streak.days = data.streak_days;
+    streak.days = data.streak_days;
 
     // ── HousingTier ───────────────────────────────────────────────────────────
-    *a.housing = HousingTier::from(data.housing);
+    *housing = HousingTier::from(data.housing);
 
     // ── Inventory ─────────────────────────────────────────────────────────────
-    a.inv.coffee = data.inv_coffee;
-    a.inv.vitamins = data.inv_vitamins;
-    a.inv.books = data.inv_books;
-    a.inv.coffee_age = data.inv_coffee_age;
-    a.inv.ingredient = data.inv_ingredient;
-    a.inv.gift_box = data.inv_gift_box;
-    a.inv.smoothie = data.inv_smoothie;
+    inv.coffee = data.inv_coffee;
+    inv.vitamins = data.inv_vitamins;
+    inv.books = data.inv_books;
+    inv.coffee_age = data.inv_coffee_age;
+    inv.ingredient = data.inv_ingredient;
+    inv.gift_box = data.inv_gift_box;
+    inv.smoothie = data.inv_smoothie;
 
     // ── Milestones ────────────────────────────────────────────────────────────
     a.ms.saved_100 = data.ms_saved_100;
@@ -647,12 +649,16 @@ pub fn reset_game(
         return;
     }
 
-    *a.stats = PlayerStats::default();
+    if let Ok((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+        a.player_q.get_single_mut()
+    {
+        *stats = PlayerStats::default();
+        *skills = Skills::default();
+        *streak = WorkStreak::default();
+        *housing = HousingTier::default();
+        *inv = Inventory::default();
+    }
     *a.gt = GameTime::default();
-    *a.skills = Skills::default();
-    *a.streak = WorkStreak::default();
-    *a.housing = HousingTier::default();
-    *a.inv = Inventory::default();
     *a.ms = Milestones::default();
     *a.rating = LifeRating::default();
     *b.hobbies = Hobbies::default();
