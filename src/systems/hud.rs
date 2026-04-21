@@ -41,7 +41,10 @@ pub fn animate_notification(
     let tween = Tween::new(
         EaseFunction::QuadraticOut,
         Duration::from_millis(280),
-        NotifTopLens { start: -60., end: 12. },
+        NotifTopLens {
+            start: -60.,
+            end: 12.,
+        },
     );
     commands.entity(entity).insert(Animator::new(tween));
 }

@@ -1,7 +1,7 @@
 use crate::components::{
     ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
     DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
-    LocalPlayer, MainCamera, Npc, NpcId, NpcLabel, NpcPersonality, NotifContainer, ObjectSize,
+    LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
     PetKind, Player, PlayerId, PlayerIndicator, Vehicle,
 };
 use crate::resources::{ActionPrompt, BankInput, PlayerMovement, VehicleState};
@@ -3925,7 +3925,10 @@ fn stat_bar(parent: &mut ChildBuilder, label: &str, color: Color, bar: HudBar) {
                     },
                     BackgroundColor(color),
                     bar,
-                    BarSmooth { displayed: 80., target: 80. },
+                    BarSmooth {
+                        displayed: 80.,
+                        target: 80.,
+                    },
                 ));
             });
         });
