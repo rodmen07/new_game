@@ -599,7 +599,7 @@ fn apply_rent(
     crisis_rent_mult: f32,
 ) {
     let rent = housing.rent() * rent_mult * crisis_rent_mult;
-    if stats.money >= rent {
+    if stats.can_afford(rent) {
         stats.money -= rent;
         stats.unpaid_rent_days = 0;
     } else {
@@ -854,6 +854,20 @@ pub fn on_new_day(
                 5.,
             );
         }
+    }
+
+    // ── Credit debt daily interest 5% ────────────────────────────────────────
+    if stats.money < 0. {
+        let interest = stats.money.abs() * 0.05;
+        stats.money -= interest;
+        stats.stress = (stats.stress + 3.).min(100.);
+        notif.push(
+            format!(
+                "Debt interest: -${:.0}  (Balance: ${:.0})",
+                interest, stats.money
+            ),
+            4.,
+        );
     }
 
     // ── Savings 5% interest ───────────────────────────────────────────────────

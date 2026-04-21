@@ -1,5 +1,6 @@
 use crate::{
     components::{ActionKind, PetKind, Player},
+    constants::DEBT_LIMIT,
     save::SaveRequest,
     settings::GameSettings,
 };
@@ -92,6 +93,10 @@ impl PlayerStats {
     }
     pub fn loan_penalty(&self) -> f32 {
         if self.loan > 300. { 0.90 } else { 1.0 }
+    }
+    /// Returns true if the player can afford `cost`, counting up to DEBT_LIMIT in credit.
+    pub fn can_afford(&self, cost: f32) -> bool {
+        self.money + DEBT_LIMIT >= cost
     }
     /// Skill XP multiplier based on sleep debt.
     /// Sleep-deprived players learn more slowly: -20% at moderate debt, -40% at severe.

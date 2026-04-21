@@ -732,7 +732,7 @@ fn handle_bank_keys(
         return true;
     }
     if p6 {
-        if stats.money >= 50. {
+        if stats.can_afford(50.) {
             gt.advance_hours(0.25);
             stats.money -= 50.;
             invest.amount += 50.;
@@ -749,7 +749,7 @@ fn handle_bank_keys(
         return true;
     }
     if p7 {
-        if stats.money >= 50. {
+        if stats.can_afford(50.) {
             gt.advance_hours(0.25);
             stats.money -= 50.;
             invest.amount += 50.;
@@ -785,7 +785,7 @@ fn handle_bank_keys(
     if p9 {
         if crisis.has_insurance {
             notif.message = format!("Already insured! ({} days left)", crisis.insurance_days);
-        } else if stats.money >= 75. {
+        } else if stats.can_afford(75.) {
             gt.advance_hours(0.25);
             stats.money -= 75.;
             crisis.has_insurance = true;
@@ -856,7 +856,7 @@ fn handle_transport_keys(
                 transport.kind.label(),
                 transport.work_uses
             );
-        } else if stats.money >= 15. {
+        } else if stats.can_afford(15.) {
             gt.advance_hours(0.25);
             stats.money -= 15.;
             transport.maintenance_due = false;
@@ -916,7 +916,7 @@ fn handle_craft_keys(
     }
     if p2 {
         gt.advance_hours(0.5);
-        if inv.ingredient >= 1 && stats.money >= 5. {
+        if inv.ingredient >= 1 && stats.can_afford(5.) {
             inv.ingredient -= 1;
             stats.money -= 5.;
             inv.gift_box += 1;
@@ -1100,7 +1100,7 @@ fn handle_work(
             ),
             5.,
         );
-    } else if *housing == HousingTier::Unhoused && stats.money >= 90. {
+    } else if *housing == HousingTier::Unhoused && stats.can_afford(90.) {
         notif.push(
             format!(
                 "${:.0} cash - enough for the apartment! Bank is SW.",
@@ -1139,7 +1139,7 @@ fn handle_shop(
     notif: &mut Notification,
 ) {
     if p1 {
-        if stats.money >= 5. && inv.coffee < 9 {
+        if stats.can_afford(5.) && inv.coffee < 9 {
             stats.money -= 5.;
             inv.coffee += 1;
             inv.coffee_age = 0;
@@ -1154,7 +1154,7 @@ fn handle_shop(
         return;
     }
     if p2 {
-        if stats.money >= 8. && inv.vitamins < 9 {
+        if stats.can_afford(8.) && inv.vitamins < 9 {
             stats.money -= 8.;
             inv.vitamins += 1;
             notif.message = format!("Bought vitamins. ({}x)", inv.vitamins);
@@ -1168,7 +1168,7 @@ fn handle_shop(
         return;
     }
     if p3 {
-        if stats.money >= 12. && inv.books < 9 {
+        if stats.can_afford(12.) && inv.books < 9 {
             stats.money -= 12.;
             inv.books += 1;
             notif.message = format!("Bought book. ({}x)", inv.books);
@@ -1182,7 +1182,7 @@ fn handle_shop(
         return;
     }
     if p4 {
-        if stats.money >= 8. && inv.ingredient < 9 {
+        if stats.can_afford(8.) && inv.ingredient < 9 {
             stats.money -= 8.;
             inv.ingredient += 1;
             notif.message = format!("Bought ingredients. ({}x)", inv.ingredient);
@@ -1196,7 +1196,7 @@ fn handle_shop(
         return;
     }
     if pe {
-        if stats.money >= 15. {
+        if stats.can_afford(15.) {
             stats.money -= 15.;
             stats.meals += 3;
             stats.cooldown = 1.;
@@ -1264,7 +1264,7 @@ fn handle_relax(
         };
         match (&kind, p1, p2) {
             (FestivalKind::SpringFair, true, _) => {
-                if stats.money < 5. {
+                if !stats.can_afford(5.) {
                     notif.push("Need $5 for Flower Crown!", 2.);
                     stats.cooldown = 0.5;
                     return;
@@ -1302,7 +1302,7 @@ fn handle_relax(
                 }
             }
             (FestivalKind::SummerBBQ, true, _) => {
-                if stats.money < 10. {
+                if !stats.can_afford(10.) {
                     notif.push("Need $10 for the Grill-Off!", 2.);
                     stats.cooldown = 0.5;
                     return;
@@ -1355,7 +1355,7 @@ fn handle_relax(
                 notif.push("Picked apples! +3 ingredients +0.1fit +2 tokens", 3.);
             }
             (FestivalKind::AutumnHarvest, _, _) => {
-                if stats.money < 15. {
+                if !stats.can_afford(15.) {
                     notif.push("Need $15 for the Harvest Feast!", 2.);
                     stats.cooldown = 0.5;
                     return;
@@ -1382,7 +1382,7 @@ fn handle_relax(
                 notif.push("Ice Skating! +0.2fit +15hap +2 tokens", 3.);
             }
             (FestivalKind::WinterGala, _, true) => {
-                if stats.money < 20. {
+                if !stats.can_afford(20.) {
                     notif.push("Need $20 for the Gift Exchange!", 2.);
                     stats.cooldown = 0.5;
                     return;
@@ -1396,7 +1396,7 @@ fn handle_relax(
                 notif.push("Gift Exchange! +0.5 friendship to all NPCs +3 tokens", 3.);
             }
             (FestivalKind::WinterGala, _, _) => {
-                if stats.money < 25. {
+                if !stats.can_afford(25.) {
                     notif.push("Need $25 for the Charity Drive!", 2.);
                     stats.cooldown = 0.5;
                     return;
@@ -1482,7 +1482,7 @@ fn handle_chat(
             return;
         }
         let used_gift_box = inv.gift_box > 0;
-        if lvl >= 2. && (used_gift_box || stats.money >= 10.) {
+        if lvl >= 2. && (used_gift_box || stats.can_afford(10.)) {
             if used_gift_box {
                 inv.gift_box -= 1;
             } else {
@@ -1604,7 +1604,7 @@ fn handle_study(
     season: &Season,
     weather: &WeatherKind,
 ) {
-    if stats.money < 30. {
+    if !stats.can_afford(30.) {
         notif.push("Need $30 to study!", 2.);
         return;
     }
@@ -1926,7 +1926,7 @@ pub fn handle_interaction(
     // Appliance breakdown: home actions cost extra
     let repair_fee = extras.crisis.home_cost_extra();
     if repair_fee > 0. && needs_home_access(&inter.action) {
-        if stats.money < repair_fee {
+        if !stats.can_afford(repair_fee) {
             notif.push(
                 format!(
                     "Appliance broken! Need ${:.0} repair fee for home actions.",
@@ -1980,7 +1980,7 @@ pub fn handle_interaction(
             let breakfast_bonus = if gt.is_breakfast() { 10. } else { 0. };
             if stats.meals > 0 {
                 stats.meals -= 1;
-            } else if stats.money >= 10. {
+            } else if stats.can_afford(10.) {
                 stats.money -= 10.;
             } else {
                 notif.push("No food or money!", 2.5);
@@ -2296,7 +2296,7 @@ pub fn handle_interaction(
         }
         ActionKind::FeedPet => {
             if !extras.pet.has_pet {
-                if stats.money >= 50. {
+                if stats.can_afford(50.) {
                     stats.money -= 50.;
                     extras.pet.has_pet = true;
                     extras.pet.fed_today = true;
@@ -2310,7 +2310,7 @@ pub fn handle_interaction(
                 stats.cooldown = 0.5;
                 return;
             }
-            if stats.money < 5. {
+            if !stats.can_afford(5.) {
                 notif.push("Need $5 to feed your pet!", 2.);
                 return;
             }
@@ -2326,7 +2326,7 @@ pub fn handle_interaction(
             );
         }
         ActionKind::ThrowParty => {
-            if stats.money < 40. {
+            if !stats.can_afford(40.) {
                 notif.push("Need $40 to throw a party!", 2.);
                 return;
             }
@@ -2391,7 +2391,7 @@ pub fn handle_interaction(
                 notif.push("Too tired for the gym!", 2.);
                 return;
             }
-            if stats.money < 5. {
+            if !stats.can_afford(5.) {
                 notif.push("Need $5 for gym entry.", 2.);
                 return;
             }
@@ -2424,7 +2424,7 @@ pub fn handle_interaction(
             if !pe {
                 return;
             }
-            if stats.money < 12. {
+            if !stats.can_afford(12.) {
                 notif.push("Need $12 for café order.", 2.);
                 return;
             }
@@ -2448,7 +2448,7 @@ pub fn handle_interaction(
                 notif.push("You're healthy — no clinic visit needed.", 2.);
                 return;
             }
-            if stats.money < 40. {
+            if !stats.can_afford(40.) {
                 notif.push("Need $40 for clinic visit.", 2.);
                 return;
             }
@@ -2482,7 +2482,7 @@ pub fn handle_interaction(
                 notif.push(format!("You already have {}!", extras.pet.name), 2.);
                 return;
             }
-            if stats.money < 300. {
+            if !stats.can_afford(300.) {
                 notif.push("Need $300 to adopt a pet.", 2.);
                 return;
             }
@@ -2532,7 +2532,7 @@ pub fn handle_interaction(
             stats.cooldown = 0.5;
         }
         ActionKind::GasUp => {
-            if stats.money >= 20. {
+            if stats.can_afford(20.) {
                 stats.money -= 20.;
                 extras.transport.maintenance_due = false;
                 notif.push("Gassed up! Vehicle range restored. ($20 paid)", 2.5);
@@ -2544,7 +2544,7 @@ pub fn handle_interaction(
         ActionKind::RepairVehicle => {
             if !extras.transport.kind.is_vehicle() {
                 notif.push("No vehicle to repair!", 2.);
-            } else if stats.money >= 25. {
+            } else if stats.can_afford(25.) {
                 gt.advance_hours(1.0);
                 stats.money -= 25.;
                 extras.transport.maintenance_due = false;
@@ -2564,7 +2564,7 @@ pub fn handle_interaction(
         ActionKind::DentalVisit => {
             if stats.health > 90. {
                 notif.push("Teeth look great — no visit needed.", 2.);
-            } else if stats.money >= 50. {
+            } else if stats.can_afford(50.) {
                 stats.money -= 50.;
                 stats.health = (stats.health + 15.).min(100.);
                 stats.stress = (stats.stress - 5.).max(0.);
@@ -2578,7 +2578,7 @@ pub fn handle_interaction(
             stats.cooldown = 0.5;
         }
         ActionKind::EyeExam => {
-            if stats.money >= 35. {
+            if stats.can_afford(35.) {
                 stats.money -= 35.;
                 stats.stress = (stats.stress - 8.).max(0.);
                 stats.happiness = (stats.happiness + 8.).min(100.);
@@ -2600,7 +2600,7 @@ pub fn handle_interaction(
             );
         }
         ActionKind::PrintShop => {
-            if stats.money >= 5. {
+            if stats.can_afford(5.) {
                 stats.money -= 5.;
                 notif.push("Printed documents. ($5 paid)", 2.);
             } else {
