@@ -32,8 +32,8 @@ pub fn resolve_collisions(
     ptf.translation.y = start.y;
 
     for _ in 0..step_count {
-        ptf.translation.x = (ptf.translation.x + step.x).clamp(-1600., 1600.);
-        ptf.translation.y = (ptf.translation.y + step.y).clamp(-1600., 1600.);
+        ptf.translation.x = (ptf.translation.x + step.x).clamp(-3000., 3000.);
+        ptf.translation.y = (ptf.translation.y + step.y).clamp(-3000., 3000.);
 
         // Two resolution passes per step for corner/stacked stability.
         for _pass in 0..2 {

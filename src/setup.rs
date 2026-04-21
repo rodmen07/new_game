@@ -263,15 +263,6 @@ pub fn setup(mut commands: Commands) {
     );
     zone(
         &mut commands,
-        255.,
-        180.,
-        150.,
-        200.,
-        Color::srgb(0.78, 0.68, 0.50),
-        "SUBURBS",
-    );
-    zone(
-        &mut commands,
         425.,
         180.,
         150.,
@@ -541,48 +532,6 @@ pub fn setup(mut commands: Commands) {
         Color::srgb(0.40, 0.25, 0.10),
         1.21,
     );
-
-    // SUBURBS (255, 180, 150x160) - three small houses
-    for (hx, tint) in [(215., 0.82f32), (255., 0.76), (295., 0.80)] {
-        rect(
-            &mut commands,
-            hx,
-            210.,
-            40.,
-            60.,
-            Color::srgb(tint, tint - 0.10, tint - 0.26),
-            1.05,
-        );
-        rect(
-            &mut commands,
-            hx,
-            242.,
-            40.,
-            10.,
-            Color::srgb(tint - 0.22, tint - 0.44, tint - 0.60),
-            1.12,
-        );
-        for woff in [-8., 8.] {
-            rect(
-                &mut commands,
-                hx + woff,
-                218.,
-                12.,
-                9.,
-                Color::srgb(0.72, 0.86, 0.96),
-                1.15,
-            );
-        }
-        rect(
-            &mut commands,
-            hx,
-            185.,
-            8.,
-            14.,
-            Color::srgb(0.44, 0.28, 0.12),
-            1.15,
-        ); // door
-    }
 
     // OFFICE (425, 180, 150x160) - corporate glass
     rect(
@@ -1189,17 +1138,6 @@ pub fn setup(mut commands: Commands) {
         130.,
         140.,
         Color::srgb(0.70, 0.62, 0.82),
-        1.03,
-    );
-
-    // SUBURBS interior - grassy yard
-    rect(
-        &mut commands,
-        255.,
-        145.,
-        130.,
-        40.,
-        Color::srgb(0.38, 0.62, 0.32),
         1.03,
     );
 
@@ -2380,57 +2318,6 @@ pub fn setup(mut commands: Commands) {
         2.3,
     );
 
-    // SUBURBS - HOUSE PORCH (255, 120)
-    obj(
-        &mut commands,
-        255.,
-        120.,
-        32.,
-        18.,
-        Color::srgb(0.72, 0.58, 0.38),
-        ActionKind::Relax,
-        "[E] Sit on porch - Relax",
-    );
-    rect(
-        &mut commands,
-        255.,
-        122.,
-        26.,
-        10.,
-        Color::srgb(0.82, 0.70, 0.48),
-        2.1,
-    );
-    rect(
-        &mut commands,
-        255.,
-        120.,
-        14.,
-        8.,
-        Color::srgb(0.60, 0.44, 0.22),
-        2.2,
-    );
-
-    // SUBURBS - NEIGHBOR MAILBOX (205, 130)
-    obj(
-        &mut commands,
-        205.,
-        130.,
-        22.,
-        18.,
-        Color::srgb(0.42, 0.58, 0.72),
-        ActionKind::Chat,
-        "[E] Chat with neighbor",
-    );
-    rect(
-        &mut commands,
-        205.,
-        134.,
-        14.,
-        8.,
-        Color::srgb(0.20, 0.32, 0.68),
-        2.1,
-    );
-
     // CAFÉ - COUNTER (85, -180)
     obj(
         &mut commands,
@@ -3290,10 +3177,6 @@ pub fn setup(mut commands: Commands) {
         kind: BuildingKind::Individual,
     });
     commands.spawn(Building {
-        name: "SUBURBS",
-        kind: BuildingKind::Individual,
-    });
-    commands.spawn(Building {
         name: "WELLNESS",
         kind: BuildingKind::Collective,
     });
@@ -3372,17 +3255,6 @@ pub fn setup(mut commands: Commands) {
     rect(&mut commands, -60., 82., 8., 10., f, 1.5);
 
     // PARK (85, 180, 150x160) - open, no walls
-
-    // SUBURBS (255, 180, 150x200) - south door at x=255
-    let c = Color::srgb(0.58, 0.48, 0.32);
-    let f = Color::srgb(0.68, 0.56, 0.38);
-    vis_wall(&mut commands, 255., 280., 150., 10., c); // north
-    vis_wall(&mut commands, 180., 180., 10., 200., c); // west
-    vis_wall(&mut commands, 330., 180., 10., 200., c); // east
-    vis_wall(&mut commands, 205., 80., 50., 10., c); // south-left
-    vis_wall(&mut commands, 305., 80., 50., 10., c); // south-right
-    rect(&mut commands, 230., 82., 8., 10., f, 1.5);
-    rect(&mut commands, 280., 82., 8., 10., f, 1.5);
 
     // OFFICE (425, 180, 150x200) - south door at x=425
     let c = Color::srgb(0.25, 0.32, 0.45);
