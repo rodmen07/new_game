@@ -206,19 +206,117 @@ src/
 
 The project is currently a playable, feature-rich prototype with a clean verified Rust baseline and ongoing expansion work.
 
-## Near-Term Roadmap
+## Roadmap
 
-### In progress
-- Continued refactor of player-specific state from global resources to entity components
-- Deeper multiplayer-safe ECS cleanup and architecture follow-through
+Items are grouped by category and ordered by priority within each group. Each item lists its goal, the files it touches, and any prerequisite work.
 
-### Next content goals
-- More NPC depth and relationship states
-- Character archetypes and stronger replay loops
-- Art pass, tutorial flow, and accessibility improvements
+---
 
-### Known follow-ups
-- Multiplayer readiness is still architectural groundwork rather than a playable mode
+### P1 - Test coverage for new systems
+
+These are pure-function tests with no ECS dependency - low effort, high value.
+
+**P1-A: Unit tests for the typing challenge helpers**
+- Target: `src/systems/interaction.rs`
+- Cover `pick_word` (index wrapping, pool boundaries), `word_challenge` (returns correct single word), `normalize_prompt_text` (whitespace collapsing, case), and the auto-confirm branch inside `handle_action_prompt_input` (correct match, partial match, Esc cancel, retry decrement)
+- No ECS setup required
+
+**P1-B: Unit tests for NPC collision helper**
+- Target: `src/systems/npc.rs`
+- Extract the AABB overlap math from `npc_collisions` into a pure `resolve_aabb(pos, half, wall_rect) -> Vec2` helper and test push directions and corner cases
+- Depends on: extract helper from `npc_collisions`
+
+---
+
+### P2 - Visual polish: typing overlay entrance animation
+
+Make the overlay feel snappier with a short fade-in and scale-up on appear.
+
+**P2-A: Fade-in tween on overlay background** ✅
+- Added `TypingOverlayFade` component (alpha: f32, TARGET_ALPHA = 0.82) to `src/components.rs`
+- Overlay spawns with alpha 0 and `Visibility::Hidden`; `update_typing_overlay` animates alpha at 10 units/sec toward 0.82 each frame it is active
+- On deactivate: alpha snaps to 0, `BackgroundColor` cleared, `Visibility::Hidden` set immediately
+- Target: `src/components.rs`, `src/setup.rs`, `src/systems/hud.rs`
+
+**P2-B: Scale-up tween on word row**
+- Target: same files as P2-A
+- Animate the word row `Node`'s implicit scale from 0.85 to 1.0 over ~120 ms using a custom `Lens` on `Transform`
+- Depends on: P2-A approach validated (same tween infrastructure)
+
+---
+
+### P3 - Audio: core sound effects
+
+The `assets/audio/` folder is present but empty. Even minimal SFX dramatically improves feel.
+
+**P3-A: Keypress sound** ✅
+- `SfxKind::KeyPress` added; fires inside `handle_action_prompt_input` when buffer grows
+- Asset: `assets/audio/key_press.ogg` (place a short click clip here)
+- Target: `src/systems/interaction.rs`, `src/audio.rs`
+
+**P3-B: Confirm sound** ✅
+- `SfxKind::Confirm` added; fires on auto-confirm and Enter-confirm paths
+- Asset: `assets/audio/confirm.ogg`
+- Target: same as P3-A
+
+**P3-C: Fail / wrong key sound** ✅
+- `SfxKind::Fail` added; fires on failed Enter attempt (wrong word) and on retry exhaustion
+- Asset: `assets/audio/fail.ogg`
+- Note: all three degrade gracefully if asset files are absent (existing pattern)
+- Target: `src/systems/interaction.rs`
+
+---
+
+### P4 - Gameplay depth
+
+**P4-A: Job promotion event**
+- A career milestone at `career >= 2.5` and `career >= 5.0` that triggers a one-time prompt at the office ("Promotion available - confirm to advance")
+- Reward: permanent work pay multiplier bump and a narrative line
+- Target: `src/systems/interaction.rs` (work arm), `src/systems/narrative.rs`, `src/resources.rs` (flag on `WorkStreak` or new component)
+
+**P4-B: NPC hangout activity** ✅
+- New `ActionKind::Hangout` interactable near an NPC when friendship >= 3
+- Press **[H]** near an NPC to hang out (requires friendship >= 3); picks a word from `HANGOUT_WORDS` as challenge
+- Grants +0.5 friendship, +25 happiness, -10 stress, -8 energy, +0.2 social skill XP
+- NPC prompt now shows `[H] Hangout` hint once friendship level reaches 3
+- Target: `src/components.rs`, `src/systems/interaction.rs`, `src/systems/npc.rs`
+
+**P4-C: Apartment furnishing buffs** ✅
+- New `Furnishings` component (desk, bed, kitchen flags) on the player entity
+- Purchased at the Bank with F1/F2/F3 key shortcuts (requires apartment access, paid from savings)
+  - F1 Desk $60: +15% skill XP on study/work
+  - F2 Comfy Bed $80: +10 energy on each sleep
+  - F3 Kitchen $100: -10 extra hunger reduction on each meal
+- Persisted in save data; bank info message hints `[F1]Desk$60 [F2]Bed$80 [F3]Kitchen$100`
+- Target: `src/components.rs`, `src/systems/interaction.rs`, `src/save.rs`, `src/setup.rs`
+
+**P4-D: Visible skill tree panel**
+- A togglable HUD panel (Tab key) showing all six skills as progress bars with next-tier labels
+- No new data - just reads existing `Skills` component
+- Target: `src/setup.rs` (spawn panel), `src/systems/hud.rs` (toggle + update), `src/components.rs` (marker)
+
+---
+
+### P5 - Fresh audit pass (Iteration 14) ✅
+
+- Scanned all new systems added in P1-P4 + P3: Furnishings, Hangout, Promotion, TypingOverlayFade, SkillPanel, SFX variants
+- Found and fixed T-04 violation: `sample_save()` missing four new `SaveData` fields (`promotion_notified`, `furnishing_*`)
+- No new findings opened; no `.unwrap()` outside tests; no new functions >150 lines
+- Audit logged in `audits/AUDIT-ITERATIONS-11-15.md` as Iteration 14
+
+---
+
+### Longer-term (post-P5)
+
+These require significant architecture work and are not blocked by any of the above.
+
+| Item | Description |
+|---|---|
+| M-02 | Replace 14 `get_single()` calls with filtered iterators for multiplayer safety |
+| M-03 | Introduce a `PlayerAction` event abstraction to decouple raw keyboard input from game logic |
+| M-04 | Restructure `SaveData` to support a `Vec<PlayerSave>` for per-player persistence |
+| Tutorial | First-run overlay guiding new players through the opening survival loop |
+| Art pass | Replace colored rectangles with sprite sheets for characters, buildings, and props |
 
 ---
 

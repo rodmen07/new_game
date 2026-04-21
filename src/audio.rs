@@ -16,6 +16,9 @@ pub enum SfxKind {
     Sleep,
     Interact,
     Chime,
+    KeyPress,
+    Confirm,
+    Fail,
 }
 
 // ── Asset handles ─────────────────────────────────────────────────────────────
@@ -28,6 +31,9 @@ pub struct AudioHandles {
     pub eat: Option<Handle<AudioSource>>,
     pub sleep: Option<Handle<AudioSource>>,
     pub interact: Option<Handle<AudioSource>>,
+    pub key_press: Option<Handle<AudioSource>>,
+    pub confirm: Option<Handle<AudioSource>>,
+    pub fail: Option<Handle<AudioSource>>,
     pub bgm_day: Option<Handle<AudioSource>>,
     pub bgm_night: Option<Handle<AudioSource>>,
     pub rain_loop: Option<Handle<AudioSource>>,
@@ -90,6 +96,9 @@ fn load_audio_handles(mut handles: ResMut<AudioHandles>, server: Res<AssetServer
     handles.eat = load_optional_audio(&server, "audio/eat.ogg");
     handles.sleep = load_optional_audio(&server, "audio/sleep.ogg");
     handles.interact = load_optional_audio(&server, "audio/interact.ogg");
+    handles.key_press = load_optional_audio(&server, "audio/key_press.ogg");
+    handles.confirm = load_optional_audio(&server, "audio/confirm.ogg");
+    handles.fail = load_optional_audio(&server, "audio/fail.ogg");
     handles.bgm_day = load_optional_audio(&server, "audio/bgm_day.ogg");
     handles.bgm_night = load_optional_audio(&server, "audio/bgm_night.ogg");
     handles.rain_loop = load_optional_audio(&server, "audio/rain_loop.wav");
@@ -195,6 +204,9 @@ fn play_sfx_events(
             SfxKind::Sleep => handles.sleep.clone(),
             SfxKind::Interact => handles.interact.clone(),
             SfxKind::Chime => handles.chime.clone(),
+            SfxKind::KeyPress => handles.key_press.clone(),
+            SfxKind::Confirm => handles.confirm.clone(),
+            SfxKind::Fail => handles.fail.clone(),
         };
         if let Some(src) = src {
             commands.spawn((AudioPlayer::<AudioSource>(src), PlaybackSettings::DESPAWN));

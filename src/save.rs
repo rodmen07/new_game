@@ -12,7 +12,7 @@ use bevy::{ecs::system::SystemParam, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::{LocalPlayer, NpcId, PetKind, Player, Vehicle},
+    components::{Furnishings, LocalPlayer, NpcId, PetKind, Player, Vehicle},
     menu::GameStartKind,
     resources::{
         ActionPrompt, BankInput, Conditions, CrisisKind, CrisisState, DailyGoal, FestivalState,
@@ -104,6 +104,8 @@ pub struct SaveData {
 
     // ── WorkStreak ────────────────────────────────────────────────────────────
     pub streak_days: u32,
+    #[serde(default)]
+    pub promotion_notified: u8,
 
     // ── HousingTier ───────────────────────────────────────────────────────────
     /// 0 = Unhoused, 1 = Apartment, 2 = Condo, 3 = Penthouse
@@ -245,6 +247,14 @@ pub struct SaveData {
     pub festivals_total: u32,
     #[serde(default)]
     pub ms_festival_goer: bool,
+
+    // ── Furnishings ───────────────────────────────────────────────────────────
+    #[serde(default)]
+    pub furnishing_desk: bool,
+    #[serde(default)]
+    pub furnishing_bed: bool,
+    #[serde(default)]
+    pub furnishing_kitchen: bool,
 }
 
 // ── SystemParam groups (Bevy 16-param limit) ──────────────────────────────────
@@ -254,11 +264,8 @@ pub struct SaveParamsA<'w, 's> {
     pub gt: Res<'w, GameTime>,
     pub ms: Res<'w, Milestones>,
     pub rating: Res<'w, LifeRating>,
-    pub player_q: Query<'w, 's, (&'static PlayerStats, &'static Skills, &'static WorkStreak, &'static HousingTier, &'static Inventory), With<LocalPlayer>>,
-}
-
-#[derive(SystemParam)]
-pub struct SaveParamsB<'w> {
+    pub player_q: Query<'w, 's, (&'static PlayerStats, &'static Skills, &'static WorkStreak, &'static HousingTier, &'static Inventory, &'static Furnishings), With<LocalPlayer>>,
+}<'w> {
     pub hobbies: Res<'w, Hobbies>,
     pub conds: Res<'w, Conditions>,
     pub invest: Res<'w, Investment>,
@@ -277,7 +284,7 @@ pub struct ApplyParamsA<'w, 's> {
     pub gt: ResMut<'w, GameTime>,
     pub ms: ResMut<'w, Milestones>,
     pub rating: ResMut<'w, LifeRating>,
-    pub player_q: Query<'w, 's, (&'static mut PlayerStats, &'static mut Skills, &'static mut WorkStreak, &'static mut HousingTier, &'static mut Inventory), With<LocalPlayer>>,
+    pub player_q: Query<'w, 's, (&'static mut PlayerStats, &'static mut Skills, &'static mut WorkStreak, &'static mut HousingTier, &'static mut Inventory, &'static mut Furnishings), With<LocalPlayer>>,
 }
 
 #[derive(SystemParam)]
@@ -325,7 +332,7 @@ pub fn handle_save(
     }
     events.clear();
 
-    let Ok((stats, skills, streak, housing, inv)) = a.player_q.get_single() else {
+    let Ok((stats, skills, streak, housing, inv, furnishings)) = a.player_q.get_single() else {
         return;
     };
 
@@ -355,6 +362,7 @@ pub fn handle_save(
         skill_fitness: skills.fitness,
         skill_social: skills.social,
         streak_days: streak.days,
+        promotion_notified: streak.promotion_notified,
         housing: u8::from(&*housing),
         inv_coffee: inv.coffee,
         inv_vitamins: inv.vitamins,
@@ -429,6 +437,9 @@ pub fn handle_save(
         festival_winter: b.festival.winter_attended,
         festivals_total: b.festival.festivals_total,
         ms_festival_goer: a.ms.festival_goer,
+        furnishing_desk: furnishings.desk,
+        furnishing_bed: furnishings.bed,
+        furnishing_kitchen: furnishings.kitchen,
     };
 
     match serde_json::to_string_pretty(&data) {
@@ -462,7 +473,7 @@ pub fn apply_save_data(
     }
     let Some(data) = pending.0.take() else { return };
 
-    let Ok((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+    let Ok((mut stats, mut skills, mut streak, mut housing, mut inv, mut furnishings)) =
         a.player_q.get_single_mut()
     else {
         return;
@@ -495,9 +506,15 @@ pub fn apply_save_data(
 
     // ── WorkStreak ────────────────────────────────────────────────────────────
     streak.days = data.streak_days;
+    streak.promotion_notified = data.promotion_notified;
 
     // ── HousingTier ───────────────────────────────────────────────────────────
     *housing = HousingTier::from(data.housing);
+
+    // ── Furnishings ───────────────────────────────────────────────────────────
+    furnishings.desk = data.furnishing_desk;
+    furnishings.bed = data.furnishing_bed;
+    furnishings.kitchen = data.furnishing_kitchen;
 
     // ── Inventory ─────────────────────────────────────────────────────────────
     inv.coffee = data.inv_coffee;
@@ -726,6 +743,7 @@ mod tests {
             skill_fitness: 0.5,
             skill_social: 1.0,
             streak_days: 3,
+            promotion_notified: 0,
             housing: 1,
             inv_coffee: 2,
             inv_vitamins: 1,
@@ -800,6 +818,9 @@ mod tests {
             festival_winter: false,
             festivals_total: 0,
             ms_festival_goer: false,
+            furnishing_desk: false,
+            furnishing_bed: false,
+            furnishing_kitchen: false,
         }
     }
 

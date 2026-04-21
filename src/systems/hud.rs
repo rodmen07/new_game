@@ -643,11 +643,67 @@ fn warnings(s: &PlayerStats, conds: &Conditions) -> String {
     w.join("  ")
 }
 
+// ── Skill panel ───────────────────────────────────────────────────────────────
+
+/// Toggles the skill panel on/off with the Tab key.
+pub fn toggle_skill_panel(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut panel_q: Query<&mut Visibility, With<SkillPanel>>,
+) {
+    if keys.just_pressed(KeyCode::Tab) {
+        for mut vis in &mut panel_q {
+            *vis = if *vis == Visibility::Hidden {
+                Visibility::Visible
+            } else {
+                Visibility::Hidden
+            };
+        }
+    }
+}
+
+/// Renders the skill values into the panel bars every frame.
+///
+/// Each bar shows filled dots (●) for whole levels and a half-dot (◑) for the
+/// fractional part, up to a max of 5 pips.
+pub fn update_skill_panel(
+    player_q: Query<&Skills, With<LocalPlayer>>,
+    mut cooking_q: Query<&mut Text, (With<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillFitnessBar>, Without<SkillSocialBar>)>,
+    mut career_q: Query<&mut Text, (With<SkillCareerBar>, Without<SkillCookingBar>, Without<SkillFitnessBar>, Without<SkillSocialBar>)>,
+    mut fitness_q: Query<&mut Text, (With<SkillFitnessBar>, Without<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillSocialBar>)>,
+    mut social_q: Query<&mut Text, (With<SkillSocialBar>, Without<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillFitnessBar>)>,
+) {
+    let Ok(skills) = player_q.get_single() else { return; };
+    set_skill_bar(&mut cooking_q, skills.cooking);
+    set_skill_bar(&mut career_q, skills.career);
+    set_skill_bar(&mut fitness_q, skills.fitness);
+    set_skill_bar(&mut social_q, skills.social);
+}
+
+fn set_skill_bar(q: &mut Query<&mut Text, impl bevy::ecs::query::QueryFilter>, value: f32) {
+    let Ok(mut t) = q.get_single_mut() else { return; };
+    let pips = 5usize;
+    let filled = (value as usize).min(pips);
+    let frac = value - value.floor();
+    let mut bar = String::new();
+    for i in 0..pips {
+        if i < filled {
+            bar.push('●');
+        } else if i == filled && frac >= 0.5 {
+            bar.push('◑');
+        } else {
+            bar.push('·');
+        }
+    }
+    let rank = if value >= 5.0 { " Master" } else if value >= 2.5 { " Senior" } else { "" };
+    **t = format!("{bar}{rank}");
+}
+
 /// Updates the full-screen typing overlay each frame to reflect the current
 /// `ActionPrompt` state: shows/hides the overlay and highlights per-character.
 pub fn update_typing_overlay(
+    time: Res<Time>,
     prompt_q: Query<&ActionPrompt, With<LocalPlayer>>,
-    mut overlay_q: Query<&mut Visibility, With<TypingOverlay>>,
+    mut overlay_q: Query<(&mut Visibility, &mut BackgroundColor, &mut TypingOverlayFade), With<TypingOverlay>>,
     mut label_q: Query<&mut Text, With<TypingLabel>>,
     mut typed_q: Query<&mut Text, (With<TypingWordTyped>, Without<TypingLabel>)>,
     mut cur_box_q: Query<
@@ -692,13 +748,27 @@ pub fn update_typing_overlay(
     let Ok(prompt) = prompt_q.get_single() else {
         return;
     };
-    let Ok(mut vis) = overlay_q.get_single_mut() else {
+    let Ok((mut vis, mut bg, mut fade)) = overlay_q.get_single_mut() else {
         return;
     };
     if !prompt.active {
+        // Snap alpha to 0 and hide.
+        fade.alpha = 0.;
+        bg.0 = Color::srgba(0., 0., 0., 0.);
         *vis = Visibility::Hidden;
+        if let Ok(mut t) = label_q.get_single_mut() { **t = String::new(); }
+        if let Ok(mut t) = typed_q.get_single_mut() { **t = String::new(); }
+        if let Ok(mut t) = cur_q.get_single_mut() { **t = String::new(); }
+        if let Ok(mut t) = remain_q.get_single_mut() { **t = String::new(); }
+        if let Ok(mut t) = instr_q.get_single_mut() { **t = String::new(); }
+        if let Ok(mut t) = retries_q.get_single_mut() { **t = String::new(); }
         return;
     }
+    // Fade in: lerp alpha toward TARGET_ALPHA at 10 units/sec.
+    let dt = time.delta_secs();
+    let target = TypingOverlayFade::TARGET_ALPHA;
+    fade.alpha = (fade.alpha + dt * 10.).min(target);
+    bg.0 = Color::srgba(0., 0., 0., fade.alpha);
     *vis = Visibility::Visible;
 
     let expected_chars: Vec<char> = prompt.expected.chars().collect();

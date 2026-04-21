@@ -295,6 +295,8 @@ impl Skills {
 pub struct WorkStreak {
     pub days: u32,
     pub worked_today: bool,
+    /// Bitmask: bit 0 = Senior promotion shown, bit 1 = Executive promotion shown.
+    pub promotion_notified: u8,
 }
 
 // ── HousingTier ───────────────────────────────────────────────────────────────

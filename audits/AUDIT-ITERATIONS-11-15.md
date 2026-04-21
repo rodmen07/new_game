@@ -53,3 +53,39 @@ Expected: 149 tests pass, 0 clippy warnings.
 - R-06: Extract sub-functions from setup() (780 lines) - spawn_world_geometry, spawn_interactables, spawn_npcs
 - R-07: Extract sub-functions from spawn_hud() (375 lines)
 - M-01 continuation: Migrate PlayerStats from Resource to Component (requires cargo to verify)
+
+---
+
+### Iteration 14 - 2026-07-19
+
+**Auditor:** GitHub Copilot (agentic workflow)
+**Scope:** Roadmap P1-P4 + P3 additions - new features since Iteration 13
+**Method:** Code scan of all new/modified files; checklist pass per AUDIT-DIMENSIONS.md
+
+**New systems added since Iteration 13:**
+- P2-A: `TypingOverlayFade` component + lerp fade in `hud.rs`
+- P4-B: `ActionKind::Hangout`, H-key, hangout word challenge, friendship gate
+- P4-C: `Furnishings` component, F1/F2/F3 purchase at Bank, sleep/eat/skill bonuses
+- P4-A: Job promotion - Senior (career>=2.5), Executive (career>=5.0) with bitmask dedup
+- P4-D: Skill tree panel - Tab toggle, pip bar display, rank labels
+- P3: `SfxKind::KeyPress`, `SfxKind::Confirm`, `SfxKind::Fail` audio events
+
+**Phase 1 scan results:**
+- `.unwrap()` / `.expect()` outside tests: 0 (confirmed by grep)
+- New functions > 150 lines: none introduced (all helpers kept short)
+- Repeated code: furnishing purchase (F1/F2/F3) has 3 structurally similar blocks in Bank arm - acceptable (3 distinct items, each with unique price/field)
+- New `SaveData` fields: `promotion_notified`, `furnishing_desk`, `furnishing_bed`, `furnishing_kitchen` all serialized and deserialized correctly
+
+**Bug found and fixed:**
+- **T-04 violation** (sample_save out of sync): `sample_save()` in `save.rs` was missing `promotion_notified`, `furnishing_desk`, `furnishing_bed`, `furnishing_kitchen`. Fixed by adding all four fields with their default values. Rust struct literals require all fields; this would have caused a compile error.
+
+**Checklist findings:**
+- Magic numbers: furnishing prices ($60/$80/$100) are inline in the Bank arm. Low severity - they appear exactly once each; extracting to constants offers marginal benefit. Accepted.
+- `SfxKind::KeyPress` fires on any buffer growth (even after re-typing same letter). This is intentional - every keypress feedback is expected.
+- P3 assets (`key_press.ogg`, `confirm.ogg`, `fail.ogg`) intentionally absent; system degrades gracefully per `load_optional_audio` pattern.
+- `TypingOverlayFade::TARGET_ALPHA = 0.82` is an associated constant on the struct - well-named, no change needed.
+- Hangout cooldown value (2) is inline. Low severity - appears once. Accepted.
+
+**Findings opened this iteration:** none
+
+**Findings closed this iteration:** none (T-04 process violation fixed inline)
