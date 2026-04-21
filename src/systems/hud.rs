@@ -22,7 +22,7 @@ pub fn update_hud(
     streak: Res<WorkStreak>,
     extras: HudExtras,
     npc_q: Query<(Entity, &Npc)>,
-    mut labels: Query<(&HudLabel, &mut Text)>,
+    mut labels: Query<(&HudLabel, &mut Text, &mut TextColor)>,
     mut bars: Query<(&HudBar, &mut Node, &mut BackgroundColor)>,
 ) {
     let mood = Mood::from_happiness(stats.happiness);
@@ -58,7 +58,7 @@ pub fn update_hud(
         .map(|vehicle_state| vehicle_state.in_vehicle)
         .unwrap_or(false);
 
-    for (label, mut text) in &mut labels {
+    for (label, mut text, mut text_color) in &mut labels {
         *text = Text::new(match label {
             HudLabel::Time => {
                 let work_hint = if gt.hours >= 6. && gt.hours < 10. {
@@ -83,12 +83,19 @@ pub fn update_hud(
                 } else {
                     stats.meals.to_string()
                 };
+                let cash_label = if stats.money < 0. { "DEBT" } else { "cash" };
                 let s = format!(
-                    "{} cash | {} saved | {} meals",
+                    "{} {} | {} saved | {} meals",
                     fmt_cash(stats.money),
+                    cash_label,
                     fmt_cash(stats.savings),
                     meals
                 );
+                if stats.money < 0. {
+                    *text_color = TextColor(Color::srgb(1.0, 0.25, 0.2));
+                } else {
+                    *text_color = TextColor(Color::srgb(0.4, 1., 0.5));
+                }
                 if s.len() > 56 {
                     format!("{}…", &s[..55])
                 } else {

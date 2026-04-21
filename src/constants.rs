@@ -35,3 +35,4 @@ pub const MEDICAL_HEALTH_FLOOR: f32 = 20.;
 pub const MEDICAL_ENERGY_DRAIN: f32 = 30.;
 pub const THEFT_CASH_FRACTION: f32 = 0.3;
 pub const MIN_INVESTMENT_FOR_CRASH: f32 = 1.;
+pub const DEBT_LIMIT: f32 = 1000.;
