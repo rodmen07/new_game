@@ -1,6 +1,50 @@
 use crate::components::*;
 use crate::resources::*;
 use bevy::prelude::*;
+use bevy_tweening::{Animator, Lens, Targetable, Tween};
+use std::time::Duration;
+
+// ── Notification slide-in lens ────────────────────────────────────────────────
+
+/// Tweens the `top` field of a `Node` so the notification panel slides in
+/// from above the viewport instead of popping in instantly.
+struct NotifTopLens {
+    start: f32,
+    end: f32,
+}
+impl Lens<Node> for NotifTopLens {
+    fn lerp(&mut self, target: &mut dyn Targetable<Node>, ratio: f32) {
+        let v = self.start + (self.end - self.start) * ratio;
+        let node = std::ops::DerefMut::deref_mut(target);
+        node.top = Val::Px(v);
+    }
+}
+
+/// Detects when a new notification message starts and triggers a slide-in
+/// tween on the `NotifContainer` node.
+pub fn animate_notification(
+    mut prev: Local<String>,
+    notif: Res<Notification>,
+    notif_q: Query<Entity, With<NotifContainer>>,
+    mut commands: Commands,
+) {
+    if notif.message == *prev {
+        return;
+    }
+    *prev = notif.message.clone();
+    if notif.message.is_empty() {
+        return;
+    }
+    let Ok(entity) = notif_q.get_single() else {
+        return;
+    };
+    let tween = Tween::new(
+        EaseFunction::QuadraticOut,
+        Duration::from_millis(280),
+        NotifTopLens { start: -60., end: 12. },
+    );
+    commands.entity(entity).insert(Animator::new(tween));
+}
 
 pub fn tick_notification(mut notif: ResMut<Notification>, time: Res<Time>) {
     notif.tick(time.delta_secs());
@@ -23,7 +67,7 @@ pub fn update_hud(
     extras: HudExtras,
     npc_q: Query<(Entity, &Npc)>,
     mut labels: Query<(&HudLabel, &mut Text, &mut TextColor)>,
-    mut bars: Query<(&HudBar, &mut Node, &mut BackgroundColor)>,
+    mut bars: Query<(&HudBar, &mut BarSmooth)>,
 ) {
     let mood = Mood::from_happiness(stats.happiness);
     let friend_str: String = {
@@ -466,16 +510,34 @@ pub fn update_hud(
         });
     }
 
-    for (bar, mut node, mut bg) in &mut bars {
-        let pct = match bar {
+    for (bar, mut smooth) in &mut bars {
+        smooth.target = match bar {
             HudBar::Energy => stats.energy,
             HudBar::Hunger => 100. - stats.hunger,
             HudBar::Happiness => stats.happiness,
             HudBar::Health => stats.health,
             HudBar::Stress => stats.stress,
-        };
-        node.width = Val::Percent(pct.clamp(0., 100.));
-        *bg = BackgroundColor(bar_color(bar, pct));
+        }
+        .clamp(0., 100.);
+    }
+}
+
+/// Smoothly animates stat bars toward their targets each frame.
+pub fn smooth_bars(
+    time: Res<Time>,
+    mut bars: Query<(&HudBar, &mut Node, &mut BackgroundColor, &mut BarSmooth)>,
+) {
+    for (bar, mut node, mut bg, mut smooth) in &mut bars {
+        let step = time.delta_secs() * 300.;
+        if (smooth.displayed - smooth.target).abs() <= step {
+            smooth.displayed = smooth.target;
+        } else if smooth.displayed < smooth.target {
+            smooth.displayed += step;
+        } else {
+            smooth.displayed -= step;
+        }
+        node.width = Val::Percent(smooth.displayed);
+        *bg = BackgroundColor(bar_color(bar, smooth.displayed));
     }
 }
 

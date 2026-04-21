@@ -10,6 +10,7 @@ mod systems;
 
 use audio::GameAudioPlugin;
 use bevy::{asset::AssetPlugin, prelude::*};
+use bevy_tweening::TweeningPlugin;
 use menu::{AppState, MenuPlugin, reset_start_kind};
 use resources::*;
 use save::{PendingLoad, SaveRequest, apply_save_data, handle_save, reset_game};
@@ -65,6 +66,7 @@ fn main() {
         )
         .add_plugins(MenuPlugin)
         .add_plugins(GameAudioPlugin)
+        .add_plugins(TweeningPlugin)
         // ── Game resources ────────────────────────────────────────────────────
         .init_resource::<PlayerStats>()
         .init_resource::<Inventory>()
@@ -166,6 +168,18 @@ fn main() {
             )
                 .chain()
                 .after(player_visuals)
+                .run_if(in_state(AppState::Playing)),
+        )
+        .add_systems(
+            Update,
+            animate_notification
+                .after(tick_notification)
+                .run_if(in_state(AppState::Playing)),
+        )
+        .add_systems(
+            Update,
+            smooth_bars
+                .after(update_hud)
                 .run_if(in_state(AppState::Playing)),
         )
         // handle_save is ungated: auto-save on new day (Playing) and on Main Menu (any state).

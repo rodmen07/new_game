@@ -1,8 +1,8 @@
 use crate::components::{
-    ActionKind, ApartmentUnit, BodyPart, Building, BuildingKind, Collider, DayNightOverlay,
-    HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind, LocalPlayer,
-    MainCamera, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize, PetKind, Player, PlayerId,
-    PlayerIndicator, Vehicle,
+    ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
+    DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
+    LocalPlayer, MainCamera, Npc, NpcId, NpcLabel, NpcPersonality, NotifContainer, ObjectSize,
+    PetKind, Player, PlayerId, PlayerIndicator, Vehicle,
 };
 use crate::resources::{ActionPrompt, BankInput, PlayerMovement, VehicleState};
 use bevy::prelude::*;
@@ -3816,14 +3816,17 @@ pub fn spawn_hud(cmd: &mut Commands) {
         });
 
         // Notification center-top
-        root.spawn(Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.),
-            left: Val::Px(0.),
-            right: Val::Px(0.),
-            justify_content: JustifyContent::Center,
-            ..default()
-        })
+        root.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(12.),
+                left: Val::Px(0.),
+                right: Val::Px(0.),
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            NotifContainer,
+        ))
         .with_children(|top| {
             top.spawn(Node {
                 padding: UiRect::axes(Val::Px(16.), Val::Px(8.)),
@@ -3922,6 +3925,7 @@ fn stat_bar(parent: &mut ChildBuilder, label: &str, color: Color, bar: HudBar) {
                     },
                     BackgroundColor(color),
                     bar,
+                    BarSmooth { displayed: 80., target: 80. },
                 ));
             });
         });
