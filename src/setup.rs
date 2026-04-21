@@ -3026,7 +3026,7 @@ pub fn setup(mut commands: Commands) {
     // -- Collision walls --------------------------------------------------------
 
     // World boundary
-    wall(&mut commands, 0., 480., 1200., 20.); // north (extended for back street)
+    wall(&mut commands, 0., 510., 1200., 20.); // north (extended for back street)
     wall(&mut commands, 0., -330., 1200., 20.); // south
     wall(&mut commands, -700., 75., 20., 830.); // west
     wall(&mut commands, 700., 75., 20., 830.); // east
