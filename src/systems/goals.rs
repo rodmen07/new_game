@@ -93,7 +93,7 @@ pub fn check_daily_goal(
     if goal.completed || goal.failed {
         return;
     }
-    let Ok((mut stats, streak)) = player_q.get_single_mut() else {
+    let Some((mut stats, streak)) = player_q.iter_mut().next() else {
         return;
     };
 
@@ -158,7 +158,7 @@ pub fn check_milestones(
     mut notif: ResMut<Notification>,
     ms_extras: MilestoneExtras,
 ) {
-    let Ok((stats, skills, streak, housing)) = player_q.get_single() else {
+    let Some((stats, skills, streak, housing)) = player_q.iter().next() else {
         return;
     };
     macro_rules! unlock {

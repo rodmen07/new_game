@@ -106,10 +106,10 @@ pub struct Particle {
 /// Spawns faint white dust particles behind the player while sprinting.
 pub fn spawn_sprint_particles(
     mut commands: Commands,
-    player_q: Query<(&Transform, &PlayerMovement), With<Player>>,
+    player_q: Query<(&Transform, &PlayerMovement), With<LocalPlayer>>,
     time: Res<Time>,
 ) {
-    let Ok((ptf, pm)) = player_q.get_single() else {
+    let Some((ptf, pm)) = player_q.iter().next() else {
         return;
     };
     if !pm.sprinting {
@@ -177,7 +177,7 @@ pub fn spawn_weather_particles(
     time: Res<Time>,
     _gt: Res<GameTime>,
 ) {
-    let Ok((cam_tf, proj)) = cam_q.get_single() else {
+    let Some((cam_tf, proj)) = cam_q.iter().next() else {
         return;
     };
     let dt = time.delta_secs();

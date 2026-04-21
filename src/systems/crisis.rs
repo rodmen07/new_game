@@ -41,7 +41,7 @@ pub fn crisis_trigger_system(
         return;
     }
 
-    let Ok((mut stats, mut inv)) = player_q.get_single_mut() else {
+    let Some((mut stats, mut inv)) = player_q.iter_mut().next() else {
         return;
     };
 

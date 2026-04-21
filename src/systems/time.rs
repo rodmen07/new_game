@@ -785,8 +785,8 @@ pub fn on_new_day(
     }
     gt.prev_day = gt.day;
 
-    let Ok((mut stats, mut skills, mut streak, mut housing, mut inv)) =
-        player_q.get_single_mut()
+    let Some((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+        player_q.iter_mut().next()
     else {
         return;
     };
@@ -965,13 +965,13 @@ pub fn on_new_day(
 /// stuck inside a home they no longer own.
 pub fn apply_eviction_teleport(
     mut gs: ResMut<GameState>,
-    mut player_q: Query<&mut Transform, With<Player>>,
+    mut player_q: Query<&mut Transform, With<LocalPlayer>>,
 ) {
     if !gs.just_evicted {
         return;
     }
     gs.just_evicted = false;
-    if let Ok(mut tf) = player_q.get_single_mut() {
+    if let Some(mut tf) = player_q.iter_mut().next() {
         tf.translation.x = 85.;
         tf.translation.y = 180.;
     }
@@ -993,7 +993,7 @@ pub fn best_friend_perks(
     }
     gs.bf_perk_day = gt.day;
 
-    let Ok(mut stats) = player_q.get_single_mut() else {
+    let Some(mut stats) = player_q.iter_mut().next() else {
         return;
     };
 

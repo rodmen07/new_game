@@ -8,7 +8,7 @@ pub fn decay_stats(
     settings: Res<GameSettings>,
     mut pet: ResMut<Pet>,
 ) {
-    let Ok(mut stats) = player_q.get_single_mut() else {
+    let Some(mut stats) = player_q.iter_mut().next() else {
         return;
     };
     let dt = time.delta_secs();
@@ -59,7 +59,7 @@ pub fn degrade_health(
     settings: Res<GameSettings>,
     mut notif: ResMut<Notification>,
 ) {
-    let Ok(mut stats) = player_q.get_single_mut() else {
+    let Some(mut stats) = player_q.iter_mut().next() else {
         return;
     };
     let dt = time.delta_secs();
@@ -117,7 +117,7 @@ pub fn check_critical(
     conds: Res<Conditions>,
     mut notif: ResMut<Notification>,
 ) {
-    let Ok(stats) = player_q.get_single() else {
+    let Some(stats) = player_q.iter().next() else {
         return;
     };
     if conds.hospitalized {

@@ -1,4 +1,4 @@
-use crate::components::{Collider, Player};
+use crate::components::{Collider, LocalPlayer, Player};
 use crate::resources::PlayerMovement;
 use bevy::prelude::*;
 
@@ -9,10 +9,10 @@ pub const PLAYER_HALF: Vec2 = Vec2::new(9., 9.);
 /// Runs after `player_movement`. Sub-steps the frame displacement into increments
 /// no larger than PLAYER_HALF.x to prevent tunneling through thin walls at sprint speed.
 pub fn resolve_collisions(
-    mut player_q: Query<(&mut Transform, &mut PlayerMovement), With<Player>>,
+    mut player_q: Query<(&mut Transform, &mut PlayerMovement), With<LocalPlayer>>,
     colliders_q: Query<(&Transform, &Collider), Without<Player>>,
 ) {
-    let Ok((mut ptf, mut pm)) = player_q.get_single_mut() else {
+    let Some((mut ptf, mut pm)) = player_q.iter_mut().next() else {
         return;
     };
 

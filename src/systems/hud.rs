@@ -35,7 +35,7 @@ pub fn animate_notification(
     if notif.message.is_empty() {
         return;
     }
-    let Ok(entity) = notif_q.get_single() else {
+    let Some(entity) = notif_q.iter().next() else {
         return;
     };
     let tween = Tween::new(
@@ -68,7 +68,7 @@ pub fn update_hud(
     mut labels: Query<(&HudLabel, &mut Text, &mut TextColor)>,
     mut bars: Query<(&HudBar, &mut BarSmooth)>,
 ) {
-    let Ok((stats, skills, inv, housing, streak)) = player_q.get_single() else {
+    let Some((stats, skills, inv, housing, streak)) = player_q.iter().next() else {
         return;
     };
     let mood = Mood::from_happiness(stats.happiness);
@@ -100,7 +100,8 @@ pub fn update_hud(
     };
     let in_vehicle = extras
         .player_vehicle_q
-        .get_single()
+        .iter()
+        .next()
         .map(|vehicle_state| vehicle_state.in_vehicle)
         .unwrap_or(false);
 
@@ -175,7 +176,7 @@ pub fn update_hud(
                 )
             }
             HudLabel::Prompt => {
-                if let Ok(prompt) = extras.player_prompt_q.get_single()
+                if let Some(prompt) = extras.player_prompt_q.iter().next()
                     && prompt.active
                 {
                     String::new() // typing overlay handles display
@@ -672,7 +673,7 @@ pub fn update_skill_panel(
     mut fitness_q: Query<&mut Text, (With<SkillFitnessBar>, Without<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillSocialBar>)>,
     mut social_q: Query<&mut Text, (With<SkillSocialBar>, Without<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillFitnessBar>)>,
 ) {
-    let Ok(skills) = player_q.get_single() else { return; };
+    let Some(skills) = player_q.iter().next() else { return; };
     set_skill_bar(&mut cooking_q, skills.cooking);
     set_skill_bar(&mut career_q, skills.career);
     set_skill_bar(&mut fitness_q, skills.fitness);
@@ -745,7 +746,7 @@ pub fn update_typing_overlay(
         ),
     >,
 ) {
-    let Ok(prompt) = prompt_q.get_single() else {
+    let Some(prompt) = prompt_q.iter().next() else {
         return;
     };
     let Ok((mut vis, mut bg, mut fade)) = overlay_q.get_single_mut() else {
@@ -808,5 +809,45 @@ pub fn update_typing_overlay(
     }
     if let Ok(mut t) = retries_q.get_single_mut() {
         **t = format!("{} retries left  [Esc] cancel", prompt.retries_left);
+    }
+}
+
+/// Drives the tutorial overlay: shows/hides it based on `TutorialState`,
+/// advances on Space/Enter, and allows skipping with Esc.
+pub fn update_tutorial(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut state: ResMut<TutorialState>,
+    mut overlay_q: Query<&mut Visibility, With<TutorialOverlay>>,
+    mut body_q: Query<&mut Text, (With<TutorialBodyText>, Without<TutorialHintText>)>,
+    mut hint_q: Query<&mut Text, (With<TutorialHintText>, Without<TutorialBodyText>)>,
+) {
+    // Advance or dismiss on key press.
+    if state.is_active() {
+        if keys.just_pressed(KeyCode::Escape) {
+            state.dismiss();
+        } else if keys.just_pressed(KeyCode::Space)
+            || keys.just_pressed(KeyCode::Enter)
+            || keys.just_pressed(KeyCode::NumpadEnter)
+        {
+            state.advance();
+        }
+    }
+
+    // Sync overlay visibility and text content.
+    let visible = state.is_active();
+    for mut vis in &mut overlay_q {
+        *vis = if visible { Visibility::Visible } else { Visibility::Hidden };
+    }
+
+    if visible {
+        if let Some((title, body)) = state.current() {
+            let total = TUTORIAL_STEPS.len();
+            if let Ok(mut t) = hint_q.get_single_mut() {
+                **t = format!("{} / {}", state.step, total);
+            }
+            if let Ok(mut t) = body_q.get_single_mut() {
+                **t = format!("{}\n\n{}", title, body);
+            }
+        }
     }
 }

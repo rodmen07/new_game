@@ -3,7 +3,8 @@ use crate::components::{
     DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
     LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
     PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
-    SkillPanel, SkillSocialBar, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
+    SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
+    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
     TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordTyped,
     Vehicle,
 };
@@ -132,6 +133,7 @@ pub fn setup(mut commands: Commands) {
     spawn_hud(&mut commands);
     spawn_typing_overlay(&mut commands);
     spawn_skill_panel(&mut commands);
+    spawn_tutorial_overlay(&mut commands);
 }
 
 fn spawn_terrain_and_roads(commands: &mut Commands) {
@@ -3665,6 +3667,65 @@ fn skill_row<M: Component>(parent: &mut ChildBuilder, label: &'static str, marke
             TextColor(Color::srgb(0.4, 0.4, 0.4)),
             marker,
         ));
+    });
+}
+
+/// Spawns the full-screen tutorial overlay. Hidden by default.
+/// Made visible by `update_tutorial` when `TutorialState::step > 0`.
+pub fn spawn_tutorial_overlay(cmd: &mut Commands) {
+    cmd.spawn((
+        Node {
+            width: Val::Percent(100.),
+            height: Val::Percent(100.),
+            position_type: PositionType::Absolute,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
+            row_gap: Val::Px(20.),
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0., 0., 0., 0.84)),
+        ZIndex(300),
+        Visibility::Hidden,
+        TutorialOverlay,
+    ))
+    .with_children(|p| {
+        // Card container
+        p.spawn((
+            Node {
+                padding: UiRect::all(Val::Px(32.)),
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(18.),
+                max_width: Val::Px(520.),
+                min_width: Val::Px(380.),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.06, 0.06, 0.10, 0.95)),
+            BorderRadius::all(Val::Px(12.)),
+        ))
+        .with_children(|card| {
+            // Step counter (e.g. "1 / 6")
+            card.spawn((
+                Text::new(""),
+                TextFont { font_size: 12., ..default() },
+                TextColor(Color::srgb(0.5, 0.5, 0.5)),
+                TutorialHintText,
+            ));
+            // Body text (title + content rendered as one block)
+            card.spawn((
+                Text::new(""),
+                TextFont { font_size: 16., ..default() },
+                TextColor(Color::WHITE),
+                TutorialBodyText,
+            ));
+            // Dismiss hint
+            card.spawn((
+                Text::new("[Space] / [Enter] Next   [Esc] Skip"),
+                TextFont { font_size: 12., ..default() },
+                TextColor(Color::srgb(0.55, 0.55, 0.55)),
+            ));
+        });
     });
 }
 

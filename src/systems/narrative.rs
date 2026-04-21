@@ -16,7 +16,7 @@ pub fn update_narrative(
     mut story: ResMut<NarrativeState>,
     mut notif: ResMut<Notification>,
 ) {
-    let Ok((stats, skills, housing)) = player_q.get_single() else {
+    let Some((stats, skills, housing)) = player_q.iter().next() else {
         return;
     };
     let unlocked = (gt.day == 0)

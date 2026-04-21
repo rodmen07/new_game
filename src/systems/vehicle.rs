@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
 
-use crate::components::{Player, Vehicle};
+use crate::components::{LocalPlayer, Player, Vehicle};
 use crate::resources::{ActionPrompt, PlayerMovement, Transport, TransportKind, VehicleState};
 use bevy::prelude::*;
 
@@ -18,11 +18,11 @@ pub fn car_movement(
             &VehicleState,
             &ActionPrompt,
         ),
-        (With<Player>, Without<Vehicle>),
-    >,
+        (With<LocalPlayer>, Without<Vehicle>),
+    ),
     mut car_q: Query<&mut Transform, (With<Vehicle>, Without<Player>)>,
 ) {
-    let Ok((mut ptf, mut pm, vehicle_state, action_prompt)) = player_q.get_single_mut() else {
+    let Some((mut ptf, mut pm, vehicle_state, action_prompt)) = player_q.iter_mut().next() else {
         return;
     };
     if action_prompt.active || !vehicle_state.in_vehicle {
@@ -66,7 +66,7 @@ pub fn car_movement(
     }
 
     // Sync car entity position to player
-    if let Ok(mut ctf) = car_q.get_single_mut() {
+    if let Some(mut ctf) = car_q.iter_mut().next() {
         ctf.translation.x = ptf.translation.x;
         ctf.translation.y = ptf.translation.y;
         ctf.translation.z = ptf.translation.z - 1.;

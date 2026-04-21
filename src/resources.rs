@@ -1,5 +1,5 @@
 use crate::{
-    components::{ActionKind, PetKind, Player},
+    components::{ActionKind, LocalPlayer, PetKind, Player},
     constants::DEBT_LIMIT,
     save::SaveRequest,
     settings::GameSettings,
@@ -1339,6 +1339,61 @@ impl FestivalState {
     }
 }
 
+// ── Tutorial ──────────────────────────────────────────────────────────────────
+
+/// Text shown on each tutorial step. Index 0 = first slide shown on new game.
+pub const TUTORIAL_STEPS: &[(&str, &str)] = &[
+    (
+        "Welcome to Everyday Life Simulator",
+        "Use WASD or arrow keys to move.\nSurvive day-to-day by managing energy, hunger, and money.",
+    ),
+    (
+        "Your Stats",
+        "Energy, Hunger, Happiness, Health, and Stress are shown on the left.\nKeep them balanced - low energy or hunger will hurt you.",
+    ),
+    (
+        "Working and Earning",
+        "Walk to the OFFICE and press [E] to work.\nWork pays your rent and fills your savings.\nYour career skill grows with each shift.",
+    ),
+    (
+        "Eating and Sleeping",
+        "Buy food at the SHOP, then use it from the APARTMENT.\nSleep at your apartment to restore energy.\nHigh sleep debt tanks your health.",
+    ),
+    (
+        "Socialising",
+        "Talk to NPCs with [E] to build friendship.\nGift items with [G]. Hang out at friendship level 3+ with [H].\nFriends provide bonuses and quests.",
+    ),
+    (
+        "Key Bindings",
+        "[E] Interact   [G] Gift   [H] Hangout\n[B] Bank input   [Tab] Skills panel\n[F5] Save   [Esc] Cancel prompt\n\nGood luck!",
+    ),
+];
+
+/// Tracks which tutorial step is currently showing.
+/// `step == 0` means the tutorial is inactive (hidden).
+/// Steps 1..=TUTORIAL_STEPS.len() are the active slides (1-based so default=0 = off).
+#[derive(Resource, Default)]
+pub struct TutorialState {
+    pub step: usize,
+}
+
+impl TutorialState {
+    pub fn is_active(&self) -> bool {
+        self.step > 0 && self.step <= TUTORIAL_STEPS.len()
+    }
+    pub fn current(&self) -> Option<(&'static str, &'static str)> {
+        TUTORIAL_STEPS.get(self.step.saturating_sub(1)).copied()
+    }
+    pub fn advance(&mut self) {
+        if self.step <= TUTORIAL_STEPS.len() {
+            self.step += 1;
+        }
+    }
+    pub fn dismiss(&mut self) {
+        self.step = TUTORIAL_STEPS.len() + 1;
+    }
+}
+
 // ── SystemParam Groups (keeps update_hud and handle_interaction under 16 params) ──
 
 #[derive(SystemParam)]
@@ -1352,8 +1407,8 @@ pub struct HudExtras<'w, 's> {
     pub season: Res<'w, Season>,
     pub settings: Res<'w, GameSettings>,
     pub story: Res<'w, NarrativeState>,
-    pub player_vehicle_q: Query<'w, 's, &'static VehicleState, With<Player>>,
-    pub player_prompt_q: Query<'w, 's, &'static ActionPrompt, With<Player>>,
+    pub player_vehicle_q: Query<'w, 's, &'static VehicleState, With<LocalPlayer>>,
+    pub player_prompt_q: Query<'w, 's, &'static ActionPrompt, With<LocalPlayer>>,
     pub quest_board: Res<'w, QuestBoard>,
     pub crisis: Res<'w, CrisisState>,
     pub festival: Res<'w, FestivalState>,

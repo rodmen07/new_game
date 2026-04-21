@@ -1768,7 +1768,7 @@ pub fn handle_interaction(
             &mut HousingTier,
             &mut Furnishings,
         ),
-        With<Player>,
+        With<LocalPlayer>,
     >,
     mut gt: ResMut<GameTime>,
     mut friendship: ResMut<NpcFriendship>,
@@ -1777,8 +1777,8 @@ pub fn handle_interaction(
     mut extras: InteractExtras,
     mut sfx: EventWriter<PlaySfx>,
 ) {
-    let Ok((mut pm, mut vehicle_state, mut bank_input, mut action_prompt, mut stats, mut inv, mut skills, mut streak, mut housing, mut furnishings)) =
-        player_q.get_single_mut()
+    let Some((mut pm, mut vehicle_state, mut bank_input, mut action_prompt, mut stats, mut inv, mut skills, mut streak, mut housing, mut furnishings)) =
+        player_q.iter_mut().next()
     else {
         return;
     };
@@ -2791,19 +2791,19 @@ pub fn handle_interaction(
 
 pub fn handle_bank_input(
     keys: Res<ButtonInput<KeyCode>>,
-    mut player_bank_q: Query<&mut BankInput, With<Player>>,
+    mut player_bank_q: Query<&mut BankInput, With<LocalPlayer>>,
     mut player_stats_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut notif: ResMut<Notification>,
     mut gt: ResMut<GameTime>,
     mut goal: ResMut<DailyGoal>,
 ) {
-    let Ok(mut bank_input) = player_bank_q.get_single_mut() else {
+    let Some(mut bank_input) = player_bank_q.iter_mut().next() else {
         return;
     };
     if !bank_input.active {
         return;
     }
-    let Ok(mut stats) = player_stats_q.get_single_mut() else {
+    let Some(mut stats) = player_stats_q.iter_mut().next() else {
         return;
     };
 

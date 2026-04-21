@@ -332,7 +332,7 @@ pub fn handle_save(
     }
     events.clear();
 
-    let Ok((stats, skills, streak, housing, inv, furnishings)) = a.player_q.get_single() else {
+    let Some((stats, skills, streak, housing, inv, furnishings)) = a.player_q.iter().next() else {
         return;
     };
 
@@ -473,8 +473,8 @@ pub fn apply_save_data(
     }
     let Some(data) = pending.0.take() else { return };
 
-    let Ok((mut stats, mut skills, mut streak, mut housing, mut inv, mut furnishings)) =
-        a.player_q.get_single_mut()
+    let Some((mut stats, mut skills, mut streak, mut housing, mut inv, mut furnishings)) =
+        a.player_q.iter_mut().next()
     else {
         return;
     };
@@ -656,7 +656,7 @@ pub fn reset_game(
             &mut BankInput,
             &mut ActionPrompt,
         ),
-        With<Player>,
+        With<LocalPlayer>,
     >,
     mut goal: ResMut<DailyGoal>,
     mut lightning: ResMut<LightningTimer>,
@@ -666,8 +666,8 @@ pub fn reset_game(
         return;
     }
 
-    if let Ok((mut stats, mut skills, mut streak, mut housing, mut inv)) =
-        a.player_q.get_single_mut()
+    if let Some((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+        a.player_q.iter_mut().next()
     {
         *stats = PlayerStats::default();
         *skills = Skills::default();
@@ -693,8 +693,8 @@ pub fn reset_game(
     *narrative = NarrativeState::default();
     *weather = WeatherKind::default();
     *nearby = NearbyInteractable::default();
-    if let Ok((mut movement, mut vehicle_state, mut bank_input, mut action_prompt)) =
-        player_state_q.get_single_mut()
+    if let Some((mut movement, mut vehicle_state, mut bank_input, mut action_prompt)) =
+        player_state_q.iter_mut().next()
     {
         *movement = PlayerMovement::default();
         *vehicle_state = VehicleState::default();
@@ -710,6 +710,19 @@ pub fn reset_game(
         if npc_id.0 < 6 {
             friendship.levels.insert(entity, 0.);
         }
+    }
+}
+
+/// Activates the tutorial on a new game. Called in the `OnEnter(Playing)` chain
+/// before `reset_start_kind` resets `GameStartKind` back to `Resume`.
+pub fn start_tutorial_if_new_game(
+    start_kind: Res<GameStartKind>,
+    mut tutorial: ResMut<crate::resources::TutorialState>,
+) {
+    if *start_kind == GameStartKind::NewGame {
+        tutorial.step = 1;
+    } else {
+        tutorial.step = 0;
     }
 }
 
