@@ -209,28 +209,28 @@ pub fn setup(mut commands: Commands) {
 
     // -- Lamp posts (on sidewalks between buildings) ----------------------------
     for &(lx, ly) in &[
-        (-340., 90.),
-        (-170., 90.),
-        (0., 90.),
-        (170., 90.),
-        (340., 90.),
-        (-340., -90.),
-        (-170., -90.),
-        (0., -90.),
-        (170., -90.),
-        (340., -90.),
+        (-340., 76.),
+        (-170., 76.),
+        (0., 76.),
+        (170., 76.),
+        (340., 76.),
+        (-340., -76.),
+        (-170., -76.),
+        (0., -76.),
+        (170., -76.),
+        (340., -76.),
     ] {
         lamp_post(&mut commands, lx, ly);
     }
 
     // -- Zones ------------------------------------------------------------------
-    // North row (center_y=180, 150x160, doors face south at y=100)
+    // North row (center_y=180, 150x200, doors face south at y=80)
     zone(
         &mut commands,
         -425.,
         180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.72, 0.58, 0.42),
         "HOME",
     );
@@ -239,7 +239,7 @@ pub fn setup(mut commands: Commands) {
         -255.,
         180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.35, 0.62, 0.55),
         "WELLNESS",
     );
@@ -248,7 +248,7 @@ pub fn setup(mut commands: Commands) {
         -85.,
         180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.30, 0.42, 0.58),
         "LIBRARY",
     );
@@ -257,7 +257,7 @@ pub fn setup(mut commands: Commands) {
         85.,
         180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.28, 0.58, 0.28),
         "PARK",
     );
@@ -266,7 +266,7 @@ pub fn setup(mut commands: Commands) {
         255.,
         180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.78, 0.68, 0.50),
         "SUBURBS",
     );
@@ -275,17 +275,17 @@ pub fn setup(mut commands: Commands) {
         425.,
         180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.42, 0.52, 0.68),
         "OFFICE",
     );
-    // South row (center_y=-180, 150x160, doors face north at y=-100)
+    // South row (center_y=-180, 150x200, doors face north at y=-80)
     zone(
         &mut commands,
         -425.,
         -180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.55, 0.48, 0.32),
         "BANK",
     );
@@ -294,7 +294,7 @@ pub fn setup(mut commands: Commands) {
         -255.,
         -180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.85, 0.90, 0.88),
         "CLINIC",
     );
@@ -303,7 +303,7 @@ pub fn setup(mut commands: Commands) {
         -85.,
         -180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.32, 0.52, 0.58),
         "STORE",
     );
@@ -312,7 +312,7 @@ pub fn setup(mut commands: Commands) {
         85.,
         -180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.82, 0.68, 0.45),
         "CAFÉ",
     );
@@ -321,7 +321,7 @@ pub fn setup(mut commands: Commands) {
         255.,
         -180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.62, 0.50, 0.78),
         "ADOPTION",
     );
@@ -330,7 +330,7 @@ pub fn setup(mut commands: Commands) {
         425.,
         -180.,
         150.,
-        160.,
+        200.,
         Color::srgb(0.40, 0.38, 0.45),
         "GARAGE",
     );
@@ -3141,8 +3141,8 @@ pub fn setup(mut commands: Commands) {
     // World boundary
     wall(&mut commands, 0., 480., 1200., 20.); // north (extended for back street)
     wall(&mut commands, 0., -330., 1200., 20.); // south
-    wall(&mut commands, -530., 0., 20., 800.); // west
-    wall(&mut commands, 530., 0., 20., 800.); // east
+    wall(&mut commands, -700., 75., 20., 830.); // west
+    wall(&mut commands, 700., 75., 20., 830.); // east
 
     // Pond obstacle (park)
     wall(&mut commands, 55., 215., 44., 34.);
@@ -3212,6 +3212,24 @@ pub fn setup(mut commands: Commands) {
         (340., 305.),
     ] {
         lamp_post(&mut commands, lx, ly);
+    }
+
+    // -- Side alleys (connecting main road to back road on east and west) -------
+    let ap = Color::srgb(0.34, 0.32, 0.28); // alley pavement
+    let asw = Color::srgb(0.42, 0.40, 0.36); // alley sidewalk
+    // West alley: x=-600, from south buildings (y=-280) to back road (y=290)
+    rect(&mut commands, -600., 5., 178., 572., ap, 0.51);
+    rect(&mut commands, -508., 5., 12., 572., asw, 0.53);
+    rect(&mut commands, -692., 5., 12., 572., asw, 0.53);
+    for &ly in &[-200., -80., 80., 200.] {
+        lamp_post(&mut commands, -610., ly);
+    }
+    // East alley: x=600, from south buildings (y=-280) to back road (y=290)
+    rect(&mut commands, 600., 5., 178., 572., ap, 0.51);
+    rect(&mut commands, 508., 5., 12., 572., asw, 0.53);
+    rect(&mut commands, 692., 5., 12., 572., asw, 0.53);
+    for &ly in &[-200., -80., 80., 200.] {
+        lamp_post(&mut commands, 610., ly);
     }
 
     // APARTMENTS zone at (0, 400)
@@ -3318,126 +3336,126 @@ pub fn setup(mut commands: Commands) {
 
     // -- Building walls with doorways -------------------------------------------
     // Wall thickness = 10. Door gap = 50 (player is 18px wide).
-    // N-row buildings: door on SOUTH face (y=100).
-    // S-row buildings: door on NORTH face (y=-100).
+    // N-row buildings: door on SOUTH face (y=80).
+    // S-row buildings: door on NORTH face (y=-80).
 
-    // HOME (-425, 180, 150x160) - south door at x=-425
+    // HOME (-425, 180, 150x200) - south door at x=-425
     let c = Color::srgb(0.50, 0.36, 0.22);
     let f = Color::srgb(0.62, 0.44, 0.28);
-    vis_wall(&mut commands, -425., 260., 150., 10., c); // north
-    vis_wall(&mut commands, -500., 180., 10., 160., c); // west
-    vis_wall(&mut commands, -350., 180., 10., 160., c); // east
-    vis_wall(&mut commands, -475., 100., 50., 10., c); // south-left
-    vis_wall(&mut commands, -375., 100., 50., 10., c); // south-right
-    rect(&mut commands, -450., 102., 8., 10., f, 1.5);
-    rect(&mut commands, -400., 102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, -425., 280., 150., 10., c); // north
+    vis_wall(&mut commands, -500., 180., 10., 200., c); // west
+    vis_wall(&mut commands, -350., 180., 10., 200., c); // east
+    vis_wall(&mut commands, -475., 80., 50., 10., c); // south-left
+    vis_wall(&mut commands, -375., 80., 50., 10., c); // south-right
+    rect(&mut commands, -450., 82., 8., 10., f, 1.5);
+    rect(&mut commands, -400., 82., 8., 10., f, 1.5);
 
-    // WELLNESS (-255, 180, 150x160) - south door at x=-255
+    // WELLNESS (-255, 180, 150x200) - south door at x=-255
     let c = Color::srgb(0.22, 0.46, 0.40);
-    vis_wall(&mut commands, -255., 260., 150., 10., c); // north
-    vis_wall(&mut commands, -330., 180., 10., 160., c); // west
-    vis_wall(&mut commands, -180., 180., 10., 160., c); // east
-    vis_wall(&mut commands, -305., 100., 50., 10., c); // south-left
-    vis_wall(&mut commands, -205., 100., 50., 10., c); // south-right
-    rect(&mut commands, -280., 102., 8., 10., f, 1.5);
-    rect(&mut commands, -230., 102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, -255., 280., 150., 10., c); // north
+    vis_wall(&mut commands, -330., 180., 10., 200., c); // west
+    vis_wall(&mut commands, -180., 180., 10., 200., c); // east
+    vis_wall(&mut commands, -305., 80., 50., 10., c); // south-left
+    vis_wall(&mut commands, -205., 80., 50., 10., c); // south-right
+    rect(&mut commands, -280., 82., 8., 10., f, 1.5);
+    rect(&mut commands, -230., 82., 8., 10., f, 1.5);
 
-    // LIBRARY (-85, 180, 150x160) - south door at x=-85
+    // LIBRARY (-85, 180, 150x200) - south door at x=-85
     let c = Color::srgb(0.18, 0.28, 0.44);
     let f = Color::srgb(0.26, 0.38, 0.56);
-    vis_wall(&mut commands, -85., 260., 150., 10., c); // north
-    vis_wall(&mut commands, -160., 180., 10., 160., c); // west
-    vis_wall(&mut commands, -10., 180., 10., 160., c); // east
-    vis_wall(&mut commands, -135., 100., 50., 10., c); // south-left
-    vis_wall(&mut commands, -35., 100., 50., 10., c); // south-right
-    rect(&mut commands, -110., 102., 8., 10., f, 1.5);
-    rect(&mut commands, -60., 102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, -85., 280., 150., 10., c); // north
+    vis_wall(&mut commands, -160., 180., 10., 200., c); // west
+    vis_wall(&mut commands, -10., 180., 10., 200., c); // east
+    vis_wall(&mut commands, -135., 80., 50., 10., c); // south-left
+    vis_wall(&mut commands, -35., 80., 50., 10., c); // south-right
+    rect(&mut commands, -110., 82., 8., 10., f, 1.5);
+    rect(&mut commands, -60., 82., 8., 10., f, 1.5);
 
     // PARK (85, 180, 150x160) - open, no walls
 
-    // SUBURBS (255, 180, 150x160) - south door at x=255
+    // SUBURBS (255, 180, 150x200) - south door at x=255
     let c = Color::srgb(0.58, 0.48, 0.32);
     let f = Color::srgb(0.68, 0.56, 0.38);
-    vis_wall(&mut commands, 255., 260., 150., 10., c); // north
-    vis_wall(&mut commands, 180., 180., 10., 160., c); // west
-    vis_wall(&mut commands, 330., 180., 10., 160., c); // east
-    vis_wall(&mut commands, 205., 100., 50., 10., c); // south-left
-    vis_wall(&mut commands, 305., 100., 50., 10., c); // south-right
-    rect(&mut commands, 230., 102., 8., 10., f, 1.5);
-    rect(&mut commands, 280., 102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, 255., 280., 150., 10., c); // north
+    vis_wall(&mut commands, 180., 180., 10., 200., c); // west
+    vis_wall(&mut commands, 330., 180., 10., 200., c); // east
+    vis_wall(&mut commands, 205., 80., 50., 10., c); // south-left
+    vis_wall(&mut commands, 305., 80., 50., 10., c); // south-right
+    rect(&mut commands, 230., 82., 8., 10., f, 1.5);
+    rect(&mut commands, 280., 82., 8., 10., f, 1.5);
 
-    // OFFICE (425, 180, 150x160) - south door at x=425
+    // OFFICE (425, 180, 150x200) - south door at x=425
     let c = Color::srgb(0.25, 0.32, 0.45);
     let f = Color::srgb(0.35, 0.44, 0.60);
-    vis_wall(&mut commands, 425., 260., 150., 10., c); // north
-    vis_wall(&mut commands, 350., 180., 10., 160., c); // west
-    vis_wall(&mut commands, 500., 180., 10., 160., c); // east
-    vis_wall(&mut commands, 375., 100., 50., 10., c); // south-left
-    vis_wall(&mut commands, 475., 100., 50., 10., c); // south-right
-    rect(&mut commands, 400., 102., 8., 10., f, 1.5);
-    rect(&mut commands, 450., 102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, 425., 280., 150., 10., c); // north
+    vis_wall(&mut commands, 350., 180., 10., 200., c); // west
+    vis_wall(&mut commands, 500., 180., 10., 200., c); // east
+    vis_wall(&mut commands, 375., 80., 50., 10., c); // south-left
+    vis_wall(&mut commands, 475., 80., 50., 10., c); // south-right
+    rect(&mut commands, 400., 82., 8., 10., f, 1.5);
+    rect(&mut commands, 450., 82., 8., 10., f, 1.5);
 
-    // BANK (-425, -180, 150x160) - north door at x=-425
+    // BANK (-425, -180, 150x200) - north door at x=-425
     let c = Color::srgb(0.40, 0.34, 0.20);
     let f = Color::srgb(0.55, 0.48, 0.30);
-    vis_wall(&mut commands, -425., -260., 150., 10., c); // south
-    vis_wall(&mut commands, -500., -180., 10., 160., c); // west
-    vis_wall(&mut commands, -350., -180., 10., 160., c); // east
-    vis_wall(&mut commands, -475., -100., 50., 10., c); // north-left
-    vis_wall(&mut commands, -375., -100., 50., 10., c); // north-right
-    rect(&mut commands, -450., -102., 8., 10., f, 1.5);
-    rect(&mut commands, -400., -102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, -425., -280., 150., 10., c); // south
+    vis_wall(&mut commands, -500., -180., 10., 200., c); // west
+    vis_wall(&mut commands, -350., -180., 10., 200., c); // east
+    vis_wall(&mut commands, -475., -80., 50., 10., c); // north-left
+    vis_wall(&mut commands, -375., -80., 50., 10., c); // north-right
+    rect(&mut commands, -450., -82., 8., 10., f, 1.5);
+    rect(&mut commands, -400., -82., 8., 10., f, 1.5);
 
-    // CLINIC (-255, -180, 150x160) - north door at x=-255
+    // CLINIC (-255, -180, 150x200) - north door at x=-255
     let c = Color::srgb(0.60, 0.68, 0.65);
-    vis_wall(&mut commands, -255., -260., 150., 10., c); // south
-    vis_wall(&mut commands, -330., -180., 10., 160., c); // west
-    vis_wall(&mut commands, -180., -180., 10., 160., c); // east
-    vis_wall(&mut commands, -305., -100., 50., 10., c); // north-left
-    vis_wall(&mut commands, -205., -100., 50., 10., c); // north-right
-    rect(&mut commands, -280., -102., 8., 10., f, 1.5);
-    rect(&mut commands, -230., -102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, -255., -280., 150., 10., c); // south
+    vis_wall(&mut commands, -330., -180., 10., 200., c); // west
+    vis_wall(&mut commands, -180., -180., 10., 200., c); // east
+    vis_wall(&mut commands, -305., -80., 50., 10., c); // north-left
+    vis_wall(&mut commands, -205., -80., 50., 10., c); // north-right
+    rect(&mut commands, -280., -82., 8., 10., f, 1.5);
+    rect(&mut commands, -230., -82., 8., 10., f, 1.5);
 
-    // STORE (-85, -180, 150x160) - north door at x=-85
+    // STORE (-85, -180, 150x200) - north door at x=-85
     let c = Color::srgb(0.20, 0.36, 0.42);
     let f = Color::srgb(0.28, 0.48, 0.56);
-    vis_wall(&mut commands, -85., -260., 150., 10., c); // south
-    vis_wall(&mut commands, -160., -180., 10., 160., c); // west
-    vis_wall(&mut commands, -10., -180., 10., 160., c); // east
-    vis_wall(&mut commands, -135., -100., 50., 10., c); // north-left
-    vis_wall(&mut commands, -35., -100., 50., 10., c); // north-right
-    rect(&mut commands, -110., -102., 8., 10., f, 1.5);
-    rect(&mut commands, -60., -102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, -85., -280., 150., 10., c); // south
+    vis_wall(&mut commands, -160., -180., 10., 200., c); // west
+    vis_wall(&mut commands, -10., -180., 10., 200., c); // east
+    vis_wall(&mut commands, -135., -80., 50., 10., c); // north-left
+    vis_wall(&mut commands, -35., -80., 50., 10., c); // north-right
+    rect(&mut commands, -110., -82., 8., 10., f, 1.5);
+    rect(&mut commands, -60., -82., 8., 10., f, 1.5);
 
-    // CAFÉ (85, -180, 150x160) - north door at x=85
+    // CAFÉ (85, -180, 150x200) - north door at x=85
     let c = Color::srgb(0.60, 0.48, 0.28);
     let f = Color::srgb(0.72, 0.58, 0.38);
-    vis_wall(&mut commands, 85., -260., 150., 10., c); // south
-    vis_wall(&mut commands, 10., -180., 10., 160., c); // west
-    vis_wall(&mut commands, 160., -180., 10., 160., c); // east
-    vis_wall(&mut commands, 35., -100., 50., 10., c); // north-left
-    vis_wall(&mut commands, 135., -100., 50., 10., c); // north-right
-    rect(&mut commands, 60., -102., 8., 10., f, 1.5);
-    rect(&mut commands, 110., -102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, 85., -280., 150., 10., c); // south
+    vis_wall(&mut commands, 10., -180., 10., 200., c); // west
+    vis_wall(&mut commands, 160., -180., 10., 200., c); // east
+    vis_wall(&mut commands, 35., -80., 50., 10., c); // north-left
+    vis_wall(&mut commands, 135., -80., 50., 10., c); // north-right
+    rect(&mut commands, 60., -82., 8., 10., f, 1.5);
+    rect(&mut commands, 110., -82., 8., 10., f, 1.5);
 
-    // ADOPTION (255, -180, 150x160) - north door at x=255
+    // ADOPTION (255, -180, 150x200) - north door at x=255
     let c = Color::srgb(0.44, 0.34, 0.58);
     let f = Color::srgb(0.56, 0.44, 0.70);
-    vis_wall(&mut commands, 255., -260., 150., 10., c); // south
-    vis_wall(&mut commands, 180., -180., 10., 160., c); // west
-    vis_wall(&mut commands, 330., -180., 10., 160., c); // east
-    vis_wall(&mut commands, 205., -100., 50., 10., c); // north-left
-    vis_wall(&mut commands, 305., -100., 50., 10., c); // north-right
-    rect(&mut commands, 230., -102., 8., 10., f, 1.5);
-    rect(&mut commands, 280., -102., 8., 10., f, 1.5);
+    vis_wall(&mut commands, 255., -280., 150., 10., c); // south
+    vis_wall(&mut commands, 180., -180., 10., 200., c); // west
+    vis_wall(&mut commands, 330., -180., 10., 200., c); // east
+    vis_wall(&mut commands, 205., -80., 50., 10., c); // north-left
+    vis_wall(&mut commands, 305., -80., 50., 10., c); // north-right
+    rect(&mut commands, 230., -82., 8., 10., f, 1.5);
+    rect(&mut commands, 280., -82., 8., 10., f, 1.5);
 
-    // GARAGE (425, -180, 150x160) - north door at x=425, 70px wide for car
+    // GARAGE (425, -180, 150x200) - north door at x=425, 70px wide for car
     let c = Color::srgb(0.26, 0.24, 0.32);
-    vis_wall(&mut commands, 425., -260., 150., 10., c); // south
-    vis_wall(&mut commands, 350., -180., 10., 160., c); // west
-    vis_wall(&mut commands, 500., -180., 10., 160., c); // east
-    vis_wall(&mut commands, 370., -100., 40., 10., c); // north-left  (350 to 390)
-    vis_wall(&mut commands, 480., -100., 40., 10., c); // north-right (460 to 500)
+    vis_wall(&mut commands, 425., -280., 150., 10., c); // south
+    vis_wall(&mut commands, 350., -180., 10., 200., c); // west
+    vis_wall(&mut commands, 500., -180., 10., 200., c); // east
+    vis_wall(&mut commands, 370., -80., 40., 10., c); // north-left  (350 to 390)
+    vis_wall(&mut commands, 480., -80., 40., 10., c); // north-right (460 to 500)
 
     spawn_hud(&mut commands);
 }
