@@ -34,7 +34,7 @@ pub fn compute_goal_progress(
     match kind {
         GoalKind::EarnMoney => (money_earned, money_earned >= target),
         GoalKind::WorkTimes => (work_today as f32, work_today as f32 >= target),
-        GoalKind::MaintainHappy => (happiness, happiness >= 60.),
+        GoalKind::MaintainHappy => (happiness, happiness >= target),
         GoalKind::EatTimes => (eat_today as f32, eat_today as f32 >= target),
         GoalKind::ChatTimes => (chat_today as f32, chat_today as f32 >= target),
         GoalKind::FriendNpc => (best_friendship, best_friendship >= target),
@@ -135,7 +135,7 @@ pub fn check_daily_goal(
             5.,
         );
     }
-    if stats.happiness < 60. && matches!(&goal.kind, GoalKind::MaintainHappy) {
+    if stats.happiness < goal.target && matches!(&goal.kind, GoalKind::MaintainHappy) {
         goal.failed = true;
     }
 }
@@ -179,7 +179,7 @@ pub fn check_milestones(
     if streak.days >= 7 {
         unlock!(ms.streak_7, "Streak 7 days");
     }
-    if stats.loan == 0. && gs.days_survived > 5 {
+    if stats.loan == 0. && stats.money >= 0. && gs.days_survived > 5 {
         unlock!(ms.debt_free, "Debt Free");
     }
     if friendship.levels.values().any(|&v| v >= 5.) {
@@ -197,9 +197,7 @@ pub fn check_milestones(
     if rep.score >= 80. {
         unlock!(ms.famous, "Famous — Rep 80+");
     }
-    if gs.study_today >= 2
-        || (skills.cooking + skills.career + skills.fitness + skills.social) >= 12.
-    {
+    if (skills.cooking + skills.career + skills.fitness + skills.social) >= 12. {
         unlock!(ms.scholar, "Scholar — Skills 12 total");
     }
     if pet.has_pet {

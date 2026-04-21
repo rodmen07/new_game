@@ -28,7 +28,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Unexpected bill! -$35",
         eff: |s| {
-            s.money = (s.money - 35.).max(0.);
+            s.money = (s.money - 35.).max(-crate::constants::DEBT_LIMIT);
         },
         rep: 0.,
         season: 0,
@@ -92,7 +92,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Subscription fee. -$20",
         eff: |s| {
-            s.money = (s.money - 20.).max(0.);
+            s.money = (s.money - 20.).max(-crate::constants::DEBT_LIMIT);
         },
         rep: 0.,
         season: 0,
@@ -191,7 +191,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Power outage. -$15, +10 Stress",
         eff: |s| {
-            s.money = (s.money - 15.).max(0.);
+            s.money = (s.money - 15.).max(-crate::constants::DEBT_LIMIT);
             s.stress = (s.stress + 10.).min(100.);
         },
         rep: 0.,
@@ -210,7 +210,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Internet outage — work delayed. -$20",
         eff: |s| {
-            s.money = (s.money - 20.).max(0.);
+            s.money = (s.money - 20.).max(-crate::constants::DEBT_LIMIT);
         },
         rep: 0.,
         season: 0,
@@ -219,7 +219,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Parking fine. -$25",
         eff: |s| {
-            s.money = (s.money - 25.).max(0.);
+            s.money = (s.money - 25.).max(-crate::constants::DEBT_LIMIT);
         },
         rep: 0.,
         season: 0,
@@ -359,7 +359,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Back-to-school sale. -$18",
         eff: |s| {
-            s.money = (s.money - 18.).max(0.);
+            s.money = (s.money - 18.).max(-crate::constants::DEBT_LIMIT);
         },
         rep: 0.,
         season: 3,
@@ -369,7 +369,7 @@ const DAILY_EVENTS: &[DailyEvt] = &[
     DailyEvt {
         msg: "Heating bill! -$30",
         eff: |s| {
-            s.money = (s.money - 30.).max(0.);
+            s.money = (s.money - 30.).max(-crate::constants::DEBT_LIMIT);
         },
         rep: 0.,
         season: 4,
@@ -607,7 +607,8 @@ fn apply_rent(
         stats.modify_happiness(-20.);
         stats.modify_stress(20.);
         if stats.unpaid_rent_days >= 3 {
-            stats.money = 0.;
+            // Do not zero out negative balance — existing debt remains.
+            stats.money = stats.money.min(0.);
             stats.modify_health(-20.);
             stats.unpaid_rent_days = 0;
             *housing = HousingTier::Unhoused;
@@ -860,6 +861,7 @@ pub fn on_new_day(
     if stats.money < 0. {
         let interest = stats.money.abs() * 0.05;
         stats.money -= interest;
+        stats.money = stats.money.max(-crate::constants::DEBT_LIMIT);
         stats.modify_stress(3.);
         notif.push(
             format!(
