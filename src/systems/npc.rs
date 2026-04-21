@@ -1,5 +1,5 @@
-use crate::components::{BodyPart, Interactable, Npc, NpcId, NpcLabel, NpcPersonality, Player};
-use crate::constants::{INTERACT_RADIUS, NPC_SPEED};
+use crate::components::{BodyPart, Collider, Interactable, Npc, NpcId, NpcLabel, NpcPersonality, Player};
+use crate::constants::{INTERACT_RADIUS, MAP_SCALE, NPC_SPEED};
 use crate::resources::{GameTime, NearbyInteractable, NpcFriendship, QuestBoard};
 use bevy::prelude::*;
 
@@ -89,6 +89,38 @@ pub fn npc_wander(
     }
 }
 
+/// NPC half-extents for AABB collision (matches player size).
+const NPC_HALF: Vec2 = Vec2::new(9., 9.);
+
+/// Resolves AABB collisions between all NPCs and `Collider` entities.
+/// Single-pass resolution is sufficient since NPCs move slowly.
+pub fn npc_collisions(
+    mut npc_q: Query<&mut Transform, With<Npc>>,
+    colliders_q: Query<(&Transform, &Collider), Without<Npc>>,
+) {
+    for mut ntf in &mut npc_q {
+        for (ctf, collider) in &colliders_q {
+            let ch = collider.0;
+            let dx = ntf.translation.x - ctf.translation.x;
+            let dy = ntf.translation.y - ctf.translation.y;
+            let overlap_x = (NPC_HALF.x + ch.x) - dx.abs();
+            let overlap_y = (NPC_HALF.y + ch.y) - dy.abs();
+
+            if overlap_x <= 0. || overlap_y <= 0. {
+                continue;
+            }
+
+            if overlap_x < overlap_y {
+                let sign = if dx >= 0. { 1. } else { -1. };
+                ntf.translation.x += overlap_x * sign;
+            } else {
+                let sign = if dy >= 0. { 1. } else { -1. };
+                ntf.translation.y += overlap_y * sign;
+            }
+        }
+    }
+}
+
 /// Animates NPC body parts (leg walk cycle) based on tracked velocity.
 pub fn npc_visuals(
     gt: Res<GameTime>,
@@ -99,23 +131,23 @@ pub fn npc_visuals(
     for (npc, children) in &npc_q {
         let speed = npc.velocity.length();
         let speed_norm = (speed / NPC_SPEED).clamp(0., 1.);
-        let leg_amp = speed_norm * 3.;
+        let leg_amp = speed_norm * 3. * MAP_SCALE;
         let leg_phase = (t * (6. + speed * 0.015)).sin() * leg_amp;
 
         for &child in children.iter() {
             if let Ok((part, mut ctf)) = parts_q.get_mut(child) {
                 match *part {
                     BodyPart::LeftLeg => {
-                        ctf.translation.y = -5. + leg_phase;
+                        ctf.translation.y = -5. * MAP_SCALE + leg_phase;
                     }
                     BodyPart::RightLeg => {
-                        ctf.translation.y = -5. - leg_phase;
+                        ctf.translation.y = -5. * MAP_SCALE - leg_phase;
                     }
                     BodyPart::LeftFoot => {
-                        ctf.translation.y = -10. + leg_phase * 0.65;
+                        ctf.translation.y = -10. * MAP_SCALE + leg_phase * 0.65;
                     }
                     BodyPart::RightFoot => {
-                        ctf.translation.y = -10. - leg_phase * 0.65;
+                        ctf.translation.y = -10. * MAP_SCALE - leg_phase * 0.65;
                     }
                     _ => {}
                 }

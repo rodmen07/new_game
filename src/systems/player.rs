@@ -48,7 +48,6 @@ pub fn sprint_drain(energy: f32, dt: f32) -> f32 {
 pub fn player_movement(
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut stats: ResMut<PlayerStats>,
     transport: Res<Transport>,
     mut q: Query<
         (
@@ -57,11 +56,12 @@ pub fn player_movement(
             &VehicleState,
             &BankInput,
             &ActionPrompt,
+            &mut PlayerStats,
         ),
         With<Player>,
     >,
 ) {
-    let Ok((mut tf, mut pm, vehicle_state, bank_input, action_prompt)) = q.get_single_mut() else {
+    let Ok((mut tf, mut pm, vehicle_state, bank_input, action_prompt, mut stats)) = q.get_single_mut() else {
         return;
     };
     if vehicle_state.in_vehicle {
@@ -126,16 +126,15 @@ pub fn player_movement(
 
 /// Squash/stretch via root scale; animate legs; tint body by state; orbit direction dot.
 pub fn player_visuals(
-    stats: Res<PlayerStats>,
     gt: Res<GameTime>,
-    mut player_q: Query<(&Children, &mut Transform, &PlayerMovement), With<Player>>,
+    mut player_q: Query<(&Children, &mut Transform, &PlayerMovement, &PlayerStats), With<Player>>,
     mut parts_q: Query<
         (&BodyPart, &mut Sprite, &mut Transform),
         (Without<Player>, Without<PlayerIndicator>),
     >,
     mut indicator_q: Query<&mut Transform, (With<PlayerIndicator>, Without<Player>)>,
 ) {
-    let Ok((children, mut root_tf, pm)) = player_q.get_single_mut() else {
+    let Ok((children, mut root_tf, pm, stats)) = player_q.get_single_mut() else {
         return;
     };
     let speed = pm.velocity.length();

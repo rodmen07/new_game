@@ -1,13 +1,16 @@
-use crate::{components::PetKind, constants::TIME_SCALE, resources::*, settings::GameSettings};
+use crate::{components::{LocalPlayer, PetKind}, constants::TIME_SCALE, resources::*, settings::GameSettings};
 use bevy::prelude::*;
 
 pub fn decay_stats(
-    mut stats: ResMut<PlayerStats>,
+    mut player_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     time: Res<Time>,
     weather: Res<WeatherKind>,
     settings: Res<GameSettings>,
     mut pet: ResMut<Pet>,
 ) {
+    let Ok(mut stats) = player_q.get_single_mut() else {
+        return;
+    };
     let dt = time.delta_secs();
     let energy_mult = weather.energy_decay_mult() * settings.difficulty.energy_decay_mult();
     let hunger_mult = settings.difficulty.hunger_mult();
@@ -49,13 +52,16 @@ pub fn decay_stats(
 }
 
 pub fn degrade_health(
-    mut stats: ResMut<PlayerStats>,
+    mut player_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut gs: ResMut<GameState>,
     mut conds: ResMut<Conditions>,
     time: Res<Time>,
     settings: Res<GameSettings>,
     mut notif: ResMut<Notification>,
 ) {
+    let Ok(mut stats) = player_q.get_single_mut() else {
+        return;
+    };
     let dt = time.delta_secs();
 
     // Tick hospital recovery timer
@@ -107,10 +113,13 @@ pub fn degrade_health(
 }
 
 pub fn check_critical(
-    stats: Res<PlayerStats>,
+    player_q: Query<&PlayerStats, With<LocalPlayer>>,
     conds: Res<Conditions>,
     mut notif: ResMut<Notification>,
 ) {
+    let Ok(stats) = player_q.get_single() else {
+        return;
+    };
     if conds.hospitalized {
         return;
     }

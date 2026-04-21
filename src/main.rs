@@ -68,13 +68,8 @@ fn main() {
         .add_plugins(GameAudioPlugin)
         .add_plugins(TweeningPlugin)
         // ── Game resources ────────────────────────────────────────────────────
-        .init_resource::<PlayerStats>()
-        .init_resource::<Inventory>()
         .init_resource::<GameTime>()
         .init_resource::<NearbyInteractable>()
-        .init_resource::<Skills>()
-        .init_resource::<WorkStreak>()
-        .init_resource::<HousingTier>()
         .init_resource::<NpcFriendship>()
         .init_resource::<Notification>()
         .init_resource::<NarrativeState>()
@@ -129,6 +124,7 @@ fn main() {
                 resolve_collisions,
                 player_visuals,
                 npc_wander,
+                npc_collisions,
                 npc_visuals,
                 update_npc_labels,
                 update_npc_prompts,
@@ -164,6 +160,7 @@ fn main() {
                 camera_follow,
                 tick_notification,
                 update_hud,
+                update_typing_overlay,
                 update_day_night,
             )
                 .chain()

@@ -55,23 +55,22 @@ pub fn tick_notification(mut notif: ResMut<Notification>, time: Res<Time>) {
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_hud(
-    stats: Res<PlayerStats>,
+    player_q: Query<(&PlayerStats, &Skills, &Inventory, &HousingTier, &WorkStreak), With<LocalPlayer>>,
     gt: Res<GameTime>,
     nearby: Res<NearbyInteractable>,
-    skills: Res<Skills>,
     notif: Res<Notification>,
     goal: Res<DailyGoal>,
     friendship: Res<NpcFriendship>,
-    inv: Res<Inventory>,
     rating: Res<LifeRating>,
     ms: Res<Milestones>,
-    housing: Res<HousingTier>,
-    streak: Res<WorkStreak>,
     extras: HudExtras,
     npc_q: Query<(Entity, &Npc)>,
     mut labels: Query<(&HudLabel, &mut Text, &mut TextColor)>,
     mut bars: Query<(&HudBar, &mut BarSmooth)>,
 ) {
+    let Ok((stats, skills, inv, housing, streak)) = player_q.get_single() else {
+        return;
+    };
     let mood = Mood::from_happiness(stats.happiness);
     let friend_str: String = {
         let entries: Vec<String> = npc_q
@@ -179,7 +178,7 @@ pub fn update_hud(
                 if let Ok(prompt) = extras.player_prompt_q.get_single()
                     && prompt.active
                 {
-                    prompt.display_text()
+                    String::new() // typing overlay handles display
                 } else if !nearby.prompt.is_empty() {
                     nearby.prompt.clone()
                 } else if stats.hunger > 70. && stats.money >= 12. {
@@ -642,4 +641,102 @@ fn warnings(s: &PlayerStats, conds: &Conditions) -> String {
     }
 
     w.join("  ")
+}
+
+/// Updates the full-screen typing overlay each frame to reflect the current
+/// `ActionPrompt` state: shows/hides the overlay and highlights per-character.
+pub fn update_typing_overlay(
+    prompt_q: Query<&ActionPrompt, With<LocalPlayer>>,
+    mut overlay_q: Query<&mut Visibility, With<TypingOverlay>>,
+    mut label_q: Query<&mut Text, With<TypingLabel>>,
+    mut typed_q: Query<&mut Text, (With<TypingWordTyped>, Without<TypingLabel>)>,
+    mut cur_box_q: Query<
+        &mut Visibility,
+        (With<TypingWordCurrentBox>, Without<TypingOverlay>),
+    >,
+    mut cur_q: Query<
+        &mut Text,
+        (With<TypingWordCurrent>, Without<TypingLabel>, Without<TypingWordTyped>),
+    >,
+    mut remain_q: Query<
+        &mut Text,
+        (
+            With<TypingWordRemaining>,
+            Without<TypingLabel>,
+            Without<TypingWordTyped>,
+            Without<TypingWordCurrent>,
+        ),
+    >,
+    mut instr_q: Query<
+        &mut Text,
+        (
+            With<TypingInstruction>,
+            Without<TypingLabel>,
+            Without<TypingWordTyped>,
+            Without<TypingWordCurrent>,
+            Without<TypingWordRemaining>,
+        ),
+    >,
+    mut retries_q: Query<
+        &mut Text,
+        (
+            With<TypingRetries>,
+            Without<TypingLabel>,
+            Without<TypingWordTyped>,
+            Without<TypingWordCurrent>,
+            Without<TypingWordRemaining>,
+            Without<TypingInstruction>,
+        ),
+    >,
+) {
+    let Ok(prompt) = prompt_q.get_single() else {
+        return;
+    };
+    let Ok(mut vis) = overlay_q.get_single_mut() else {
+        return;
+    };
+    if !prompt.active {
+        *vis = Visibility::Hidden;
+        return;
+    }
+    *vis = Visibility::Visible;
+
+    let expected_chars: Vec<char> = prompt.expected.chars().collect();
+    let typed_len = prompt.buffer.chars().count().min(expected_chars.len());
+    let typed_str: String = expected_chars[..typed_len].iter().collect();
+    let cur_str: String = expected_chars
+        .get(typed_len)
+        .map(|c| c.to_string())
+        .unwrap_or_default();
+    let remaining_str: String = if typed_len + 1 < expected_chars.len() {
+        expected_chars[typed_len + 1..].iter().collect()
+    } else {
+        String::new()
+    };
+
+    if let Ok(mut t) = label_q.get_single_mut() {
+        **t = prompt.label.to_uppercase();
+    }
+    if let Ok(mut t) = typed_q.get_single_mut() {
+        **t = typed_str;
+    }
+    if let Ok(mut v) = cur_box_q.get_single_mut() {
+        *v = if cur_str.is_empty() {
+            Visibility::Hidden
+        } else {
+            Visibility::Visible
+        };
+    }
+    if let Ok(mut t) = cur_q.get_single_mut() {
+        **t = cur_str;
+    }
+    if let Ok(mut t) = remain_q.get_single_mut() {
+        **t = remaining_str;
+    }
+    if let Ok(mut t) = instr_q.get_single_mut() {
+        **t = prompt.instruction.clone();
+    }
+    if let Ok(mut t) = retries_q.get_single_mut() {
+        **t = format!("{} retries left  [Esc] cancel", prompt.retries_left);
+    }
 }

@@ -1,15 +1,14 @@
 use bevy::prelude::*;
 
+use crate::components::LocalPlayer;
 use crate::resources::*;
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_narrative(
     gt: Res<GameTime>,
     _gs: Res<GameState>,
-    stats: Res<PlayerStats>,
-    skills: Res<Skills>,
+    player_q: Query<(&PlayerStats, &Skills, &HousingTier), With<LocalPlayer>>,
     friendship: Res<NpcFriendship>,
-    housing: Res<HousingTier>,
     rating: Res<LifeRating>,
     conds: Res<Conditions>,
     rep: Res<Reputation>,
@@ -17,6 +16,9 @@ pub fn update_narrative(
     mut story: ResMut<NarrativeState>,
     mut notif: ResMut<Notification>,
 ) {
+    let Ok((stats, skills, housing)) = player_q.get_single() else {
+        return;
+    };
     let unlocked = (gt.day == 0)
         && story.unlock(
             "intro",

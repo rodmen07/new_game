@@ -1,3 +1,4 @@
+use crate::components::LocalPlayer;
 use crate::constants::*;
 use crate::resources::*;
 use crate::settings::{Difficulty, GameSettings};
@@ -25,8 +26,7 @@ fn crisis_should_trigger(seed: u64, base_chance: u64, day: u32, insured: bool) -
 pub fn crisis_trigger_system(
     gt: Res<GameTime>,
     mut crisis: ResMut<CrisisState>,
-    mut stats: ResMut<PlayerStats>,
-    mut inv: ResMut<Inventory>,
+    mut player_q: Query<(&mut PlayerStats, &mut Inventory), With<LocalPlayer>>,
     mut invest: ResMut<Investment>,
     mut notif: ResMut<Notification>,
     settings: Res<GameSettings>,
@@ -40,6 +40,10 @@ pub fn crisis_trigger_system(
     if gt.day.saturating_sub(crisis.last_crisis_day) < CRISIS_COOLDOWN_DAYS {
         return;
     }
+
+    let Ok((mut stats, mut inv)) = player_q.get_single_mut() else {
+        return;
+    };
 
     // Use a sentinel to run once per day
     let seed = (gt.day as u64)

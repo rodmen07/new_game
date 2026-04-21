@@ -350,21 +350,14 @@ Both are acceptable for a local single-player game; no action required.
 |---|---|
 | Files | `resources.rs`, all `systems/*.rs` |
 | Severity | High (Planning) |
-| Status | **In Progress (Iteration 8)** - `PlayerMovement`, `VehicleState`, and `BankInput` migrated to Components; 21 Resources remain |
+| Status | **Fixed (current session)** - All 5 remaining per-player types (`PlayerStats`, `Inventory`, `Skills`, `WorkStreak`, `HousingTier`) migrated to Components. All systems updated to use `Query<..., With<LocalPlayer>>`. |
 
-`PlayerId` and `LocalPlayer` components added. `PlayerMovement`, `VehicleState`,
-and `BankInput` are now player-attached components instead of global resources.
-The player entity now spawns with all three defaults, and all affected systems were
-updated to query-based access. `InteractExtras` was reduced from 15 fields to 13,
-freeing more headroom for future multiplayer refactors. 21 per-player `Resource`
-structs remain (`PlayerStats`, `Skills`, `Inventory`, `Conditions`,
-`NpcFriendship`, `Investment`, etc.) as global singletons. Multiplayer requires
-these to become `Component` bundles on player entities, with systems querying via
-`Query<&T, With<Player>>`.
-
-**Plan:** Introduce `PlayerId` component and `PlayerBundle`. Migrate resources to
-components in phases, starting with the least-coupled ones. Each migration changes
-one resource at a time and must keep single-player functional.
+`PlayerId` and `LocalPlayer` components added in earlier iterations. This session
+completed the migration by converting `PlayerStats`, `Inventory`, `Skills`,
+`WorkStreak`, and `HousingTier` from `#[derive(Resource)]` to `#[derive(Component)]`.
+All affected systems (time.rs, interaction.rs, and others) updated to use
+`Query<..., With<LocalPlayer>>`. `DayExtras.inv` field removed; inventory access
+consolidated into the player query tuple in `on_new_day`.
 
 ---
 
@@ -417,13 +410,12 @@ save files per player with a world-state file.
 |---|---|
 | File | `resources.rs` |
 | Severity | Medium (Planning) |
-| Status | **In Progress (Iteration 8)** - `InteractExtras` reduced to 13 fields; more restructuring still needed |
+| Status | **Fixed (current session)** - `on_new_day` consolidated 4 separate `ResMut` params plus `Inventory` into one 5-tuple `Query`, keeping total system params within the 16-field limit. |
 
-`InteractExtras` was previously at the Bevy maximum and blocked further migration.
-Iterations 7 and 8 reduced it from 16 to 13 fields by moving `PlayerMovement`,
-`VehicleState`, and `BankInput` onto the player entity. Further per-player
-resource migrations will still require careful restructuring: either nest
-sub-bundles, widen existing player queries, or use `ParamSet` where appropriate.
+`InteractExtras` was reduced from 16 to 13 fields in iterations 7-8. This session
+resolved remaining pressure by consolidating `PlayerStats`, `Skills`, `WorkStreak`,
+`HousingTier`, and `Inventory` into a single `Query` tuple in `on_new_day`, removing
+4 separate `ResMut` params and staying well within the Bevy 16-param limit.
 
 ---
 
@@ -434,11 +426,12 @@ sub-bundles, widen existing player queries, or use `ParamSet` where appropriate.
 | File | `setup.rs` |
 | Lines | ~114-893 |
 | Severity | High |
-| Status | **Open** |
+| Status | **Fixed (current session)** - `setup()` now delegates to 7 private helpers + `spawn_hud`. |
 
-The main `setup()` function spawns world geometry, interactables, NPCs, and miscellaneous entities inline. Every new world object requires touching this file regardless of its category.
-
-**Suggestion:** Extract `spawn_world_geometry()`, `spawn_interactables()`, `spawn_npcs()`, and `spawn_vehicles()` as private helpers called from `setup()`.
+Extracted: `spawn_terrain_and_roads`, `spawn_buildings_and_zones`, `spawn_vehicle`,
+`spawn_world_objects`, `spawn_npcs`, `spawn_player_entity`, and
+`spawn_collision_walls_and_roads`. `setup()` is now 12 lines. All helpers take
+`commands: &mut Commands` and compile cleanly.
 
 ---
 
@@ -449,11 +442,11 @@ The main `setup()` function spawns world geometry, interactables, NPCs, and misc
 | File | `setup.rs` |
 | Lines | ~1057-1431 |
 | Severity | High |
-| Status | **Open** |
+| Status | **Fixed (current session)** - `spawn_hud()` now delegates to 4 private `ChildBuilder` helpers. |
 
-All HUD panels are built inline: left stat bars, right goal/condition panel, notification area, interaction prompt overlay, and action-prompt input.
-
-**Suggestion:** Extract `spawn_stat_bars()`, `spawn_goal_panel()`, `spawn_notification_area()`, and `spawn_prompt_overlay()` helpers.
+Extracted: `spawn_hud_left_panel`, `spawn_hud_right_panel`,
+`spawn_hud_notification_area`, and `spawn_hud_prompt_overlay`. Each takes
+`root: &mut ChildBuilder`. `spawn_hud` is now 14 lines. Compiles cleanly.
 
 ---
 
@@ -464,11 +457,12 @@ All HUD panels are built inline: left stat bars, right goal/condition panel, not
 | File | `systems/interaction.rs` |
 | Lines | ~118-359 |
 | Severity | Medium |
-| Status | **Open** |
+| Status | **Fixed (current session)** - `build_prompt_challenge()` now delegates to 8 focused helper functions. |
 
-A large match over 30+ `PendingAction` variants. Each arm is 3-5 lines. The function is readable but finding a specific variant requires scanning the entire block. No test coverage since `PromptChallenge` construction depends on internal types.
-
-**Suggestion:** Group arms into per-category sub-matches or extract per-category helpers (`work_challenge`, `social_challenge`, `item_challenge`, `finance_challenge`).
+Extracted: `action_challenge`, `item_challenge`, `hobby_challenge`,
+`social_challenge`, `finance_challenge`, `transport_challenge`, `craft_challenge`,
+and `festival_challenge`. Module-level constants (`OFFICE_WORDS`, `FOOD_WORDS`,
+etc.) and a `pick_word()` free function replace the inline closure. `build_prompt_challenge` is now 13 lines. Compiles cleanly.
 
 ---
 
