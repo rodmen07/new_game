@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
 
-use crate::components::{BodyPart, MainCamera, Player, PlayerIndicator};
+use crate::components::{BodyPart, LocalPlayer, MainCamera, Player, PlayerIndicator};
 use crate::constants::{
     PLAYER_ACCEL, PLAYER_FRICTION, PLAYER_SPEED, SPRINT_ENERGY_DRAIN, SPRINT_MULTIPLIER,
     WORLD_BOUNDARY,
@@ -58,10 +58,10 @@ pub fn player_movement(
             &ActionPrompt,
             &mut PlayerStats,
         ),
-        With<Player>,
+        With<LocalPlayer>,
     >,
 ) {
-    let Ok((mut tf, mut pm, vehicle_state, bank_input, action_prompt, mut stats)) = q.get_single_mut() else {
+    let Some((mut tf, mut pm, vehicle_state, bank_input, action_prompt, mut stats)) = q.iter_mut().next() else {
         return;
     };
     if vehicle_state.in_vehicle {
@@ -127,14 +127,14 @@ pub fn player_movement(
 /// Squash/stretch via root scale; animate legs; tint body by state; orbit direction dot.
 pub fn player_visuals(
     gt: Res<GameTime>,
-    mut player_q: Query<(&Children, &mut Transform, &PlayerMovement, &PlayerStats), With<Player>>,
+    mut player_q: Query<(&Children, &mut Transform, &PlayerMovement, &PlayerStats), With<LocalPlayer>>,
     mut parts_q: Query<
         (&BodyPart, &mut Sprite, &mut Transform),
         (Without<Player>, Without<PlayerIndicator>),
     >,
     mut indicator_q: Query<&mut Transform, (With<PlayerIndicator>, Without<Player>)>,
 ) {
-    let Ok((children, mut root_tf, pm, stats)) = player_q.get_single_mut() else {
+    let Some((children, mut root_tf, pm, stats)) = player_q.iter_mut().next() else {
         return;
     };
     let speed = pm.velocity.length();
@@ -203,17 +203,17 @@ pub fn player_visuals(
 }
 
 pub fn camera_follow(
-    player_q: Query<(&Transform, &PlayerMovement), With<Player>>,
+    player_q: Query<(&Transform, &PlayerMovement), With<LocalPlayer>>,
     mut cam_q: Query<
         (&mut Transform, &mut OrthographicProjection),
         (With<MainCamera>, Without<Player>),
     >,
     time: Res<Time>,
 ) {
-    let Ok((ptf, pm)) = player_q.get_single() else {
+    let Some((ptf, pm)) = player_q.iter().next() else {
         return;
     };
-    let Ok((mut ctf, mut proj)) = cam_q.get_single_mut() else {
+    let Some((mut ctf, mut proj)) = cam_q.iter_mut().next() else {
         return;
     };
     let dt = time.delta_secs();
@@ -228,9 +228,9 @@ pub fn camera_follow(
 
 pub fn camera_zoom(
     mut scroll_evr: EventReader<MouseWheel>,
-    mut pm_q: Query<&mut PlayerMovement, With<Player>>,
+    mut pm_q: Query<&mut PlayerMovement, With<LocalPlayer>>,
 ) {
-    let Ok(mut pm) = pm_q.get_single_mut() else {
+    let Some(mut pm) = pm_q.iter_mut().next() else {
         return;
     };
     for ev in scroll_evr.read() {

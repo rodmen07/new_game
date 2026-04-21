@@ -1,4 +1,4 @@
-use crate::components::{BodyPart, Collider, Interactable, Npc, NpcId, NpcLabel, NpcPersonality, Player};
+use crate::components::{BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality, Player};
 use crate::constants::{INTERACT_RADIUS, MAP_SCALE, NPC_SPEED};
 use crate::resources::{GameTime, NearbyInteractable, NpcFriendship, QuestBoard};
 use bevy::prelude::*;
@@ -234,11 +234,11 @@ pub fn update_npc_prompts(
 }
 
 pub fn detect_nearby(
-    player_q: Query<&Transform, With<Player>>,
+    player_q: Query<&Transform, With<LocalPlayer>>,
     inter_q: Query<(Entity, &Transform, &Interactable)>,
     mut nearby: ResMut<NearbyInteractable>,
 ) {
-    let Ok(ptf) = player_q.get_single() else {
+    let Some(ptf) = player_q.iter().next() else {
         return;
     };
     let pos = ptf.translation.truncate();

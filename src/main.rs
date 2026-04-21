@@ -2,6 +2,7 @@ mod audio;
 mod components;
 mod constants;
 mod menu;
+mod network;
 mod resources;
 mod save;
 mod settings;
@@ -12,8 +13,9 @@ use audio::GameAudioPlugin;
 use bevy::{asset::AssetPlugin, prelude::*};
 use bevy_tweening::TweeningPlugin;
 use menu::{AppState, MenuPlugin, reset_start_kind};
+use network::wasm_net::MultiplayerPlugin;
 use resources::*;
-use save::{PendingLoad, SaveRequest, apply_save_data, handle_save, reset_game};
+use save::{PendingLoad, SaveRequest, apply_save_data, handle_save, reset_game, start_tutorial_if_new_game};
 use settings::{GameSettings, apply_settings};
 use setup::setup;
 #[cfg(not(target_arch = "wasm32"))]
@@ -67,6 +69,7 @@ fn main() {
         .add_plugins(MenuPlugin)
         .add_plugins(GameAudioPlugin)
         .add_plugins(TweeningPlugin)
+        .add_plugins(MultiplayerPlugin)
         // ── Game resources ────────────────────────────────────────────────────
         .init_resource::<GameTime>()
         .init_resource::<NearbyInteractable>()
@@ -90,6 +93,7 @@ fn main() {
         .init_resource::<CrisisState>()
         .init_resource::<FestivalState>()
         .init_resource::<LightningTimer>()
+        .init_resource::<TutorialState>()
         // ── Save / load ───────────────────────────────────────────────────────
         .init_resource::<PendingLoad>()
         .add_event::<SaveRequest>()
@@ -98,7 +102,7 @@ fn main() {
         // Reset + apply save data every time we enter Playing (skipped on Resume).
         .add_systems(
             OnEnter(AppState::Playing),
-            (reset_game, apply_save_data, reset_start_kind).chain(),
+            (reset_game, apply_save_data, start_tutorial_if_new_game, reset_start_kind).chain(),
         )
         // Gameplay systems — only run in the Playing state.
         .add_systems(Update, camera_zoom.run_if(in_state(AppState::Playing)))
@@ -177,6 +181,11 @@ fn main() {
         .add_systems(
             Update,
             toggle_skill_panel
+                .run_if(in_state(AppState::Playing)),
+        )
+        .add_systems(
+            Update,
+            update_tutorial
                 .run_if(in_state(AppState::Playing)),
         )
         .add_systems(

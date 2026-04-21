@@ -10,6 +10,11 @@ pub struct LocalPlayer;
 /// Stable identity for a player across save/load and network sessions.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct PlayerId(pub u32);
+/// Marks a remotely-controlled player entity (server-synced position, no input).
+#[derive(Component, Clone)]
+pub struct RemotePlayer {
+    pub net_id: String,
+}
 #[derive(Component)]
 pub struct MainCamera;
 #[derive(Component)]
@@ -345,6 +350,17 @@ impl TypingOverlayFade {
 impl Default for TypingOverlayFade {
     fn default() -> Self { Self { alpha: 0. } }
 }
+
+// ── Tutorial overlay ──────────────────────────────────────────────────────────
+/// Marks the full-screen tutorial overlay node.
+#[derive(Component)]
+pub struct TutorialOverlay;
+/// Marks the text node inside the tutorial overlay that displays the current step.
+#[derive(Component)]
+pub struct TutorialBodyText;
+/// Marks the small hint line at the bottom of the tutorial overlay.
+#[derive(Component)]
+pub struct TutorialHintText;
 
 // ── Apartment furnishings ─────────────────────────────────────────────────────
 /// Purchasable home upgrades that provide permanent passive buffs.

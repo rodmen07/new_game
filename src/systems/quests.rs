@@ -130,7 +130,7 @@ pub fn quest_progress_system(
     mut notif: ResMut<Notification>,
     npc_q: Query<(Entity, &NpcId)>,
 ) {
-    let Ok((inv, mut stats)) = player_q.get_single_mut() else {
+    let Some((inv, mut stats)) = player_q.iter_mut().next() else {
         return;
     };
     let mut any_completed = false;
