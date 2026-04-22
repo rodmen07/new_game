@@ -6,6 +6,54 @@
     <title>Everyday Life Simulator</title>
     <link data-trunk rel="copy-dir" href="assets" />
     <link data-trunk rel="rust" />
+    <script>
+      (function () {
+        let started = false;
+
+        function ensureOverlay() {
+          let overlay = document.getElementById("startup-diagnostics");
+          if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "startup-diagnostics";
+            overlay.className = "startup-diagnostics";
+            document.body.appendChild(overlay);
+          }
+          return overlay;
+        }
+
+        function showDiagnostic(message) {
+          const overlay = ensureOverlay();
+          overlay.textContent = message;
+          overlay.style.display = "block";
+        }
+
+        window.addEventListener("TrunkApplicationStarted", function () {
+          started = true;
+          const overlay = document.getElementById("startup-diagnostics");
+          if (overlay) {
+            overlay.style.display = "none";
+          }
+        });
+
+        window.addEventListener("error", function (event) {
+          const detail = event && event.message ? event.message : "Unknown runtime error";
+          showDiagnostic("Startup error: " + detail);
+        });
+
+        window.addEventListener("unhandledrejection", function (event) {
+          const reason = event && event.reason ? String(event.reason) : "Unknown promise rejection";
+          showDiagnostic("Startup rejected: " + reason);
+        });
+
+        setTimeout(function () {
+          if (!started) {
+            showDiagnostic(
+              "Game startup is taking too long. Check browser console for JS/WASM errors, disable aggressive blockers, and hard-refresh."
+            );
+          }
+        }, 12000);
+      })();
+    </script>
     <style>
       html, body {
         margin: 0;
@@ -39,6 +87,22 @@
         background: rgba(17, 24, 39, 0.78);
         font-size: 13px;
         pointer-events: none;
+      }
+
+      .startup-diagnostics {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(248, 113, 113, 0.6);
+        background: rgba(127, 29, 29, 0.88);
+        color: #fee2e2;
+        font-size: 13px;
+        line-height: 1.4;
+        display: none;
+        z-index: 50;
       }
     </style>
   </head>
