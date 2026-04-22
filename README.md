@@ -24,7 +24,7 @@ Current implemented highlights include:
 - pets, crisis events, seasonal festivals, and weather-driven visuals
 - universal typed action prompts with seniority-based retries and subject-aware phrases before tasks resolve
 
-The current baseline is verified with a successful build, a clean strict clippy run, and 150 passing tests.
+The current baseline is verified with a successful build, a clean strict clippy run, and 171 passing tests.
 
 ---
 
@@ -215,7 +215,7 @@ src/
 |---|---|
 | Build | Passing |
 | Clippy | Passing with cargo clippy -- -D warnings |
-| Tests | 150 passing |
+| Tests | 171 passing |
 | Save and load | Implemented |
 | Crisis system | Implemented |
 | Seasonal festivals | Implemented |
@@ -236,15 +236,15 @@ Items are grouped by category and ordered by priority within each group. Each it
 
 These are pure-function tests with no ECS dependency - low effort, high value.
 
-**P1-A: Unit tests for the typing challenge helpers**
+**P1-A: Unit tests for the typing challenge helpers** ✅
+- Pure-function tests added in `src/systems/interaction.rs`: `pick_word_*` (pool boundary, large-seed wrap, offset variation, determinism), `normalize_prompt_text_*` (lowercase, whitespace collapse, empty input, auto-confirm comparison), `word_challenge_*` (single-word output, pool membership, label/instruction passthrough), and `build_prompt_challenge_*` smoke tests across all basic actions
+- The auto-confirm branch inside `handle_action_prompt_input` requires a Bevy `App`/world to drive and is left for the longer-term ECS test pass
 - Target: `src/systems/interaction.rs`
-- Cover `pick_word` (index wrapping, pool boundaries), `word_challenge` (returns correct single word), `normalize_prompt_text` (whitespace collapsing, case), and the auto-confirm branch inside `handle_action_prompt_input` (correct match, partial match, Esc cancel, retry decrement)
-- No ECS setup required
 
-**P1-B: Unit tests for NPC collision helper**
+**P1-B: Unit tests for NPC collision helper** ✅
+- Extracted pure helper `resolve_aabb_push(entity_pos, entity_half, collider_pos, collider_half) -> Option<Vec2>` from `npc_collisions` in `src/systems/npc.rs`
+- Unit tests cover non-overlap (returns `None`), horizontal-axis push (smaller overlap on x), vertical-axis push (smaller overlap on y), corner ties, and edge contact (zero overlap)
 - Target: `src/systems/npc.rs`
-- Extract the AABB overlap math from `npc_collisions` into a pure `resolve_aabb(pos, half, wall_rect) -> Vec2` helper and test push directions and corner cases
-- Depends on: extract helper from `npc_collisions`
 
 ---
 
@@ -258,10 +258,12 @@ Make the overlay feel snappier with a short fade-in and scale-up on appear.
 - On deactivate: alpha snaps to 0, `BackgroundColor` cleared, `Visibility::Hidden` set immediately
 - Target: `src/components.rs`, `src/setup.rs`, `src/systems/hud.rs`
 
-**P2-B: Scale-up tween on word row**
-- Target: same files as P2-A
-- Animate the word row `Node`'s implicit scale from 0.85 to 1.0 over ~120 ms using a custom `Lens` on `Transform`
-- Depends on: P2-A approach validated (same tween infrastructure)
+**P2-B: Scale-up tween on word row** ✅
+- Added `TypingWordRow` marker and `TypingWordRowScale { scale }` component (`START_SCALE = 0.85`, `TARGET_SCALE = 1.0`, `RATE_PER_SEC = 1.25`) in `src/components.rs`
+- Word row Node spawns with `Transform::from_scale(0.85)` and the new components in `src/setup.rs`
+- New `update_typing_word_row_scale` system in `src/systems/hud.rs` lerps scale toward target while the prompt is active and snaps back when inactive (gives a ~120 ms entrance ease)
+- Pure helper `next_word_row_scale(current, dt, active)` extracted and unit-tested (4 tests)
+- Target: `src/components.rs`, `src/setup.rs`, `src/systems/hud.rs`, `src/main.rs`
 
 ---
 
@@ -289,10 +291,12 @@ The `assets/audio/` folder is present but empty. Even minimal SFX dramatically i
 
 ### P4 - Gameplay depth
 
-**P4-A: Job promotion event**
-- A career milestone at `career >= 2.5` and `career >= 5.0` that triggers a one-time prompt at the office ("Promotion available - confirm to advance")
-- Reward: permanent work pay multiplier bump and a narrative line
-- Target: `src/systems/interaction.rs` (work arm), `src/systems/narrative.rs`, `src/resources.rs` (flag on `WorkStreak` or new component)
+**P4-A: Job promotion event** ✅
+- `WorkStreak::promotion_notified: u8` bitmask added in `src/resources.rs` (bit 0 = Senior, bit 1 = Executive)
+- Senior promotion fires once at `career >= 2.5`, Executive at `career >= 5.0`, both gated by the bitmask so they only trigger one time each
+- Promotion event surfaces a notification line and is logged through the narrative pipeline
+- Field is persisted in `SaveData` (`save.rs`) so promotions survive across saves
+- Target: `src/systems/interaction.rs` (work arm), `src/systems/narrative.rs`, `src/resources.rs`, `src/save.rs`
 
 **P4-B: NPC hangout activity** ✅
 - New `ActionKind::Hangout` interactable near an NPC when friendship >= 3
@@ -310,10 +314,12 @@ The `assets/audio/` folder is present but empty. Even minimal SFX dramatically i
 - Persisted in save data; bank info message hints `[F1]Desk$60 [F2]Bed$80 [F3]Kitchen$100`
 - Target: `src/components.rs`, `src/systems/interaction.rs`, `src/save.rs`, `src/setup.rs`
 
-**P4-D: Visible skill tree panel**
-- A togglable HUD panel (Tab key) showing all six skills as progress bars with next-tier labels
-- No new data - just reads existing `Skills` component
-- Target: `src/setup.rs` (spawn panel), `src/systems/hud.rs` (toggle + update), `src/components.rs` (marker)
+**P4-D: Visible skill tree panel** ✅
+- New `SkillPanel` marker component plus per-skill bar markers (`SkillCookingBar`, `SkillCareerBar`, `SkillFitnessBar`, `SkillSocialBar`) in `src/components.rs`
+- `spawn_skill_panel` builds a hidden bottom-right panel in `src/setup.rs`
+- `toggle_skill_panel` (Tab key) and `update_skill_panel` (live bar widths and tier labels) added in `src/systems/hud.rs` and registered in `src/main.rs`
+- Reads existing `Skills` component data; no new save fields
+- Target: `src/setup.rs`, `src/systems/hud.rs`, `src/components.rs`, `src/main.rs`
 
 ---
 
