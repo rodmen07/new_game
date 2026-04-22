@@ -14,7 +14,7 @@ pub fn update_day_night(
     weather: Res<WeatherKind>,
     mut overlay_q: Query<&mut Sprite, With<DayNightOverlay>>,
 ) {
-    let Ok(mut sprite) = overlay_q.get_single_mut() else {
+    let Some(mut sprite) = overlay_q.iter_mut().next() else {
         return;
     };
     let h = gt.hours % 24.;
@@ -76,7 +76,7 @@ pub fn update_highlight(
     >,
     mut highlight_q: Query<(&mut Transform, &mut Sprite), With<InteractHighlight>>,
 ) {
-    let Ok((mut htf, mut hsprite)) = highlight_q.get_single_mut() else {
+    let Some((mut htf, mut hsprite)) = highlight_q.iter_mut().next() else {
         return;
     };
 
@@ -497,7 +497,7 @@ pub fn update_lightning(
 
     // Apply flash to overlay
     if lightning.flash_alpha > 0.01 {
-        let Ok(mut sprite) = overlay_q.get_single_mut() else {
+        let Some(mut sprite) = overlay_q.iter_mut().next() else {
             return;
         };
         let current = sprite.color.to_srgba();

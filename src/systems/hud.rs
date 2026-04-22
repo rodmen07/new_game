@@ -720,7 +720,7 @@ pub fn update_skill_panel(
 }
 
 fn set_skill_bar(q: &mut Query<&mut Text, impl bevy::ecs::query::QueryFilter>, value: f32) {
-    let Ok(mut t) = q.get_single_mut() else {
+    let Some(mut t) = q.iter_mut().next() else {
         return;
     };
     let pips = 5usize;
@@ -805,7 +805,7 @@ pub fn update_typing_overlay(
     let Some(prompt) = prompt_q.iter().next() else {
         return;
     };
-    let Ok((mut vis, mut bg, mut fade)) = overlay_q.get_single_mut() else {
+    let Some((mut vis, mut bg, mut fade)) = overlay_q.iter_mut().next() else {
         return;
     };
     if !prompt.active {
@@ -813,22 +813,22 @@ pub fn update_typing_overlay(
         fade.alpha = 0.;
         bg.0 = Color::srgba(0., 0., 0., 0.);
         *vis = Visibility::Hidden;
-        if let Ok(mut t) = label_q.get_single_mut() {
+        if let Some(mut t) = label_q.iter_mut().next() {
             **t = String::new();
         }
-        if let Ok(mut t) = typed_q.get_single_mut() {
+        if let Some(mut t) = typed_q.iter_mut().next() {
             **t = String::new();
         }
-        if let Ok(mut t) = cur_q.get_single_mut() {
+        if let Some(mut t) = cur_q.iter_mut().next() {
             **t = String::new();
         }
-        if let Ok(mut t) = remain_q.get_single_mut() {
+        if let Some(mut t) = remain_q.iter_mut().next() {
             **t = String::new();
         }
-        if let Ok(mut t) = instr_q.get_single_mut() {
+        if let Some(mut t) = instr_q.iter_mut().next() {
             **t = String::new();
         }
-        if let Ok(mut t) = retries_q.get_single_mut() {
+        if let Some(mut t) = retries_q.iter_mut().next() {
             **t = String::new();
         }
         return;
@@ -853,29 +853,29 @@ pub fn update_typing_overlay(
         String::new()
     };
 
-    if let Ok(mut t) = label_q.get_single_mut() {
+    if let Some(mut t) = label_q.iter_mut().next() {
         **t = prompt.label.to_uppercase();
     }
-    if let Ok(mut t) = typed_q.get_single_mut() {
+    if let Some(mut t) = typed_q.iter_mut().next() {
         **t = typed_str;
     }
-    if let Ok(mut v) = cur_box_q.get_single_mut() {
+    if let Some(mut v) = cur_box_q.iter_mut().next() {
         *v = if cur_str.is_empty() {
             Visibility::Hidden
         } else {
             Visibility::Visible
         };
     }
-    if let Ok(mut t) = cur_q.get_single_mut() {
+    if let Some(mut t) = cur_q.iter_mut().next() {
         **t = cur_str;
     }
-    if let Ok(mut t) = remain_q.get_single_mut() {
+    if let Some(mut t) = remain_q.iter_mut().next() {
         **t = remaining_str;
     }
-    if let Ok(mut t) = instr_q.get_single_mut() {
+    if let Some(mut t) = instr_q.iter_mut().next() {
         **t = prompt.instruction.clone();
     }
-    if let Ok(mut t) = retries_q.get_single_mut() {
+    if let Some(mut t) = retries_q.iter_mut().next() {
         **t = format!("{} retries left  [Esc] cancel", prompt.retries_left);
     }
 }
@@ -942,10 +942,10 @@ pub fn update_tutorial(
 
     if visible && let Some((title, body)) = state.current() {
         let total = TUTORIAL_STEPS.len();
-        if let Ok(mut t) = hint_q.get_single_mut() {
+        if let Some(mut t) = hint_q.iter_mut().next() {
             **t = format!("{} / {}", state.step, total);
         }
-        if let Ok(mut t) = body_q.get_single_mut() {
+        if let Some(mut t) = body_q.iter_mut().next() {
             **t = format!("{}\n\n{}", title, body);
         }
     }
