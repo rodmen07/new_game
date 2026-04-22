@@ -1,4 +1,6 @@
-use crate::components::{BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality, Player};
+use crate::components::{
+    BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality, Player,
+};
 use crate::constants::{INTERACT_RADIUS, MAP_SCALE, NPC_SPEED};
 use crate::resources::{GameTime, NearbyInteractable, NpcFriendship, QuestBoard};
 use bevy::prelude::*;
@@ -265,7 +267,12 @@ mod tests {
     #[test]
     fn no_overlap_returns_none() {
         // Entity at (0,0) half (5,5) vs collider at (20,0) half (5,5) - well clear
-        let result = resolve_aabb_push(Vec2::ZERO, Vec2::splat(5.), Vec2::new(20., 0.), Vec2::splat(5.));
+        let result = resolve_aabb_push(
+            Vec2::ZERO,
+            Vec2::splat(5.),
+            Vec2::new(20., 0.),
+            Vec2::splat(5.),
+        );
         assert!(result.is_none());
     }
 
@@ -273,7 +280,13 @@ mod tests {
     fn overlap_from_right_pushes_entity_right() {
         // Entity centre at (8,0), collider centre at (0,0), both half=(5,5)
         // overlap_x = 10-8 = 2, overlap_y = 10-0 = 10 => push along x
-        let delta = resolve_aabb_push(Vec2::new(8., 0.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.)).unwrap();
+        let delta = resolve_aabb_push(
+            Vec2::new(8., 0.),
+            Vec2::splat(5.),
+            Vec2::ZERO,
+            Vec2::splat(5.),
+        )
+        .unwrap();
         assert!(delta.x > 0., "should push right, got {delta:?}");
         assert!((delta.y).abs() < f32::EPSILON, "y component should be zero");
         assert!((delta.x - 2.).abs() < f32::EPSILON);
@@ -281,7 +294,13 @@ mod tests {
 
     #[test]
     fn overlap_from_left_pushes_entity_left() {
-        let delta = resolve_aabb_push(Vec2::new(-8., 0.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.)).unwrap();
+        let delta = resolve_aabb_push(
+            Vec2::new(-8., 0.),
+            Vec2::splat(5.),
+            Vec2::ZERO,
+            Vec2::splat(5.),
+        )
+        .unwrap();
         assert!(delta.x < 0.);
         assert!((delta.x + 2.).abs() < f32::EPSILON);
     }
@@ -291,7 +310,13 @@ mod tests {
         // Vertical overlap is smaller -> push along y
         // Entity at (0,8), collider at (0,0), both half=(5,5)
         // overlap_x = 10-0 = 10, overlap_y = 10-8 = 2 => push along y
-        let delta = resolve_aabb_push(Vec2::new(0., 8.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.)).unwrap();
+        let delta = resolve_aabb_push(
+            Vec2::new(0., 8.),
+            Vec2::splat(5.),
+            Vec2::ZERO,
+            Vec2::splat(5.),
+        )
+        .unwrap();
         assert!(delta.y > 0.);
         assert!((delta.y - 2.).abs() < f32::EPSILON);
         assert!((delta.x).abs() < f32::EPSILON);
@@ -300,7 +325,12 @@ mod tests {
     #[test]
     fn exact_boundary_no_overlap() {
         // overlap_x = 10 - 10 = 0 -> no overlap
-        let result = resolve_aabb_push(Vec2::new(10., 0.), Vec2::splat(5.), Vec2::ZERO, Vec2::splat(5.));
+        let result = resolve_aabb_push(
+            Vec2::new(10., 0.),
+            Vec2::splat(5.),
+            Vec2::ZERO,
+            Vec2::splat(5.),
+        );
         assert!(result.is_none());
     }
 
@@ -309,9 +339,12 @@ mod tests {
         // entity half=(4,4), collider half=(6,6), entity at (9,0)
         // overlap_x = (4+6) - 9 = 1, overlap_y = 10 - 0 = 10 => push along x
         let delta = resolve_aabb_push(
-            Vec2::new(9., 0.), Vec2::new(4., 4.),
-            Vec2::ZERO, Vec2::new(6., 6.),
-        ).unwrap();
+            Vec2::new(9., 0.),
+            Vec2::new(4., 4.),
+            Vec2::ZERO,
+            Vec2::new(6., 6.),
+        )
+        .unwrap();
         assert!((delta.x - 1.).abs() < f32::EPSILON);
     }
 }

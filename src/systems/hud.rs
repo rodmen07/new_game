@@ -55,7 +55,10 @@ pub fn tick_notification(mut notif: ResMut<Notification>, time: Res<Time>) {
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_hud(
-    player_q: Query<(&PlayerStats, &Skills, &Inventory, &HousingTier, &WorkStreak), With<LocalPlayer>>,
+    player_q: Query<
+        (&PlayerStats, &Skills, &Inventory, &HousingTier, &WorkStreak),
+        With<LocalPlayer>,
+    >,
     gt: Res<GameTime>,
     nearby: Res<NearbyInteractable>,
     notif: Res<Notification>,
@@ -668,12 +671,46 @@ pub fn toggle_skill_panel(
 /// fractional part, up to a max of 5 pips.
 pub fn update_skill_panel(
     player_q: Query<&Skills, With<LocalPlayer>>,
-    mut cooking_q: Query<&mut Text, (With<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillFitnessBar>, Without<SkillSocialBar>)>,
-    mut career_q: Query<&mut Text, (With<SkillCareerBar>, Without<SkillCookingBar>, Without<SkillFitnessBar>, Without<SkillSocialBar>)>,
-    mut fitness_q: Query<&mut Text, (With<SkillFitnessBar>, Without<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillSocialBar>)>,
-    mut social_q: Query<&mut Text, (With<SkillSocialBar>, Without<SkillCookingBar>, Without<SkillCareerBar>, Without<SkillFitnessBar>)>,
+    mut cooking_q: Query<
+        &mut Text,
+        (
+            With<SkillCookingBar>,
+            Without<SkillCareerBar>,
+            Without<SkillFitnessBar>,
+            Without<SkillSocialBar>,
+        ),
+    >,
+    mut career_q: Query<
+        &mut Text,
+        (
+            With<SkillCareerBar>,
+            Without<SkillCookingBar>,
+            Without<SkillFitnessBar>,
+            Without<SkillSocialBar>,
+        ),
+    >,
+    mut fitness_q: Query<
+        &mut Text,
+        (
+            With<SkillFitnessBar>,
+            Without<SkillCookingBar>,
+            Without<SkillCareerBar>,
+            Without<SkillSocialBar>,
+        ),
+    >,
+    mut social_q: Query<
+        &mut Text,
+        (
+            With<SkillSocialBar>,
+            Without<SkillCookingBar>,
+            Without<SkillCareerBar>,
+            Without<SkillFitnessBar>,
+        ),
+    >,
 ) {
-    let Some(skills) = player_q.iter().next() else { return; };
+    let Some(skills) = player_q.iter().next() else {
+        return;
+    };
     set_skill_bar(&mut cooking_q, skills.cooking);
     set_skill_bar(&mut career_q, skills.career);
     set_skill_bar(&mut fitness_q, skills.fitness);
@@ -681,7 +718,9 @@ pub fn update_skill_panel(
 }
 
 fn set_skill_bar(q: &mut Query<&mut Text, impl bevy::ecs::query::QueryFilter>, value: f32) {
-    let Ok(mut t) = q.get_single_mut() else { return; };
+    let Ok(mut t) = q.get_single_mut() else {
+        return;
+    };
     let pips = 5usize;
     let filled = (value as usize).min(pips);
     let frac = value - value.floor();
@@ -695,7 +734,13 @@ fn set_skill_bar(q: &mut Query<&mut Text, impl bevy::ecs::query::QueryFilter>, v
             bar.push('·');
         }
     }
-    let rank = if value >= 5.0 { " Master" } else if value >= 2.5 { " Senior" } else { "" };
+    let rank = if value >= 5.0 {
+        " Master"
+    } else if value >= 2.5 {
+        " Senior"
+    } else {
+        ""
+    };
     **t = format!("{bar}{rank}");
 }
 
@@ -704,16 +749,24 @@ fn set_skill_bar(q: &mut Query<&mut Text, impl bevy::ecs::query::QueryFilter>, v
 pub fn update_typing_overlay(
     time: Res<Time>,
     prompt_q: Query<&ActionPrompt, With<LocalPlayer>>,
-    mut overlay_q: Query<(&mut Visibility, &mut BackgroundColor, &mut TypingOverlayFade), With<TypingOverlay>>,
+    mut overlay_q: Query<
+        (
+            &mut Visibility,
+            &mut BackgroundColor,
+            &mut TypingOverlayFade,
+        ),
+        With<TypingOverlay>,
+    >,
     mut label_q: Query<&mut Text, With<TypingLabel>>,
     mut typed_q: Query<&mut Text, (With<TypingWordTyped>, Without<TypingLabel>)>,
-    mut cur_box_q: Query<
-        &mut Visibility,
-        (With<TypingWordCurrentBox>, Without<TypingOverlay>),
-    >,
+    mut cur_box_q: Query<&mut Visibility, (With<TypingWordCurrentBox>, Without<TypingOverlay>)>,
     mut cur_q: Query<
         &mut Text,
-        (With<TypingWordCurrent>, Without<TypingLabel>, Without<TypingWordTyped>),
+        (
+            With<TypingWordCurrent>,
+            Without<TypingLabel>,
+            Without<TypingWordTyped>,
+        ),
     >,
     mut remain_q: Query<
         &mut Text,
@@ -757,12 +810,24 @@ pub fn update_typing_overlay(
         fade.alpha = 0.;
         bg.0 = Color::srgba(0., 0., 0., 0.);
         *vis = Visibility::Hidden;
-        if let Ok(mut t) = label_q.get_single_mut() { **t = String::new(); }
-        if let Ok(mut t) = typed_q.get_single_mut() { **t = String::new(); }
-        if let Ok(mut t) = cur_q.get_single_mut() { **t = String::new(); }
-        if let Ok(mut t) = remain_q.get_single_mut() { **t = String::new(); }
-        if let Ok(mut t) = instr_q.get_single_mut() { **t = String::new(); }
-        if let Ok(mut t) = retries_q.get_single_mut() { **t = String::new(); }
+        if let Ok(mut t) = label_q.get_single_mut() {
+            **t = String::new();
+        }
+        if let Ok(mut t) = typed_q.get_single_mut() {
+            **t = String::new();
+        }
+        if let Ok(mut t) = cur_q.get_single_mut() {
+            **t = String::new();
+        }
+        if let Ok(mut t) = remain_q.get_single_mut() {
+            **t = String::new();
+        }
+        if let Ok(mut t) = instr_q.get_single_mut() {
+            **t = String::new();
+        }
+        if let Ok(mut t) = retries_q.get_single_mut() {
+            **t = String::new();
+        }
         return;
     }
     // Fade in: lerp alpha toward TARGET_ALPHA at 10 units/sec.
@@ -836,7 +901,11 @@ pub fn update_tutorial(
     // Sync overlay visibility and text content.
     let visible = state.is_active();
     for mut vis in &mut overlay_q {
-        *vis = if visible { Visibility::Visible } else { Visibility::Hidden };
+        *vis = if visible {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
     }
 
     if visible {

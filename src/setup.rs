@@ -1,15 +1,17 @@
+use crate::components::Furnishings;
 use crate::components::{
     ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
     DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
     LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
     PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
     SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
-    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
-    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordTyped,
-    Vehicle,
+    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
+    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordTyped, Vehicle,
 };
-use crate::resources::{ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills, VehicleState, WorkStreak};
-use crate::components::Furnishings;
+use crate::resources::{
+    ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
+    VehicleState, WorkStreak,
+};
 use bevy::prelude::*;
 
 /// World-space scale multiplier applied inside all layout helpers.
@@ -2865,15 +2867,7 @@ fn spawn_world_objects(commands: &mut Commands) {
             Color::srgb(0.32, 0.20, 0.08),
             2.95,
         );
-        rect(
-            commands,
-            x,
-            y,
-            s,
-            s,
-            Color::srgb(0.12, 0.40, 0.12),
-            3.0,
-        );
+        rect(commands, x, y, s, s, Color::srgb(0.12, 0.40, 0.12), 3.0);
         let hs = s * 0.65;
         rect(
             commands,
@@ -3554,7 +3548,10 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
         // Action label (e.g., "WORK")
         p.spawn((
             Text::new(""),
-            TextFont { font_size: 22., ..default() },
+            TextFont {
+                font_size: 22.,
+                ..default()
+            },
             TextColor(Color::srgb(1., 0.85, 0.25)),
             TypingLabel,
         ));
@@ -3568,7 +3565,10 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             // Typed chars (green)
             row.spawn((
                 Text::new(""),
-                TextFont { font_size: 72., ..default() },
+                TextFont {
+                    font_size: 72.,
+                    ..default()
+                },
                 TextColor(Color::srgb(0.3, 1., 0.4)),
                 TypingWordTyped,
             ));
@@ -3584,7 +3584,10 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             .with_children(|b| {
                 b.spawn((
                     Text::new(""),
-                    TextFont { font_size: 72., ..default() },
+                    TextFont {
+                        font_size: 72.,
+                        ..default()
+                    },
                     TextColor(Color::srgb(0.05, 0.05, 0.05)),
                     TypingWordCurrent,
                 ));
@@ -3592,7 +3595,10 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             // Remaining chars (gray)
             row.spawn((
                 Text::new(""),
-                TextFont { font_size: 72., ..default() },
+                TextFont {
+                    font_size: 72.,
+                    ..default()
+                },
                 TextColor(Color::srgb(0.45, 0.45, 0.45)),
                 TypingWordRemaining,
             ));
@@ -3600,14 +3606,20 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
         // Instruction text
         p.spawn((
             Text::new(""),
-            TextFont { font_size: 15., ..default() },
+            TextFont {
+                font_size: 15.,
+                ..default()
+            },
             TextColor(Color::srgb(0.7, 0.7, 0.7)),
             TypingInstruction,
         ));
         // Retries / cancel hint
         p.spawn((
             Text::new(""),
-            TextFont { font_size: 13., ..default() },
+            TextFont {
+                font_size: 13.,
+                ..default()
+            },
             TextColor(Color::srgb(0.6, 0.5, 0.3)),
             TypingRetries,
         ));
@@ -3638,7 +3650,10 @@ pub fn spawn_skill_panel(cmd: &mut Commands) {
         // Title
         p.spawn((
             Text::new("Skills  [Tab]"),
-            TextFont { font_size: 14., ..default() },
+            TextFont {
+                font_size: 14.,
+                ..default()
+            },
             TextColor(Color::srgb(1., 0.85, 0.25)),
         ));
         skill_row(p, "Cooking  ", SkillCookingBar);
@@ -3649,25 +3664,32 @@ pub fn spawn_skill_panel(cmd: &mut Commands) {
 }
 
 fn skill_row<M: Component>(parent: &mut ChildBuilder, label: &'static str, marker: M) {
-    parent.spawn(Node {
-        flex_direction: FlexDirection::Row,
-        align_items: AlignItems::Center,
-        column_gap: Val::Px(6.),
-        ..default()
-    })
-    .with_children(|row| {
-        row.spawn((
-            Text::new(label),
-            TextFont { font_size: 13., ..default() },
-            TextColor(Color::srgb(0.8, 0.8, 0.8)),
-        ));
-        row.spawn((
-            Text::new("·····"),
-            TextFont { font_size: 13., ..default() },
-            TextColor(Color::srgb(0.4, 0.4, 0.4)),
-            marker,
-        ));
-    });
+    parent
+        .spawn(Node {
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            column_gap: Val::Px(6.),
+            ..default()
+        })
+        .with_children(|row| {
+            row.spawn((
+                Text::new(label),
+                TextFont {
+                    font_size: 13.,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.8, 0.8, 0.8)),
+            ));
+            row.spawn((
+                Text::new("·····"),
+                TextFont {
+                    font_size: 13.,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.4, 0.4, 0.4)),
+                marker,
+            ));
+        });
 }
 
 /// Spawns the full-screen tutorial overlay. Hidden by default.
@@ -3708,21 +3730,30 @@ pub fn spawn_tutorial_overlay(cmd: &mut Commands) {
             // Step counter (e.g. "1 / 6")
             card.spawn((
                 Text::new(""),
-                TextFont { font_size: 12., ..default() },
+                TextFont {
+                    font_size: 12.,
+                    ..default()
+                },
                 TextColor(Color::srgb(0.5, 0.5, 0.5)),
                 TutorialHintText,
             ));
             // Body text (title + content rendered as one block)
             card.spawn((
                 Text::new(""),
-                TextFont { font_size: 16., ..default() },
+                TextFont {
+                    font_size: 16.,
+                    ..default()
+                },
                 TextColor(Color::WHITE),
                 TutorialBodyText,
             ));
             // Dismiss hint
             card.spawn((
                 Text::new("[Space] / [Enter] Next   [Esc] Skip"),
-                TextFont { font_size: 12., ..default() },
+                TextFont {
+                    font_size: 12.,
+                    ..default()
+                },
                 TextColor(Color::srgb(0.55, 0.55, 0.55)),
             ));
         });
@@ -3746,375 +3777,375 @@ pub fn spawn_hud(cmd: &mut Commands) {
 
 fn spawn_hud_left_panel(root: &mut ChildBuilder) {
     root.spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                left: Val::Px(12.),
-                top: Val::Px(12.),
-                padding: UiRect::all(Val::Px(10.)),
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(3.),
+        Node {
+            position_type: PositionType::Absolute,
+            left: Val::Px(12.),
+            top: Val::Px(12.),
+            padding: UiRect::all(Val::Px(10.)),
+            flex_direction: FlexDirection::Column,
+            row_gap: Val::Px(3.),
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0., 0., 0., 0.72)),
+        BorderRadius::all(Val::Px(8.)),
+    ))
+    .with_children(|p| {
+        htxt(
+            p,
+            "Day 1  08:00 AM  (Mon)",
+            15.,
+            Color::srgb(1., 0.9, 0.4),
+            HudLabel::Time,
+        );
+        htxt(
+            p,
+            "$100 cash  savings $0  | 2 meals",
+            12.,
+            Color::srgb(0.4, 1., 0.5),
+            HudLabel::Money,
+        );
+        htxt(p, "", 11., Color::srgb(0.8, 0.4, 0.4), HudLabel::Rent);
+        htxt(
+            p,
+            "Mood: Happy | Junior | Apartment",
+            12.,
+            Color::srgb(0.8, 0.9, 1.0),
+            HudLabel::Mood,
+        );
+        stat_bar(p, "Energy    ", Color::srgb(1., 0.78, 0.2), HudBar::Energy);
+        stat_bar(p, "Satiety   ", Color::srgb(1., 0.44, 0.2), HudBar::Hunger);
+        stat_bar(
+            p,
+            "Happiness ",
+            Color::srgb(0.4, 0.8, 1.),
+            HudBar::Happiness,
+        );
+        stat_bar(p, "Health    ", Color::srgb(0.3, 0.9, 0.4), HudBar::Health);
+        stat_bar(p, "Stress    ", Color::srgb(0.9, 0.3, 0.2), HudBar::Stress);
+        htxt(p, "", 12., Color::srgb(1., 0.3, 0.3), HudLabel::Warning);
+        htxt(
+            p,
+            "Streak: 0 days  Loan: $0",
+            11.,
+            Color::srgb(0.9, 0.7, 0.4),
+            HudLabel::Streak,
+        );
+        p.spawn((
+            Text::new("-- Skills --"),
+            TextFont {
+                font_size: 11.,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.72)),
-            BorderRadius::all(Val::Px(8.)),
-        ))
-        .with_children(|p| {
-            htxt(
-                p,
-                "Day 1  08:00 AM  (Mon)",
-                15.,
-                Color::srgb(1., 0.9, 0.4),
-                HudLabel::Time,
-            );
-            htxt(
-                p,
-                "$100 cash  savings $0  | 2 meals",
-                12.,
-                Color::srgb(0.4, 1., 0.5),
-                HudLabel::Money,
-            );
-            htxt(p, "", 11., Color::srgb(0.8, 0.4, 0.4), HudLabel::Rent);
-            htxt(
-                p,
-                "Mood: Happy | Junior | Apartment",
-                12.,
-                Color::srgb(0.8, 0.9, 1.0),
-                HudLabel::Mood,
-            );
-            stat_bar(p, "Energy    ", Color::srgb(1., 0.78, 0.2), HudBar::Energy);
-            stat_bar(p, "Satiety   ", Color::srgb(1., 0.44, 0.2), HudBar::Hunger);
-            stat_bar(
-                p,
-                "Happiness ",
-                Color::srgb(0.4, 0.8, 1.),
-                HudBar::Happiness,
-            );
-            stat_bar(p, "Health    ", Color::srgb(0.3, 0.9, 0.4), HudBar::Health);
-            stat_bar(p, "Stress    ", Color::srgb(0.9, 0.3, 0.2), HudBar::Stress);
-            htxt(p, "", 12., Color::srgb(1., 0.3, 0.3), HudLabel::Warning);
-            htxt(
-                p,
-                "Streak: 0 days  Loan: $0",
-                11.,
-                Color::srgb(0.9, 0.7, 0.4),
-                HudLabel::Streak,
-            );
-            p.spawn((
-                Text::new("-- Skills --"),
-                TextFont {
-                    font_size: 11.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.5, 0.5, 0.5)),
-            ));
-            htxt(
-                p,
-                "Cook 0.0   Career 0.0\nFit  0.0   Social 0.0",
-                11.,
-                Color::srgb(0.75, 0.85, 1.0),
-                HudLabel::Skills,
-            );
-            p.spawn((
-                Text::new("-- Friends --"),
-                TextFont {
-                    font_size: 11.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.5, 0.5, 0.5)),
-            ));
-            htxt(
-                p,
-                "Alex 0/5  Sam 0/5  Mia 0/5",
-                11.,
-                Color::srgb(1.0, 0.65, 0.75),
-                HudLabel::Friendship,
-            );
-            p.spawn((
-                Text::new("-- Inventory --"),
-                TextFont {
-                    font_size: 11.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.5, 0.5, 0.5)),
-            ));
-            htxt(
-                p,
-                "Coffee x0  Vitamins x0  Books x0",
-                11.,
-                Color::srgb(0.9, 0.8, 0.6),
-                HudLabel::Inventory,
-            );
-        });
+            TextColor(Color::srgb(0.5, 0.5, 0.5)),
+        ));
+        htxt(
+            p,
+            "Cook 0.0   Career 0.0\nFit  0.0   Social 0.0",
+            11.,
+            Color::srgb(0.75, 0.85, 1.0),
+            HudLabel::Skills,
+        );
+        p.spawn((
+            Text::new("-- Friends --"),
+            TextFont {
+                font_size: 11.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.5, 0.5, 0.5)),
+        ));
+        htxt(
+            p,
+            "Alex 0/5  Sam 0/5  Mia 0/5",
+            11.,
+            Color::srgb(1.0, 0.65, 0.75),
+            HudLabel::Friendship,
+        );
+        p.spawn((
+            Text::new("-- Inventory --"),
+            TextFont {
+                font_size: 11.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.5, 0.5, 0.5)),
+        ));
+        htxt(
+            p,
+            "Coffee x0  Vitamins x0  Books x0",
+            11.,
+            Color::srgb(0.9, 0.8, 0.6),
+            HudLabel::Inventory,
+        );
+    });
 }
 
 fn spawn_hud_right_panel(root: &mut ChildBuilder) {
     root.spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                right: Val::Px(12.),
-                top: Val::Px(12.),
-                padding: UiRect::all(Val::Px(10.)),
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(4.),
-                max_width: Val::Px(255.),
+        Node {
+            position_type: PositionType::Absolute,
+            right: Val::Px(12.),
+            top: Val::Px(12.),
+            padding: UiRect::all(Val::Px(10.)),
+            flex_direction: FlexDirection::Column,
+            row_gap: Val::Px(4.),
+            max_width: Val::Px(255.),
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0., 0., 0., 0.72)),
+        BorderRadius::all(Val::Px(8.)),
+    ))
+    .with_children(|p| {
+        p.spawn((
+            Text::new("-- Daily Goal --"),
+            TextFont {
+                font_size: 12.,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.72)),
-            BorderRadius::all(Val::Px(8.)),
-        ))
-        .with_children(|p| {
-            p.spawn((
-                Text::new("-- Daily Goal --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.75, 0.2)),
-            ));
-            htxt(p, "...", 12., Color::WHITE, HudLabel::Goal);
-            p.spawn((
-                Text::new("-- Story --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.95, 0.72, 0.55)),
-            ));
-            htxt(
-                p,
-                "Your story is just beginning.",
-                11.,
-                Color::srgb(1.0, 0.88, 0.75),
-                HudLabel::Story,
-            );
-            p.spawn((
-                Text::new("-- Weather --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.5, 0.8, 1.0)),
-            ));
-            htxt(
-                p,
-                "Sunny — outdoor bonus",
-                11.,
-                Color::srgb(1.0, 0.95, 0.6),
-                HudLabel::Weather,
-            );
-            p.spawn((
-                Text::new("-- Hobbies --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.8, 0.6, 0.9)),
-            ));
-            htxt(
-                p,
-                "Paint 0.0  Game 0.0  Music 0.0",
-                11.,
-                Color::srgb(0.85, 0.75, 1.0),
-                HudLabel::Hobbies,
-            );
-            p.spawn((
-                Text::new("-- Conditions --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.4, 0.3)),
-            ));
-            htxt(
-                p,
-                "Healthy",
-                11.,
-                Color::srgb(0.4, 0.9, 0.5),
-                HudLabel::Conditions,
-            );
-            p.spawn((
-                Text::new("-- Reputation --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.7, 0.4)),
-            ));
-            htxt(
-                p,
-                "Rep: 0/100",
-                11.,
-                Color::srgb(1.0, 0.85, 0.5),
-                HudLabel::Reputation,
-            );
-            p.spawn((
-                Text::new("-- Season --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.5, 0.9, 0.7)),
-            ));
-            htxt(
-                p,
-                "Spring — social bonus",
-                11.,
-                Color::srgb(0.7, 1.0, 0.8),
-                HudLabel::Season,
-            );
-            p.spawn((
-                Text::new("-- Pet --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.75, 0.5)),
-            ));
-            htxt(
-                p,
-                "No pet (adopt at Pet Bowl)",
-                11.,
-                Color::srgb(0.9, 0.8, 0.6),
-                HudLabel::Pet,
-            );
-            p.spawn((
-                Text::new("-- Transport --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.7, 0.7, 0.85)),
-            ));
-            htxt(
-                p,
-                "On foot (buy at Garage)",
-                11.,
-                Color::srgb(0.8, 0.8, 0.95),
-                HudLabel::Transport,
-            );
-            p.spawn((
-                Text::new("-- Quests --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.8, 0.5)),
-            ));
-            htxt(
-                p,
-                "No quests - chat with NPCs [Q]",
-                11.,
-                Color::srgb(0.95, 0.9, 0.65),
-                HudLabel::Quest,
-            );
-            p.spawn((
-                Text::new("-- Life Rating --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.6, 0.9, 0.6)),
-            ));
-            htxt(
-                p,
-                "B — Comfortable",
-                13.,
-                Color::srgb(0.8, 1.0, 0.7),
-                HudLabel::Rating,
-            );
-            p.spawn((
-                Text::new("-- Housing --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.75, 0.65, 0.5)),
-            ));
-            htxt(
-                p,
-                "Apartment | $20/day | [E] Bank to upgrade",
-                11.,
-                Color::srgb(0.82, 0.76, 0.65),
-                HudLabel::Housing,
-            );
-            p.spawn((
-                Text::new("-- Milestones --"),
-                TextFont {
-                    font_size: 12.,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.9, 0.85, 0.3)),
-            ));
-            htxt(
-                p,
-                "None yet  (0/21)",
-                11.,
-                Color::srgb(0.95, 0.90, 0.6),
-                HudLabel::Milestones,
-            );
-        });
+            TextColor(Color::srgb(0.9, 0.75, 0.2)),
+        ));
+        htxt(p, "...", 12., Color::WHITE, HudLabel::Goal);
+        p.spawn((
+            Text::new("-- Story --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.95, 0.72, 0.55)),
+        ));
+        htxt(
+            p,
+            "Your story is just beginning.",
+            11.,
+            Color::srgb(1.0, 0.88, 0.75),
+            HudLabel::Story,
+        );
+        p.spawn((
+            Text::new("-- Weather --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.5, 0.8, 1.0)),
+        ));
+        htxt(
+            p,
+            "Sunny — outdoor bonus",
+            11.,
+            Color::srgb(1.0, 0.95, 0.6),
+            HudLabel::Weather,
+        );
+        p.spawn((
+            Text::new("-- Hobbies --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.8, 0.6, 0.9)),
+        ));
+        htxt(
+            p,
+            "Paint 0.0  Game 0.0  Music 0.0",
+            11.,
+            Color::srgb(0.85, 0.75, 1.0),
+            HudLabel::Hobbies,
+        );
+        p.spawn((
+            Text::new("-- Conditions --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.4, 0.3)),
+        ));
+        htxt(
+            p,
+            "Healthy",
+            11.,
+            Color::srgb(0.4, 0.9, 0.5),
+            HudLabel::Conditions,
+        );
+        p.spawn((
+            Text::new("-- Reputation --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.7, 0.4)),
+        ));
+        htxt(
+            p,
+            "Rep: 0/100",
+            11.,
+            Color::srgb(1.0, 0.85, 0.5),
+            HudLabel::Reputation,
+        );
+        p.spawn((
+            Text::new("-- Season --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.5, 0.9, 0.7)),
+        ));
+        htxt(
+            p,
+            "Spring — social bonus",
+            11.,
+            Color::srgb(0.7, 1.0, 0.8),
+            HudLabel::Season,
+        );
+        p.spawn((
+            Text::new("-- Pet --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.75, 0.5)),
+        ));
+        htxt(
+            p,
+            "No pet (adopt at Pet Bowl)",
+            11.,
+            Color::srgb(0.9, 0.8, 0.6),
+            HudLabel::Pet,
+        );
+        p.spawn((
+            Text::new("-- Transport --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.7, 0.7, 0.85)),
+        ));
+        htxt(
+            p,
+            "On foot (buy at Garage)",
+            11.,
+            Color::srgb(0.8, 0.8, 0.95),
+            HudLabel::Transport,
+        );
+        p.spawn((
+            Text::new("-- Quests --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.8, 0.5)),
+        ));
+        htxt(
+            p,
+            "No quests - chat with NPCs [Q]",
+            11.,
+            Color::srgb(0.95, 0.9, 0.65),
+            HudLabel::Quest,
+        );
+        p.spawn((
+            Text::new("-- Life Rating --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.6, 0.9, 0.6)),
+        ));
+        htxt(
+            p,
+            "B — Comfortable",
+            13.,
+            Color::srgb(0.8, 1.0, 0.7),
+            HudLabel::Rating,
+        );
+        p.spawn((
+            Text::new("-- Housing --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.75, 0.65, 0.5)),
+        ));
+        htxt(
+            p,
+            "Apartment | $20/day | [E] Bank to upgrade",
+            11.,
+            Color::srgb(0.82, 0.76, 0.65),
+            HudLabel::Housing,
+        );
+        p.spawn((
+            Text::new("-- Milestones --"),
+            TextFont {
+                font_size: 12.,
+                ..default()
+            },
+            TextColor(Color::srgb(0.9, 0.85, 0.3)),
+        ));
+        htxt(
+            p,
+            "None yet  (0/21)",
+            11.,
+            Color::srgb(0.95, 0.90, 0.6),
+            HudLabel::Milestones,
+        );
+    });
 }
 
 fn spawn_hud_notification_area(root: &mut ChildBuilder) {
     root.spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                top: Val::Px(12.),
-                left: Val::Px(0.),
-                right: Val::Px(0.),
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            NotifContainer,
-        ))
-        .with_children(|top| {
-            top.spawn(Node {
-                padding: UiRect::axes(Val::Px(16.), Val::Px(8.)),
-                ..default()
-            })
-            .with_children(|inner| {
-                inner.spawn((
-                    Text::new(""),
-                    TextFont {
-                        font_size: 15.,
-                        ..default()
-                    },
-                    TextColor(Color::srgb(1., 0.88, 0.3)),
-                    HudLabel::Notification,
-                ));
-            });
-        });
-}
-
-fn spawn_hud_prompt_overlay(root: &mut ChildBuilder) {
-    root.spawn(Node {
+        Node {
             position_type: PositionType::Absolute,
-            bottom: Val::Px(18.),
+            top: Val::Px(12.),
             left: Val::Px(0.),
             right: Val::Px(0.),
             justify_content: JustifyContent::Center,
             ..default()
+        },
+        NotifContainer,
+    ))
+    .with_children(|top| {
+        top.spawn(Node {
+            padding: UiRect::axes(Val::Px(16.), Val::Px(8.)),
+            ..default()
         })
-        .with_children(|b| {
-            b.spawn((
-                Node {
-                    padding: UiRect::axes(Val::Px(14.), Val::Px(7.)),
+        .with_children(|inner| {
+            inner.spawn((
+                Text::new(""),
+                TextFont {
+                    font_size: 15.,
                     ..default()
                 },
-                BackgroundColor(Color::srgba(0., 0., 0., 0.72)),
-            ))
-            .with_children(|inner| {
-                inner.spawn((
-                    Text::new(""),
-                    TextFont {
-                        font_size: 15.,
-                        ..default()
-                    },
-                    TextColor(Color::WHITE),
-                    HudLabel::Prompt,
-                ));
-            });
+                TextColor(Color::srgb(1., 0.88, 0.3)),
+                HudLabel::Notification,
+            ));
         });
+    });
+}
+
+fn spawn_hud_prompt_overlay(root: &mut ChildBuilder) {
+    root.spawn(Node {
+        position_type: PositionType::Absolute,
+        bottom: Val::Px(18.),
+        left: Val::Px(0.),
+        right: Val::Px(0.),
+        justify_content: JustifyContent::Center,
+        ..default()
+    })
+    .with_children(|b| {
+        b.spawn((
+            Node {
+                padding: UiRect::axes(Val::Px(14.), Val::Px(7.)),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0., 0., 0., 0.72)),
+        ))
+        .with_children(|inner| {
+            inner.spawn((
+                Text::new(""),
+                TextFont {
+                    font_size: 15.,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                HudLabel::Prompt,
+            ));
+        });
+    });
 }
 
 fn htxt(parent: &mut ChildBuilder, text: &str, size: f32, color: Color, label: HudLabel) {

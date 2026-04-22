@@ -125,216 +125,559 @@ fn action_prompt_retries(career: f32) -> u8 {
 
 // ── Word banks — one random word is picked per challenge ──────────────────────
 const WORK_WORDS: &[&str] = &[
-    "deadline", "pivot", "synergy", "workflow", "sprint", "standup",
-    "backlog", "invoice", "quarterly", "metric", "onboard", "milestone",
-    "overtime", "feedback", "proposal", "agenda", "pipeline", "deploy",
-    "dashboard", "offsite",
+    "deadline",
+    "pivot",
+    "synergy",
+    "workflow",
+    "sprint",
+    "standup",
+    "backlog",
+    "invoice",
+    "quarterly",
+    "metric",
+    "onboard",
+    "milestone",
+    "overtime",
+    "feedback",
+    "proposal",
+    "agenda",
+    "pipeline",
+    "deploy",
+    "dashboard",
+    "offsite",
 ];
 const FREELANCE_WORDS: &[&str] = &[
-    "invoice", "client", "remote", "contract", "revise", "proposal",
-    "deadline", "pitch", "project", "retainer", "markup", "estimate",
-    "draft", "scope", "deliver", "iterate", "approval", "mockup", "handoff", "billing",
+    "invoice", "client", "remote", "contract", "revise", "proposal", "deadline", "pitch",
+    "project", "retainer", "markup", "estimate", "draft", "scope", "deliver", "iterate",
+    "approval", "mockup", "handoff", "billing",
 ];
 const EAT_WORDS: &[&str] = &[
-    "bowl", "sandwich", "noodles", "salad", "stew", "toast", "wrap",
-    "burrito", "ramen", "curry", "falafel", "pasta", "taco", "grains", "broth",
+    "bowl", "sandwich", "noodles", "salad", "stew", "toast", "wrap", "burrito", "ramen", "curry",
+    "falafel", "pasta", "taco", "grains", "broth",
 ];
 const SLEEP_WORDS: &[&str] = &[
-    "slumber", "doze", "nap", "recharge", "rest", "snooze", "unwind",
-    "hibernate", "drift", "recover", "pillow", "blanket", "drowsy", "twilight", "dream",
+    "slumber",
+    "doze",
+    "nap",
+    "recharge",
+    "rest",
+    "snooze",
+    "unwind",
+    "hibernate",
+    "drift",
+    "recover",
+    "pillow",
+    "blanket",
+    "drowsy",
+    "twilight",
+    "dream",
 ];
 const SHOP_WORDS: &[&str] = &[
-    "groceries", "staples", "rations", "supplies", "provisions",
-    "checkout", "essentials", "stock", "cart", "purchase",
-    "restock", "budget", "basket", "aisle", "coupon",
+    "groceries",
+    "staples",
+    "rations",
+    "supplies",
+    "provisions",
+    "checkout",
+    "essentials",
+    "stock",
+    "cart",
+    "purchase",
+    "restock",
+    "budget",
+    "basket",
+    "aisle",
+    "coupon",
 ];
 const RELAX_WORDS: &[&str] = &[
-    "park", "bench", "garden", "shade", "breeze", "sunset",
-    "wander", "lounge", "stroll", "unwind", "meadow", "birdsong",
-    "hammock", "leisure", "picnic",
+    "park", "bench", "garden", "shade", "breeze", "sunset", "wander", "lounge", "stroll", "unwind",
+    "meadow", "birdsong", "hammock", "leisure", "picnic",
 ];
 const SHOWER_WORDS: &[&str] = &[
-    "rinse", "scrub", "lather", "freshen", "cleanse", "refresh",
-    "steam", "towel", "exfoliate", "hygiene", "soapy", "warm",
-    "drench", "nozzle", "squeaky",
+    "rinse",
+    "scrub",
+    "lather",
+    "freshen",
+    "cleanse",
+    "refresh",
+    "steam",
+    "towel",
+    "exfoliate",
+    "hygiene",
+    "soapy",
+    "warm",
+    "drench",
+    "nozzle",
+    "squeaky",
 ];
 const EXERCISE_WORDS: &[&str] = &[
-    "sprint", "squat", "burpee", "pushup", "plank", "lunge",
-    "crunch", "pullup", "deadlift", "jog", "interval", "tempo",
-    "stride", "circuit", "rally",
+    "sprint", "squat", "burpee", "pushup", "plank", "lunge", "crunch", "pullup", "deadlift", "jog",
+    "interval", "tempo", "stride", "circuit", "rally",
 ];
 const MEDITATE_WORDS: &[&str] = &[
-    "breathe", "focus", "clarity", "stillness", "balance", "center",
-    "mindful", "inhale", "exhale", "serenity", "grounded", "aware",
-    "presence", "tranquil", "quiet",
+    "breathe",
+    "focus",
+    "clarity",
+    "stillness",
+    "balance",
+    "center",
+    "mindful",
+    "inhale",
+    "exhale",
+    "serenity",
+    "grounded",
+    "aware",
+    "presence",
+    "tranquil",
+    "quiet",
 ];
 const STUDY_WORDS: &[&str] = &[
-    "chapter", "lecture", "notes", "review", "research", "quiz",
-    "outline", "flashcard", "summary", "concept", "thesis", "annotate",
-    "memorize", "syllabus", "focus",
+    "chapter",
+    "lecture",
+    "notes",
+    "review",
+    "research",
+    "quiz",
+    "outline",
+    "flashcard",
+    "summary",
+    "concept",
+    "thesis",
+    "annotate",
+    "memorize",
+    "syllabus",
+    "focus",
 ];
 const GYM_WORDS: &[&str] = &[
-    "bench", "barbell", "squat", "deadlift", "cable", "dumbbell",
-    "rack", "spotter", "shrug", "curl", "incline", "crunch",
-    "lateral", "cardio", "reps",
+    "bench", "barbell", "squat", "deadlift", "cable", "dumbbell", "rack", "spotter", "shrug",
+    "curl", "incline", "crunch", "lateral", "cardio", "reps",
 ];
 const CAFE_WORDS: &[&str] = &[
-    "latte", "espresso", "mocha", "cortado", "cappuccino", "drip",
-    "matcha", "oat", "americano", "ristretto", "lungo",
-    "macchiato", "chai", "froth", "coldbrew",
+    "latte",
+    "espresso",
+    "mocha",
+    "cortado",
+    "cappuccino",
+    "drip",
+    "matcha",
+    "oat",
+    "americano",
+    "ristretto",
+    "lungo",
+    "macchiato",
+    "chai",
+    "froth",
+    "coldbrew",
 ];
 const CLINIC_WORDS: &[&str] = &[
-    "checkup", "vitals", "bloodwork", "prescription", "diagnosis",
-    "triage", "consult", "referral", "dosage", "followup",
-    "symptom", "physician", "wellness", "recovery", "screening",
+    "checkup",
+    "vitals",
+    "bloodwork",
+    "prescription",
+    "diagnosis",
+    "triage",
+    "consult",
+    "referral",
+    "dosage",
+    "followup",
+    "symptom",
+    "physician",
+    "wellness",
+    "recovery",
+    "screening",
 ];
 const VEHICLE_WORDS: &[&str] = &[
-    "ignition", "clutch", "throttle", "reverse", "neutral",
-    "cruise", "gear", "accelerate", "signal", "merge",
-    "navigate", "steer", "parallel", "overtake", "brake",
+    "ignition",
+    "clutch",
+    "throttle",
+    "reverse",
+    "neutral",
+    "cruise",
+    "gear",
+    "accelerate",
+    "signal",
+    "merge",
+    "navigate",
+    "steer",
+    "parallel",
+    "overtake",
+    "brake",
 ];
 const PARTY_WORDS: &[&str] = &[
-    "gather", "toast", "celebrate", "invite", "mingle", "cheer",
-    "festive", "decorate", "groove", "confetti", "clink", "revel",
-    "playlist", "welcome", "candles",
+    "gather",
+    "toast",
+    "celebrate",
+    "invite",
+    "mingle",
+    "cheer",
+    "festive",
+    "decorate",
+    "groove",
+    "confetti",
+    "clink",
+    "revel",
+    "playlist",
+    "welcome",
+    "candles",
 ];
 const GARAGE_WORDS: &[&str] = &[
-    "wrench", "torque", "socket", "lube", "patch", "inflate",
-    "tighten", "flush", "grease", "align", "calibrate", "overhaul",
-    "seal", "replace", "inspect",
+    "wrench",
+    "torque",
+    "socket",
+    "lube",
+    "patch",
+    "inflate",
+    "tighten",
+    "flush",
+    "grease",
+    "align",
+    "calibrate",
+    "overhaul",
+    "seal",
+    "replace",
+    "inspect",
 ];
 const PRINT_WORDS: &[&str] = &[
-    "collate", "format", "export", "submit", "staple", "laminate",
-    "photocopy", "scan", "layout", "margins", "duplex", "toner",
-    "spool", "queue", "printout",
+    "collate",
+    "format",
+    "export",
+    "submit",
+    "staple",
+    "laminate",
+    "photocopy",
+    "scan",
+    "layout",
+    "margins",
+    "duplex",
+    "toner",
+    "spool",
+    "queue",
+    "printout",
 ];
 const COMPUTER_WORDS: &[&str] = &[
-    "compile", "debug", "deploy", "commit", "merge", "refactor",
-    "lint", "optimize", "profile", "review", "branch", "clone",
-    "iterate", "document", "build",
+    "compile", "debug", "deploy", "commit", "merge", "refactor", "lint", "optimize", "profile",
+    "review", "branch", "clone", "iterate", "document", "build",
 ];
 const DENTAL_WORDS: &[&str] = &[
-    "floss", "rinse", "brace", "crown", "polish", "cavity",
-    "enamel", "retainer", "bridge", "scale", "plaque", "fluoride",
-    "whitening", "molar", "gum",
+    "floss",
+    "rinse",
+    "brace",
+    "crown",
+    "polish",
+    "cavity",
+    "enamel",
+    "retainer",
+    "bridge",
+    "scale",
+    "plaque",
+    "fluoride",
+    "whitening",
+    "molar",
+    "gum",
 ];
 const EYE_WORDS: &[&str] = &[
-    "focus", "dilate", "contrast", "distance", "strain", "clarity",
-    "glare", "chart", "lens", "pupil", "retina", "blink",
-    "optometry", "acuity", "peripheral",
+    "focus",
+    "dilate",
+    "contrast",
+    "distance",
+    "strain",
+    "clarity",
+    "glare",
+    "chart",
+    "lens",
+    "pupil",
+    "retina",
+    "blink",
+    "optometry",
+    "acuity",
+    "peripheral",
 ];
 const RENT_WORDS: &[&str] = &[
-    "lease", "sign", "commit", "settle", "reside", "occupy",
-    "tenant", "secure", "contract", "deposit", "landlord", "furnish",
-    "movein", "clauses", "renew",
+    "lease", "sign", "commit", "settle", "reside", "occupy", "tenant", "secure", "contract",
+    "deposit", "landlord", "furnish", "movein", "clauses", "renew",
 ];
 const GAS_WORDS: &[&str] = &[
-    "fuel", "refill", "tank", "pump", "gasoline", "diesel",
-    "unleaded", "nozzle", "octane", "premium", "regular",
-    "station", "receipt", "gallons", "liters",
+    "fuel", "refill", "tank", "pump", "gasoline", "diesel", "unleaded", "nozzle", "octane",
+    "premium", "regular", "station", "receipt", "gallons", "liters",
 ];
 const REPAIR_WORDS: &[&str] = &[
-    "weld", "patch", "bolt", "tighten", "replace", "overhaul",
-    "seal", "solder", "rebuild", "service", "grease", "swap",
-    "calibrate", "inspect", "restore",
+    "weld",
+    "patch",
+    "bolt",
+    "tighten",
+    "replace",
+    "overhaul",
+    "seal",
+    "solder",
+    "rebuild",
+    "service",
+    "grease",
+    "swap",
+    "calibrate",
+    "inspect",
+    "restore",
 ];
 const ITEM_COFFEE_WORDS: &[&str] = &[
-    "espresso", "latte", "brew", "arabica", "roast", "java",
-    "buzz", "caffeine", "drip", "aroma", "percolate", "grounds",
-    "crema", "filter", "mug",
+    "espresso",
+    "latte",
+    "brew",
+    "arabica",
+    "roast",
+    "java",
+    "buzz",
+    "caffeine",
+    "drip",
+    "aroma",
+    "percolate",
+    "grounds",
+    "crema",
+    "filter",
+    "mug",
 ];
 const ITEM_VITAMINS_WORDS: &[&str] = &[
-    "vitamin", "supplement", "capsule", "zinc", "omega", "boost",
-    "daily", "nutrient", "mineral", "biotin", "probiotic", "collagen",
-    "immunity", "antioxidant", "dose",
+    "vitamin",
+    "supplement",
+    "capsule",
+    "zinc",
+    "omega",
+    "boost",
+    "daily",
+    "nutrient",
+    "mineral",
+    "biotin",
+    "probiotic",
+    "collagen",
+    "immunity",
+    "antioxidant",
+    "dose",
 ];
 const ITEM_BOOKS_WORDS: &[&str] = &[
-    "chapter", "novel", "passage", "volume", "excerpt", "prose",
-    "absorb", "bookmark", "narrative", "plot", "insight", "words",
-    "knowledge", "reading", "index",
+    "chapter",
+    "novel",
+    "passage",
+    "volume",
+    "excerpt",
+    "prose",
+    "absorb",
+    "bookmark",
+    "narrative",
+    "plot",
+    "insight",
+    "words",
+    "knowledge",
+    "reading",
+    "index",
 ];
 const ITEM_INGREDIENT_WORDS: &[&str] = &[
-    "carrot", "basil", "ginger", "garlic", "thyme", "cumin",
-    "pepper", "zest", "saffron", "oregano", "paprika", "turmeric",
-    "coriander", "cinnamon", "chili",
+    "carrot",
+    "basil",
+    "ginger",
+    "garlic",
+    "thyme",
+    "cumin",
+    "pepper",
+    "zest",
+    "saffron",
+    "oregano",
+    "paprika",
+    "turmeric",
+    "coriander",
+    "cinnamon",
+    "chili",
 ];
 const ITEM_GIFTBOX_WORDS: &[&str] = &[
-    "ribbon", "wrap", "package", "bundle", "seal", "bow",
-    "surprise", "keepsake", "token", "gesture", "giving", "present",
-    "cherish", "celebrate", "memories",
+    "ribbon",
+    "wrap",
+    "package",
+    "bundle",
+    "seal",
+    "bow",
+    "surprise",
+    "keepsake",
+    "token",
+    "gesture",
+    "giving",
+    "present",
+    "cherish",
+    "celebrate",
+    "memories",
 ];
 const ITEM_SMOOTHIE_WORDS: &[&str] = &[
-    "berry", "blend", "mango", "tropical", "citrus", "kale",
-    "protein", "frothy", "spinach", "avocado", "coconut", "ginger",
-    "peach", "pineapple", "flax",
+    "berry",
+    "blend",
+    "mango",
+    "tropical",
+    "citrus",
+    "kale",
+    "protein",
+    "frothy",
+    "spinach",
+    "avocado",
+    "coconut",
+    "ginger",
+    "peach",
+    "pineapple",
+    "flax",
 ];
 const PAINTING_WORDS: &[&str] = &[
-    "canvas", "stroke", "palette", "acrylic", "texture", "blend",
-    "layer", "hue", "sketch", "detail", "pigment", "easel",
-    "chiaroscuro", "impasto", "glaze",
+    "canvas",
+    "stroke",
+    "palette",
+    "acrylic",
+    "texture",
+    "blend",
+    "layer",
+    "hue",
+    "sketch",
+    "detail",
+    "pigment",
+    "easel",
+    "chiaroscuro",
+    "impasto",
+    "glaze",
 ];
 const GAMING_WORDS: &[&str] = &[
-    "respawn", "loot", "quest", "dungeon", "boss", "combo",
-    "stealth", "level", "vault", "dodge", "craft",
-    "rally", "trigger", "snipe", "grind",
+    "respawn", "loot", "quest", "dungeon", "boss", "combo", "stealth", "level", "vault", "dodge",
+    "craft", "rally", "trigger", "snipe", "grind",
 ];
 const MUSIC_WORDS: &[&str] = &[
-    "chord", "rhythm", "melody", "tempo", "harmony", "riff",
-    "verse", "bridge", "scale", "groove", "strum", "pitch",
-    "dynamics", "accent", "cadence",
+    "chord", "rhythm", "melody", "tempo", "harmony", "riff", "verse", "bridge", "scale", "groove",
+    "strum", "pitch", "dynamics", "accent", "cadence",
 ];
 const BANK_DEPOSIT_WORDS: &[&str] = &[
-    "deposit", "save", "stash", "secure", "lodge", "store", "fund", "contribute",
+    "deposit",
+    "save",
+    "stash",
+    "secure",
+    "lodge",
+    "store",
+    "fund",
+    "contribute",
 ];
 const BANK_WITHDRAW_WORDS: &[&str] = &[
     "withdraw", "collect", "redeem", "retrieve", "cash", "pocket", "access", "release",
 ];
 const BANK_INVEST_WORDS: &[&str] = &[
-    "invest", "growth", "yield", "compound", "dividend", "stake", "hedge", "diversify",
+    "invest",
+    "growth",
+    "yield",
+    "compound",
+    "dividend",
+    "stake",
+    "hedge",
+    "diversify",
 ];
-const BANK_LOAN_WORDS: &[&str] = &["borrow", "loan", "credit", "advance", "finance", "collateral"];
+const BANK_LOAN_WORDS: &[&str] = &[
+    "borrow",
+    "loan",
+    "credit",
+    "advance",
+    "finance",
+    "collateral",
+];
 const BANK_HALF_WORDS: &[&str] = &["partial", "split", "half", "divide", "portion", "share"];
 const BANK_REPAY_WORDS: &[&str] = &["repay", "settle", "clear", "return", "payoff", "discharge"];
-const BANK_CASHOUT_WORDS: &[&str] = &["cashout", "liquidate", "redeem", "convert", "exit", "encash"];
-const BANK_INSURE_WORDS: &[&str] = &["insure", "coverage", "protect", "policy", "safeguard", "shield"];
+const BANK_CASHOUT_WORDS: &[&str] = &[
+    "cashout",
+    "liquidate",
+    "redeem",
+    "convert",
+    "exit",
+    "encash",
+];
+const BANK_INSURE_WORDS: &[&str] = &[
+    "insure",
+    "coverage",
+    "protect",
+    "policy",
+    "safeguard",
+    "shield",
+];
 const GIFT_WORDS: &[&str] = &[
-    "present", "token", "keepsake", "souvenir", "surprise", "offering",
-    "gesture", "bouquet", "charm", "trinket", "memento", "cherish",
+    "present", "token", "keepsake", "souvenir", "surprise", "offering", "gesture", "bouquet",
+    "charm", "trinket", "memento", "cherish",
 ];
 const BIKE_WORDS: &[&str] = &[
-    "pedal", "chain", "saddle", "commute", "gear", "spoke",
-    "handlebar", "brake", "cycle", "sprint",
+    "pedal",
+    "chain",
+    "saddle",
+    "commute",
+    "gear",
+    "spoke",
+    "handlebar",
+    "brake",
+    "cycle",
+    "sprint",
 ];
 const CAR_WORDS: &[&str] = &[
-    "ignition", "clutch", "navigate", "accelerate", "signal",
-    "reverse", "cruise", "steer", "parallel", "drive",
+    "ignition",
+    "clutch",
+    "navigate",
+    "accelerate",
+    "signal",
+    "reverse",
+    "cruise",
+    "steer",
+    "parallel",
+    "drive",
 ];
 const SERVICE_WORDS: &[&str] = &[
-    "service", "inspect", "lube", "filter", "align", "tune",
-    "replace", "torque", "flush", "overhaul",
+    "service", "inspect", "lube", "filter", "align", "tune", "replace", "torque", "flush",
+    "overhaul",
 ];
 const COOK_WORDS: &[&str] = &[
-    "stir", "chop", "saute", "simmer", "blanch", "season", "dice",
-    "roast", "fold", "reduce", "whisk", "baste", "caramelize", "puree", "flambe",
+    "stir",
+    "chop",
+    "saute",
+    "simmer",
+    "blanch",
+    "season",
+    "dice",
+    "roast",
+    "fold",
+    "reduce",
+    "whisk",
+    "baste",
+    "caramelize",
+    "puree",
+    "flambe",
 ];
 const SMOOTHIE_WORDS: &[&str] = &[
-    "blend", "puree", "pour", "chill", "freeze", "whisk", "crush",
-    "shake", "swirl", "mix", "liquefy", "froth", "churn", "emulsify", "strain",
+    "blend", "puree", "pour", "chill", "freeze", "whisk", "crush", "shake", "swirl", "mix",
+    "liquefy", "froth", "churn", "emulsify", "strain",
 ];
 const FESTIVAL_WORDS: &[&str] = &[
-    "cheer", "dance", "mingle", "feast", "celebrate", "perform",
-    "exhibit", "gather", "toast", "revel", "parade", "sparkle", "jubilee", "carnival", "exuberant",
+    "cheer",
+    "dance",
+    "mingle",
+    "feast",
+    "celebrate",
+    "perform",
+    "exhibit",
+    "gather",
+    "toast",
+    "revel",
+    "parade",
+    "sparkle",
+    "jubilee",
+    "carnival",
+    "exuberant",
 ];
 const HANGOUT_WORDS: &[&str] = &[
-    "coffee", "wander", "park", "chill", "stroll", "laugh",
-    "picnic", "explore", "catch-up", "banter", "unwind", "hang", "vibe", "lounge", "chat",
+    "coffee", "wander", "park", "chill", "stroll", "laugh", "picnic", "explore", "catch-up",
+    "banter", "unwind", "hang", "vibe", "lounge", "chat",
 ];
 
 fn pick_word(pool: &'static [&'static str], seed: u32, offset: u32) -> &'static str {
     pool[(seed.wrapping_add(offset * 11) as usize) % pool.len()]
 }
 
-fn word_challenge(label: &str, instruction: &str, words: &'static [&'static str], seed: u32) -> PromptChallenge {
+fn word_challenge(
+    label: &str,
+    instruction: &str,
+    words: &'static [&'static str],
+    seed: u32,
+) -> PromptChallenge {
     PromptChallenge {
         label: label.to_string(),
         instruction: instruction.to_string(),
@@ -383,19 +726,32 @@ fn action_challenge(kind: &ActionKind, seed: u32, subject: &str) -> PromptChalle
         ActionKind::UseItem(item) => item_challenge(item, seed),
         ActionKind::Hobby(hobby) => hobby_challenge(hobby, seed),
         ActionKind::Work => word_challenge("Work", "type to work", WORK_WORDS, seed),
-        ActionKind::Freelance => word_challenge("Freelance", "type to freelance", FREELANCE_WORDS, seed),
+        ActionKind::Freelance => {
+            word_challenge("Freelance", "type to freelance", FREELANCE_WORDS, seed)
+        }
         ActionKind::Eat => word_challenge("Eat", "type to eat", EAT_WORDS, seed),
         ActionKind::Sleep => word_challenge("Sleep", "type to sleep", SLEEP_WORDS, seed),
         ActionKind::SleepRough => word_challenge("Shelter", "type to shelter", SLEEP_WORDS, seed),
         ActionKind::Shop => word_challenge("Shop", "type to shop", SHOP_WORDS, seed),
         ActionKind::Relax => word_challenge("Relax", "type to relax", RELAX_WORDS, seed),
         ActionKind::Shower => word_challenge("Shower", "type to shower", SHOWER_WORDS, seed),
-        ActionKind::Exercise => word_challenge("Exercise", "type to exercise", EXERCISE_WORDS, seed),
-        ActionKind::Meditate => word_challenge("Meditate", "type to meditate", MEDITATE_WORDS, seed),
-        ActionKind::Bank => word_challenge("Bank", "type to open bank", &["vault", "access", "enter", "open"], seed),
+        ActionKind::Exercise => {
+            word_challenge("Exercise", "type to exercise", EXERCISE_WORDS, seed)
+        }
+        ActionKind::Meditate => {
+            word_challenge("Meditate", "type to meditate", MEDITATE_WORDS, seed)
+        }
+        ActionKind::Bank => word_challenge(
+            "Bank",
+            "type to open bank",
+            &["vault", "access", "enter", "open"],
+            seed,
+        ),
         ActionKind::StudyCourse => word_challenge("Study", "type to study", STUDY_WORDS, seed),
         ActionKind::ThrowParty => word_challenge("Party", "type to host", PARTY_WORDS, seed),
-        ActionKind::BuyTransport => word_challenge("Transport", "type for garage", GARAGE_WORDS, seed),
+        ActionKind::BuyTransport => {
+            word_challenge("Transport", "type for garage", GARAGE_WORDS, seed)
+        }
         ActionKind::GymSession => word_challenge("Gym", "type to train", GYM_WORDS, seed),
         ActionKind::Cafe => word_challenge("Cafe", "type to order", CAFE_WORDS, seed),
         ActionKind::Clinic => word_challenge("Clinic", "type for checkup", CLINIC_WORDS, seed),
@@ -405,7 +761,9 @@ fn action_challenge(kind: &ActionKind, seed: u32, subject: &str) -> PromptChalle
         ActionKind::RepairVehicle => word_challenge("Repair", "type to repair", REPAIR_WORDS, seed),
         ActionKind::DentalVisit => word_challenge("Dental", "type for dental", DENTAL_WORDS, seed),
         ActionKind::EyeExam => word_challenge("Eye Exam", "type for eye exam", EYE_WORDS, seed),
-        ActionKind::ComputerLab => word_challenge("Computer Lab", "type to log in", COMPUTER_WORDS, seed),
+        ActionKind::ComputerLab => {
+            word_challenge("Computer Lab", "type to log in", COMPUTER_WORDS, seed)
+        }
         ActionKind::PrintShop => word_challenge("Print", "type to print", PRINT_WORDS, seed),
         ActionKind::Hangout => PromptChallenge {
             label: "Hangout".to_string(),
@@ -417,12 +775,31 @@ fn action_challenge(kind: &ActionKind, seed: u32, subject: &str) -> PromptChalle
 
 fn item_challenge(item: &ItemKind, seed: u32) -> PromptChallenge {
     match item {
-        ItemKind::Coffee => word_challenge("Coffee", "type to drink coffee", ITEM_COFFEE_WORDS, seed),
-        ItemKind::Vitamins => word_challenge("Vitamins", "type to take vitamins", ITEM_VITAMINS_WORDS, seed),
+        ItemKind::Coffee => {
+            word_challenge("Coffee", "type to drink coffee", ITEM_COFFEE_WORDS, seed)
+        }
+        ItemKind::Vitamins => word_challenge(
+            "Vitamins",
+            "type to take vitamins",
+            ITEM_VITAMINS_WORDS,
+            seed,
+        ),
         ItemKind::Books => word_challenge("Books", "type to read", ITEM_BOOKS_WORDS, seed),
-        ItemKind::Ingredient => word_challenge("Ingredient", "type to use ingredient", ITEM_INGREDIENT_WORDS, seed),
-        ItemKind::GiftBox => word_challenge("Gift Box", "type to open gift", ITEM_GIFTBOX_WORDS, seed),
-        ItemKind::Smoothie => word_challenge("Smoothie", "type to drink smoothie", ITEM_SMOOTHIE_WORDS, seed),
+        ItemKind::Ingredient => word_challenge(
+            "Ingredient",
+            "type to use ingredient",
+            ITEM_INGREDIENT_WORDS,
+            seed,
+        ),
+        ItemKind::GiftBox => {
+            word_challenge("Gift Box", "type to open gift", ITEM_GIFTBOX_WORDS, seed)
+        }
+        ItemKind::Smoothie => word_challenge(
+            "Smoothie",
+            "type to drink smoothie",
+            ITEM_SMOOTHIE_WORDS,
+            seed,
+        ),
     }
 }
 
@@ -1131,10 +1508,16 @@ fn handle_work(
     // Promotion check: fire once when career crosses 2.5 (Senior) and 5.0 (Executive).
     if skills.career >= 2.5 && (streak.promotion_notified & 0b01) == 0 {
         streak.promotion_notified |= 0b01;
-        notif.push("Promoted to Senior! Pay multiplier increased. [1.12x career bonus]".to_string(), 6.);
+        notif.push(
+            "Promoted to Senior! Pay multiplier increased. [1.12x career bonus]".to_string(),
+            6.,
+        );
     } else if skills.career >= 5.0 && (streak.promotion_notified & 0b10) == 0 {
         streak.promotion_notified |= 0b10;
-        notif.push("Promoted to Executive! Maximum career tier reached. [1.60x career bonus]".to_string(), 6.);
+        notif.push(
+            "Promoted to Executive! Maximum career tier reached. [1.60x career bonus]".to_string(),
+            6.,
+        );
     }
     gs.work_today += 1;
     gs.money_earned_today += earned;
@@ -1777,8 +2160,18 @@ pub fn handle_interaction(
     mut extras: InteractExtras,
     mut sfx: EventWriter<PlaySfx>,
 ) {
-    let Some((mut pm, mut vehicle_state, mut bank_input, mut action_prompt, mut stats, mut inv, mut skills, mut streak, mut housing, mut furnishings)) =
-        player_q.iter_mut().next()
+    let Some((
+        mut pm,
+        mut vehicle_state,
+        mut bank_input,
+        mut action_prompt,
+        mut stats,
+        mut inv,
+        mut skills,
+        mut streak,
+        mut housing,
+        mut furnishings,
+    )) = player_q.iter_mut().next()
     else {
         return;
     };
@@ -2073,11 +2466,18 @@ pub fn handle_interaction(
             } else {
                 "Daytime nap"
             };
-            let bonus_tag = if sleep_bonus > 0. { " [Comfy Bed +10]" } else { "" };
+            let bonus_tag = if sleep_bonus > 0. {
+                " [Comfy Bed +10]"
+            } else {
+                ""
+            };
             notif.push(
                 format!(
                     "{} — +{:.0} Energy, -SleepDebt, -Stress{}{}",
-                    tag, gain + sleep_bonus, stress_tag, bonus_tag
+                    tag,
+                    gain + sleep_bonus,
+                    stress_tag,
+                    bonus_tag
                 ),
                 2.,
             );
@@ -2108,9 +2508,19 @@ pub fn handle_interaction(
             } else {
                 ""
             };
-            let kitchen_tag = if meal_bonus > 0. { " [Kitchen +10]" } else { "" };
+            let kitchen_tag = if meal_bonus > 0. {
+                " [Kitchen +10]"
+            } else {
+                ""
+            };
             notif.push(
-                format!("{} — -{:.0} Hunger{}{}", meal_label, reduction + meal_bonus, bfast, kitchen_tag),
+                format!(
+                    "{} — -{:.0} Hunger{}{}",
+                    meal_label,
+                    reduction + meal_bonus,
+                    bfast,
+                    kitchen_tag
+                ),
                 2.,
             );
         }
@@ -2544,7 +2954,11 @@ pub fn handle_interaction(
                 );
                 return;
             }
-            let npc_name = npc_q.get(entity).ok().map(|(n, _)| n.name.clone()).unwrap_or_else(|| "them".to_string());
+            let npc_name = npc_q
+                .get(entity)
+                .ok()
+                .map(|(n, _)| n.name.clone())
+                .unwrap_or_else(|| "them".to_string());
             let f = friendship.levels.entry(entity).or_insert(0.);
             *f = (*f + 0.5).clamp(0., 5.);
             stats.modify_happiness(25.);
@@ -2555,7 +2969,10 @@ pub fn handle_interaction(
             gs.chat_today += 1;
             stats.cooldown = 2.;
             notif.push(
-                format!("Hung out with {}! +0.5 friendship, +25 happiness, -10 stress.", npc_name),
+                format!(
+                    "Hung out with {}! +0.5 friendship, +25 happiness, -10 stress.",
+                    npc_name
+                ),
                 3.,
             );
         }
@@ -3119,7 +3536,10 @@ mod tests {
         // Simulates the check inside handle_action_prompt_input.
         let buffer = "Deadline";
         let expected = "deadline";
-        assert_eq!(normalize_prompt_text(buffer), normalize_prompt_text(expected));
+        assert_eq!(
+            normalize_prompt_text(buffer),
+            normalize_prompt_text(expected)
+        );
     }
 
     // ── word_challenge ────────────────────────────────────────────────────────

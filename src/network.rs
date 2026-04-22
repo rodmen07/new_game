@@ -19,15 +19,15 @@ pub mod wasm_net {
     use js_sys::JsString;
     use serde::{Deserialize, Serialize};
     use std::{cell::RefCell, collections::VecDeque, rc::Rc};
-    use wasm_bindgen::{closure::Closure, JsCast};
+    use wasm_bindgen::{JsCast, closure::Closure};
     use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
     // ── Config ────────────────────────────────────────────────────────────────
 
     /// URL of the relay.  In development use `ws://localhost:8090/ws`.
     /// Set RELAY_URL at build time or fall back to the Fly.io deployment.
-    const RELAY_URL: &str = option_env!("RELAY_URL")
-        .unwrap_or("wss://multiplayer-relay-rodmen07.fly.dev/ws");
+    const RELAY_URL: &str =
+        option_env!("RELAY_URL").unwrap_or("wss://multiplayer-relay-rodmen07.fly.dev/ws");
 
     /// How often (seconds) we send our position to the server.
     const NET_SEND_INTERVAL: f32 = 0.05; // 20 Hz
@@ -181,14 +181,13 @@ pub mod wasm_net {
                     }
 
                     // Update existing or spawn new remote player.
-                    let existing = remote_q
-                        .iter_mut()
-                        .find(|(_, rp, _)| rp.net_id == id)
-                        .map(|(e, _, mut tf)| {
+                    let existing = remote_q.iter_mut().find(|(_, rp, _)| rp.net_id == id).map(
+                        |(e, _, mut tf)| {
                             tf.translation.x = x;
                             tf.translation.y = y;
                             e
-                        });
+                        },
+                    );
 
                     if existing.is_none() {
                         spawn_remote(&mut commands, id, x, y);
