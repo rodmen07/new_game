@@ -220,6 +220,43 @@ comment.
 
 ---
 
+### R-10 — WASM audio loading uses native filesystem existence checks
+
+| Field | Value |
+|---|---|
+| File | `audio.rs` |
+| Lines | ~76-107 |
+| Severity | High |
+| Status | **Fixed (2026-04-22)** - `load_optional_audio()` is now platform-specific: native builds still check disk presence, while WASM builds always load through `AssetServer` without relying on local filesystem access. |
+
+`load_optional_audio()` gates asset loading on `PathBuf::exists()`, which works on
+native builds but fails in WASM/browser builds because bundled assets are served over
+HTTP, not the local filesystem. This causes all browser audio handles to remain `None`.
+
+**Suggestion:** Use a platform-specific load path: preserve disk existence checks on
+native, but always ask `AssetServer` to load assets on WASM and let the runtime handle
+missing files gracefully.
+
+---
+
+### R-11 — Remote player entities spawn without visibility components
+
+| Field | Value |
+|---|---|
+| File | `network.rs` |
+| Lines | ~194-205 |
+| Severity | High |
+| Status | **Fixed (2026-04-22)** - remote player spawn now includes `Visibility::default()` and uses the local player render baseline (`z=10.0`). |
+
+`spawn_remote()` creates remote player sprites without `Visibility::default()`, unlike
+the local player spawn path. In Bevy 0.15 this can leave remote players present in ECS
+but not renderable in the scene.
+
+**Suggestion:** Spawn remote players with `Visibility::default()` and align their draw
+depth with the local player baseline so they are not hidden behind world geometry.
+
+---
+
 ## Category: Test Coverage
 
 ### T-01 — `systems/interaction.rs` has zero tests

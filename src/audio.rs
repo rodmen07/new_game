@@ -2,6 +2,7 @@ use crate::menu::AppState;
 use crate::resources::{GameTime, LightningTimer, WeatherKind};
 use bevy::audio::Volume;
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
 use std::path::PathBuf;
 
 // ── Event ─────────────────────────────────────────────────────────────────────
@@ -73,12 +74,19 @@ impl Plugin for GameAudioPlugin {
 
 // ── Systems ───────────────────────────────────────────────────────────────────
 
+#[cfg(not(target_arch = "wasm32"))]
 fn asset_disk_path(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("assets")
         .join(relative)
 }
 
+#[cfg(target_arch = "wasm32")]
+fn load_optional_audio(server: &AssetServer, relative: &str) -> Option<Handle<AudioSource>> {
+    Some(server.load(relative.to_string()))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn load_optional_audio(server: &AssetServer, relative: &str) -> Option<Handle<AudioSource>> {
     let disk_path = asset_disk_path(relative);
     if disk_path.exists() {
