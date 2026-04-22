@@ -173,6 +173,7 @@ fn main() {
                 tick_notification,
                 update_hud,
                 update_typing_overlay,
+                update_typing_word_row_scale,
                 update_skill_panel,
                 update_day_night,
             )

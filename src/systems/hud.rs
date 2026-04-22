@@ -880,6 +880,35 @@ pub fn update_typing_overlay(
     }
 }
 
+/// Drives the entrance scale tween on the typing overlay's word row (P2-B).
+///
+/// While the prompt is active the row's scale lerps from
+/// `TypingWordRowScale::START_SCALE` toward `TARGET_SCALE` at
+/// `RATE_PER_SEC`, giving a roughly 120 ms ease. When the prompt is
+/// inactive the scale snaps back so the next show repeats the entrance.
+pub fn update_typing_word_row_scale(
+    time: Res<Time>,
+    prompt_q: Query<&ActionPrompt, With<LocalPlayer>>,
+    mut row_q: Query<(&mut Transform, &mut TypingWordRowScale), With<TypingWordRow>>,
+) {
+    let active = prompt_q.iter().next().map(|p| p.active).unwrap_or(false);
+    let dt = time.delta_secs();
+    for (mut tf, mut row) in &mut row_q {
+        row.scale = next_word_row_scale(row.scale, dt, active);
+        tf.scale = Vec3::splat(row.scale);
+    }
+}
+
+/// Pure helper: advances the word-row scale one frame.
+/// When `active`, eases toward `TARGET_SCALE`; otherwise snaps to `START_SCALE`.
+fn next_word_row_scale(current: f32, dt: f32, active: bool) -> f32 {
+    if active {
+        (current + dt * TypingWordRowScale::RATE_PER_SEC).min(TypingWordRowScale::TARGET_SCALE)
+    } else {
+        TypingWordRowScale::START_SCALE
+    }
+}
+
 /// Drives the tutorial overlay: shows/hides it based on `TutorialState`,
 /// advances on Space/Enter, and allows skipping with Esc.
 pub fn update_tutorial(
@@ -919,5 +948,36 @@ pub fn update_tutorial(
         if let Ok(mut t) = body_q.get_single_mut() {
             **t = format!("{}\n\n{}", title, body);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::next_word_row_scale;
+    use crate::components::TypingWordRowScale;
+
+    #[test]
+    fn snaps_to_start_when_inactive() {
+        let s = next_word_row_scale(0.92, 0.1, false);
+        assert_eq!(s, TypingWordRowScale::START_SCALE);
+    }
+
+    #[test]
+    fn eases_toward_target_when_active() {
+        let s = next_word_row_scale(TypingWordRowScale::START_SCALE, 0.05, true);
+        assert!(s > TypingWordRowScale::START_SCALE);
+        assert!(s <= TypingWordRowScale::TARGET_SCALE);
+    }
+
+    #[test]
+    fn clamps_to_target_when_active_long_dt() {
+        let s = next_word_row_scale(TypingWordRowScale::START_SCALE, 10.0, true);
+        assert_eq!(s, TypingWordRowScale::TARGET_SCALE);
+    }
+
+    #[test]
+    fn already_at_target_stays_at_target() {
+        let s = next_word_row_scale(TypingWordRowScale::TARGET_SCALE, 0.016, true);
+        assert_eq!(s, TypingWordRowScale::TARGET_SCALE);
     }
 }
