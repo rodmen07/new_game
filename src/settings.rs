@@ -186,8 +186,8 @@ mod tests {
     }
 
     #[test]
-    fn default_settings_use_hard_difficulty() {
+    fn default_settings_use_normal_difficulty() {
         let settings = GameSettings::default();
-        assert_eq!(settings.difficulty, Difficulty::Hard);
+        assert_eq!(settings.difficulty, Difficulty::Normal);
     }
 }
