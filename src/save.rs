@@ -265,7 +265,10 @@ pub struct SaveParamsA<'w, 's> {
     pub ms: Res<'w, Milestones>,
     pub rating: Res<'w, LifeRating>,
     pub player_q: Query<'w, 's, (&'static PlayerStats, &'static Skills, &'static WorkStreak, &'static HousingTier, &'static Inventory, &'static Furnishings), With<LocalPlayer>>,
-}<'w> {
+}
+
+#[derive(SystemParam)]
+pub struct SaveParamsB<'w> {
     pub hobbies: Res<'w, Hobbies>,
     pub conds: Res<'w, Conditions>,
     pub invest: Res<'w, Investment>,
