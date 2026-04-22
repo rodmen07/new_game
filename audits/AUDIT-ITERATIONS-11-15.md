@@ -89,3 +89,33 @@ Expected: 149 tests pass, 0 clippy warnings.
 **Findings opened this iteration:** none
 
 **Findings closed this iteration:** none (T-04 process violation fixed inline)
+
+---
+
+### Iteration 15 - 2026-04-22
+
+**Auditor:** GitHub Copilot (agentic workflow)
+**Scope:** Bug fixes for browser audio, remote player visibility, and MMO gap analysis
+**Method:** Targeted code inspection of `audio.rs`, `network.rs`, startup spawn paths, and multiplayer architecture
+
+**Planned changes:**
+- **R-10:** Fix WASM audio asset loading so browser builds do not depend on native filesystem checks.
+- **R-11:** Fix remote player visibility by matching the local player render baseline.
+- Add an MMO analysis document describing which mechanics are local-only vs server-authoritative candidates.
+
+**Results:**
+- **R-10** - FIXED. `audio.rs` now uses a WASM-specific load path that skips native filesystem existence checks and always loads audio via `AssetServer` in browser builds.
+- **R-11** - FIXED. `network.rs` remote player spawns now include `Visibility::default()` and use `z=10.0` to match the local player render layer.
+- MMO analysis document added at `docs/mmo-model-analysis.md` to identify which mechanics remain local-only and what needs server authority for MMO support.
+
+**Build verification:**
+```
+cargo clippy --all-targets -- -D warnings
+cargo test --all-targets
+cargo build --target wasm32-unknown-unknown --release
+```
+
+All three passed after the fixes.
+
+**Findings opened this iteration:** R-10, R-11
+**Findings closed this iteration:** R-10, R-11

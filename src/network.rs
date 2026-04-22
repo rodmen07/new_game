@@ -219,7 +219,8 @@ pub mod wasm_net {
                 custom_size: Some(Vec2::new(20., 32.)),
                 ..default()
             },
-            Transform::from_xyz(x, y, 1.0),
+            Transform::from_xyz(x, y, 10.0),
+            Visibility::default(),
         ));
     }
 }
