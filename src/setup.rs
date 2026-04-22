@@ -3557,13 +3557,18 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             TypingLabel,
         ));
         // Word row: typed | current char in highlight box | remaining
+        // Note: do NOT spawn an explicit Transform here. `Node` injects one via
+        // required components, and supplying our own alongside `Node` triggers
+        // a wasm "unreachable" trap at startup on Bevy 0.15. The
+        // `update_typing_word_row_scale` system writes the scale every frame
+        // from `TypingWordRowScale` (which defaults to START_SCALE), so the
+        // first visible frame already shows the entrance scale.
         p.spawn((
             Node {
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::Center,
                 ..default()
             },
-            Transform::from_scale(Vec3::splat(TypingWordRowScale::START_SCALE)),
             TypingWordRow,
             TypingWordRowScale::default(),
         ))
