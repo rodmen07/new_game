@@ -367,6 +367,32 @@ impl Default for TypingOverlayFade {
     }
 }
 
+/// Marks the word row Node inside the typing overlay so the entrance scale
+/// tween (P2-B) can target it.
+#[derive(Component)]
+pub struct TypingWordRow;
+
+/// Tracks the animated scale of the word row. Starts at `START_SCALE` and
+/// lerps toward `TARGET_SCALE` while the overlay is active; snaps back to
+/// `START_SCALE` on hide so the next show repeats the entrance.
+#[derive(Component)]
+pub struct TypingWordRowScale {
+    pub scale: f32,
+}
+impl TypingWordRowScale {
+    pub const START_SCALE: f32 = 0.85;
+    pub const TARGET_SCALE: f32 = 1.0;
+    /// Per-second rate giving a ~120 ms ease from START to TARGET.
+    pub const RATE_PER_SEC: f32 = 1.25;
+}
+impl Default for TypingWordRowScale {
+    fn default() -> Self {
+        Self {
+            scale: Self::START_SCALE,
+        }
+    }
+}
+
 // ── Tutorial overlay ──────────────────────────────────────────────────────────
 /// Marks the full-screen tutorial overlay node.
 #[derive(Component)]

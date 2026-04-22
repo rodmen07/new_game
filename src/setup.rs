@@ -6,7 +6,8 @@ use crate::components::{
     PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
     SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
     TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
-    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordTyped, Vehicle,
+    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
+    TypingWordRowScale, TypingWordTyped, Vehicle,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -3556,11 +3557,16 @@ pub fn spawn_typing_overlay(cmd: &mut Commands) {
             TypingLabel,
         ));
         // Word row: typed | current char in highlight box | remaining
-        p.spawn(Node {
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            ..default()
-        })
+        p.spawn((
+            Node {
+                flex_direction: FlexDirection::Row,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            Transform::from_scale(Vec3::splat(TypingWordRowScale::START_SCALE)),
+            TypingWordRow,
+            TypingWordRowScale::default(),
+        ))
         .with_children(|row| {
             // Typed chars (green)
             row.spawn((
