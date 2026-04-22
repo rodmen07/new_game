@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 //! Persistence layer: save game state to `save.json` and restore it on load.
 //!
 //! # Design
@@ -12,7 +14,7 @@ use bevy::{ecs::system::SystemParam, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    components::{Furnishings, LocalPlayer, NpcId, PetKind, Player, Vehicle},
+    components::{Furnishings, LocalPlayer, NpcId, PetKind, Vehicle},
     menu::GameStartKind,
     resources::{
         ActionPrompt, BankInput, Conditions, CrisisKind, CrisisState, DailyGoal, FestivalState,
@@ -390,7 +392,7 @@ pub fn handle_save(
         skill_social: skills.social,
         streak_days: streak.days,
         promotion_notified: streak.promotion_notified,
-        housing: u8::from(&*housing),
+        housing: u8::from(housing),
         inv_coffee: inv.coffee,
         inv_vitamins: inv.vitamins,
         inv_books: inv.books,
@@ -693,7 +695,7 @@ pub fn reset_game(
         return;
     }
 
-    if let Some((mut stats, mut skills, mut streak, mut housing, mut inv)) =
+    if let Some((mut stats, mut skills, mut streak, mut housing, mut inv, mut furnishings)) =
         a.player_q.iter_mut().next()
     {
         *stats = PlayerStats::default();
@@ -701,6 +703,7 @@ pub fn reset_game(
         *streak = WorkStreak::default();
         *housing = HousingTier::default();
         *inv = Inventory::default();
+        *furnishings = Furnishings::default();
     }
     *a.gt = GameTime::default();
     *a.ms = Milestones::default();

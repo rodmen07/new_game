@@ -1,7 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::audio::{PlaySfx, SfxKind};
-use crate::components::{LocalPlayer, Npc, NpcPersonality, Player};
+use crate::components::{LocalPlayer, Npc, NpcPersonality};
 use crate::constants::TIME_SCALE;
 use crate::resources::*;
 use bevy::prelude::*;

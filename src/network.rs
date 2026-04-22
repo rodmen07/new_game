@@ -8,8 +8,6 @@
 //! - Remote players are spawned/despawned/moved as `Player` entities
 //!   (without `LocalPlayer`) so all existing queries continue to work.
 
-use bevy::prelude::*;
-
 // ── Only compile the real networking on WASM ──────────────────────────────────
 
 #[cfg(target_arch = "wasm32")]
