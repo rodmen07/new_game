@@ -341,8 +341,13 @@ These require significant architecture work and are not blocked by any of the ab
 | M-02 | Replace 14 `get_single()` calls with filtered iterators for multiplayer safety |
 | M-03 | Introduce a `PlayerAction` event abstraction to decouple raw keyboard input from game logic |
 | M-04 | Restructure `SaveData` to support a `Vec<PlayerSave>` for per-player persistence |
-| Tutorial | First-run overlay guiding new players through the opening survival loop |
 | Art pass | Replace colored rectangles with sprite sheets for characters, buildings, and props |
+
+**Tutorial: First-run overlay** ✅
+- `TUTORIAL_STEPS` and `TutorialState { step }` resource in `src/resources.rs` drive a 6-slide overlay (Welcome, Stats, Working, Eating/Sleeping, Socialising, Key Bindings)
+- `start_tutorial_if_new_game` in `src/save.rs` flips `step` to 1 only when `GameStartKind == NewGame` so resumes never replay the tutorial
+- `update_tutorial` in `src/systems/hud.rs` shows/advances slides on Space/Enter and dismisses on Esc
+- Overlay node + body/hint text spawned by `setup` in `src/setup.rs`; hidden by default and shown by `update_tutorial` when `TutorialState::is_active()`
 
 ---
 
