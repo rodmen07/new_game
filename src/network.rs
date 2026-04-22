@@ -8,6 +8,9 @@
 //! - Remote players are spawned/despawned/moved as `Player` entities
 //!   (without `LocalPlayer`) so all existing queries continue to work.
 
+#[cfg(target_arch = "wasm32")]
+use bevy::prelude::*;
+
 // ── Only compile the real networking on WASM ──────────────────────────────────
 
 #[cfg(target_arch = "wasm32")]
@@ -24,8 +27,10 @@ pub mod wasm_net {
 
     /// URL of the relay.  In development use `ws://localhost:8090/ws`.
     /// Set RELAY_URL at build time or fall back to the Fly.io deployment.
-    const RELAY_URL: &str =
-        option_env!("RELAY_URL").unwrap_or("wss://multiplayer-relay-rodmen07.fly.dev/ws");
+    const RELAY_URL: &str = match option_env!("RELAY_URL") {
+        Some(url) => url,
+        None => "wss://multiplayer-relay-rodmen07.fly.dev/ws",
+    };
 
     /// How often (seconds) we send our position to the server.
     const NET_SEND_INTERVAL: f32 = 0.05; // 20 Hz
@@ -50,7 +55,6 @@ pub mod wasm_net {
 
     // ── Resource ──────────────────────────────────────────────────────────────
 
-    #[derive(Resource)]
     pub struct NetState {
         pub socket: WebSocket,
         pub local_id: Option<String>,
@@ -68,17 +72,16 @@ pub mod wasm_net {
                 .add_systems(OnExit(crate::menu::AppState::Playing), net_disconnect)
                 .add_systems(
                     Update,
-                    (net_send, net_receive).chain().run_if(
-                        bevy::prelude::in_state(crate::menu::AppState::Playing)
-                            .and(resource_exists::<NetState>),
-                    ),
+                    (net_send, net_receive)
+                        .chain()
+                        .run_if(bevy::prelude::in_state(crate::menu::AppState::Playing)),
                 );
         }
     }
 
     // ── Systems ───────────────────────────────────────────────────────────────
 
-    pub fn net_connect(mut commands: Commands) {
+    pub fn net_connect(world: &mut World) {
         let inbox: Rc<RefCell<VecDeque<ServerMsg>>> = Rc::new(RefCell::new(VecDeque::new()));
 
         let ws = match WebSocket::new(RELAY_URL) {
@@ -89,7 +92,6 @@ pub mod wasm_net {
             }
         };
 
-        // onmessage
         {
             let inbox_clone = inbox.clone();
             let onmessage = Closure::<dyn FnMut(MessageEvent)>::new(move |e: MessageEvent| {
@@ -105,7 +107,6 @@ pub mod wasm_net {
             onmessage.forget();
         }
 
-        // onerror
         {
             let onerror = Closure::<dyn FnMut(ErrorEvent)>::new(|e: ErrorEvent| {
                 bevy::log::warn!("net: WebSocket error: {:?}", e.message());
@@ -114,7 +115,7 @@ pub mod wasm_net {
             onerror.forget();
         }
 
-        commands.insert_resource(NetState {
+        world.insert_non_send_resource(NetState {
             socket: ws,
             local_id: None,
             inbox,
@@ -122,21 +123,23 @@ pub mod wasm_net {
         });
     }
 
-    pub fn net_disconnect(mut commands: Commands) {
-        if let Some(state) = commands
-            .get_resource_ref::<NetState>()
-            .map(|r| r.socket.clone())
-        {
-            let _ = state.close();
+    pub fn net_disconnect(world: &mut World) {
+        if let Some(state) = world.get_non_send_resource::<NetState>() {
+            let _ = state.socket.close();
         }
-        commands.remove_resource::<NetState>();
+
+        let _ = world.remove_non_send_resource::<NetState>();
     }
 
     pub fn net_send(
         time: Res<Time>,
-        mut net: ResMut<NetState>,
+        net: Option<NonSendMut<NetState>>,
         player_q: Query<&Transform, With<crate::components::LocalPlayer>>,
     ) {
+        let Some(mut net) = net else {
+            return;
+        };
+
         net.send_timer += time.delta_secs();
         if net.send_timer < NET_SEND_INTERVAL {
             return;
@@ -161,9 +164,13 @@ pub mod wasm_net {
 
     pub fn net_receive(
         mut commands: Commands,
-        mut net: ResMut<NetState>,
+        net: Option<NonSendMut<NetState>>,
         mut remote_q: Query<(Entity, &RemotePlayer, &mut Transform)>,
     ) {
+        let Some(mut net) = net else {
+            return;
+        };
+
         let messages: Vec<ServerMsg> = net.inbox.borrow_mut().drain(..).collect();
 
         for msg in messages {
@@ -173,12 +180,10 @@ pub mod wasm_net {
                     net.local_id = Some(id);
                 }
                 ServerMsg::Pos { id, x, y } => {
-                    // Skip if this is our own echo (shouldn't happen with relay design, but guard it).
                     if net.local_id.as_deref() == Some(&id) {
                         continue;
                     }
 
-                    // Update existing or spawn new remote player.
                     let existing = remote_q.iter_mut().find(|(_, rp, _)| rp.net_id == id).map(
                         |(e, _, mut tf)| {
                             tf.translation.x = x;
