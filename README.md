@@ -84,6 +84,26 @@ To build for deployment:
 trunk build --release --public-url /new_game/
 ```
 
+### Windows local troubleshooting
+
+If the game appears stuck or Trunk reports Windows file/path errors such as `os error 32` or `os error 3`, this is usually a local file-lock race on `dist`/`wasm-target` from overlapping Trunk runs or background scanners.
+
+Use the local helper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\serve_local.ps1
+```
+
+Manual recovery sequence:
+
+```powershell
+Set-Location .\new_game
+Get-Process trunk,wasm-opt,wasm-bindgen -ErrorAction SilentlyContinue | Stop-Process -Force
+Remove-Item .\dist -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item .\wasm-target -Recurse -Force -ErrorAction SilentlyContinue
+trunk serve --release --port 8092 --dist .dist_local
+```
+
 Notes for the web build:
 - game assets are served from the bundled assets directory
 - settings and save progress live in browser localStorage instead of config.toml and save.json
