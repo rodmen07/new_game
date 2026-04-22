@@ -2133,6 +2133,7 @@ fn handle_study(
     );
 }
 
+#[allow(clippy::type_complexity)]
 pub fn handle_interaction(
     keys: Res<ButtonInput<KeyCode>>,
     nearby: Res<NearbyInteractable>,

@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use crate::components::*;
 use crate::resources::*;
 use bevy::prelude::*;
@@ -197,7 +199,7 @@ pub fn update_hud(
                     String::new()
                 }
             }
-            HudLabel::Warning => warnings(&stats, &extras.conds),
+            HudLabel::Warning => warnings(stats, &extras.conds),
             HudLabel::Notification => notif.message.clone(),
             HudLabel::Skills => {
                 let career_next = if skills.career >= 5.0 {
@@ -746,6 +748,7 @@ fn set_skill_bar(q: &mut Query<&mut Text, impl bevy::ecs::query::QueryFilter>, v
 
 /// Updates the full-screen typing overlay each frame to reflect the current
 /// `ActionPrompt` state: shows/hides the overlay and highlights per-character.
+#[allow(clippy::too_many_arguments)]
 pub fn update_typing_overlay(
     time: Res<Time>,
     prompt_q: Query<&ActionPrompt, With<LocalPlayer>>,
@@ -908,15 +911,13 @@ pub fn update_tutorial(
         };
     }
 
-    if visible {
-        if let Some((title, body)) = state.current() {
-            let total = TUTORIAL_STEPS.len();
-            if let Ok(mut t) = hint_q.get_single_mut() {
-                **t = format!("{} / {}", state.step, total);
-            }
-            if let Ok(mut t) = body_q.get_single_mut() {
-                **t = format!("{}\n\n{}", title, body);
-            }
+    if visible && let Some((title, body)) = state.current() {
+        let total = TUTORIAL_STEPS.len();
+        if let Ok(mut t) = hint_q.get_single_mut() {
+            **t = format!("{} / {}", state.step, total);
+        }
+        if let Ok(mut t) = body_q.get_single_mut() {
+            **t = format!("{}\n\n{}", title, body);
         }
     }
 }

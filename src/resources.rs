@@ -1,5 +1,5 @@
 use crate::{
-    components::{ActionKind, LocalPlayer, PetKind, Player},
+    components::{ActionKind, LocalPlayer, PetKind},
     constants::DEBT_LIMIT,
     save::SaveRequest,
     settings::GameSettings,
@@ -22,6 +22,7 @@ pub struct PlayerInput {
     /// Normalised wish direction from WASD / arrow keys, or zero if no key held.
     pub move_dir: Vec2,
     /// True while Shift is held.
+    #[allow(dead_code)]
     pub sprint: bool,
 }
 

@@ -1,5 +1,5 @@
 use crate::components::{
-    BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality, Player,
+    BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality,
 };
 use crate::constants::{INTERACT_RADIUS, MAP_SCALE, NPC_SPEED};
 use crate::resources::{GameTime, NearbyInteractable, NpcFriendship, QuestBoard};

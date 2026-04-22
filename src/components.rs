@@ -12,6 +12,7 @@ pub struct LocalPlayer;
 pub struct PlayerId(pub u32);
 /// Marks a remotely-controlled player entity (server-synced position, no input).
 #[derive(Component, Clone)]
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub struct RemotePlayer {
     pub net_id: String,
 }
