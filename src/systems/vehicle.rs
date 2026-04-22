@@ -30,6 +30,7 @@ pub fn car_movement(
     }
     let dt = time.delta_secs();
 
+    // M-03: movement intent is emitted once in input.rs and consumed here.
     let wish = player_input.move_dir;
 
     if wish != Vec2::ZERO {
