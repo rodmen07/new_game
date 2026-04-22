@@ -135,7 +135,7 @@ impl Default for GameSettings {
             window_width: 1150.,
             window_height: 800.,
             master_volume: 0.8,
-            difficulty: Difficulty::Hard,
+            difficulty: Difficulty::Normal,
         }
     }
 }

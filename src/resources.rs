@@ -13,6 +13,18 @@ pub struct NearbyInteractable {
     pub prompt: String,
 }
 
+// ── PlayerInput ───────────────────────────────────────────────────────────────
+
+/// Continuous input state updated once per frame by `emit_player_input`.
+/// Movement and vehicle systems read this instead of `ButtonInput<KeyCode>`.
+#[derive(Resource, Default)]
+pub struct PlayerInput {
+    /// Normalised wish direction from WASD / arrow keys, or zero if no key held.
+    pub move_dir: Vec2,
+    /// True while Shift is held.
+    pub sprint: bool,
+}
+
 // ── PlayerMovement ────────────────────────────────────────────────────────────
 
 #[derive(Component)]
@@ -61,10 +73,10 @@ impl Default for PlayerStats {
             health: 92.,
             stress: 25.,
             sleep_debt: 2.,
-            money: 50.,
+            money: 80.,
             savings: 0.,
             loan: 0.,
-            meals: 3,
+            meals: 4,
             cooldown: 0.,
             critical_timer: 0.,
             unpaid_rent_days: 0,
