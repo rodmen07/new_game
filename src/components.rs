@@ -321,21 +321,34 @@ pub enum BodyPart {
 pub struct NpcId(pub usize);
 
 // ── Typing overlay components ─────────────────────────────────────────────────
-#[derive(Component)] pub struct TypingOverlay;
-#[derive(Component)] pub struct TypingLabel;
-#[derive(Component)] pub struct TypingWordTyped;
-#[derive(Component)] pub struct TypingWordCurrentBox;
-#[derive(Component)] pub struct TypingWordCurrent;
-#[derive(Component)] pub struct TypingWordRemaining;
-#[derive(Component)] pub struct TypingInstruction;
-#[derive(Component)] pub struct TypingRetries;
+#[derive(Component)]
+pub struct TypingOverlay;
+#[derive(Component)]
+pub struct TypingLabel;
+#[derive(Component)]
+pub struct TypingWordTyped;
+#[derive(Component)]
+pub struct TypingWordCurrentBox;
+#[derive(Component)]
+pub struct TypingWordCurrent;
+#[derive(Component)]
+pub struct TypingWordRemaining;
+#[derive(Component)]
+pub struct TypingInstruction;
+#[derive(Component)]
+pub struct TypingRetries;
 
 // ── Skill tree panel components ───────────────────────────────────────────────
-#[derive(Component)] pub struct SkillPanel;
-#[derive(Component)] pub struct SkillCookingBar;
-#[derive(Component)] pub struct SkillCareerBar;
-#[derive(Component)] pub struct SkillFitnessBar;
-#[derive(Component)] pub struct SkillSocialBar;
+#[derive(Component)]
+pub struct SkillPanel;
+#[derive(Component)]
+pub struct SkillCookingBar;
+#[derive(Component)]
+pub struct SkillCareerBar;
+#[derive(Component)]
+pub struct SkillFitnessBar;
+#[derive(Component)]
+pub struct SkillSocialBar;
 
 // ── Typing overlay fade ───────────────────────────────────────────────────────
 /// Tracks the animated alpha of the typing overlay background.
@@ -348,7 +361,9 @@ impl TypingOverlayFade {
     pub const TARGET_ALPHA: f32 = 0.82;
 }
 impl Default for TypingOverlayFade {
-    fn default() -> Self { Self { alpha: 0. } }
+    fn default() -> Self {
+        Self { alpha: 0. }
+    }
 }
 
 // ── Tutorial overlay ──────────────────────────────────────────────────────────

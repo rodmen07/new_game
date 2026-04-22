@@ -1,4 +1,9 @@
-use crate::{components::{LocalPlayer, PetKind}, constants::TIME_SCALE, resources::*, settings::GameSettings};
+use crate::{
+    components::{LocalPlayer, PetKind},
+    constants::TIME_SCALE,
+    resources::*,
+    settings::GameSettings,
+};
 use bevy::prelude::*;
 
 pub fn decay_stats(

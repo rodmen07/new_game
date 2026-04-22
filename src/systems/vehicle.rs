@@ -4,12 +4,7 @@ use bevy::prelude::*;
 
 use crate::components::{LocalPlayer, Player, Vehicle};
 use crate::resources::{
-    ActionPrompt,
-    PlayerInput,
-    PlayerMovement,
-    Transport,
-    TransportKind,
-    VehicleState,
+    ActionPrompt, PlayerInput, PlayerMovement, Transport, TransportKind, VehicleState,
 };
 
 const CAR_SPEED: f32 = 340.0;

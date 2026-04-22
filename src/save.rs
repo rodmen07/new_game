@@ -264,7 +264,19 @@ pub struct SaveParamsA<'w, 's> {
     pub gt: Res<'w, GameTime>,
     pub ms: Res<'w, Milestones>,
     pub rating: Res<'w, LifeRating>,
-    pub player_q: Query<'w, 's, (&'static PlayerStats, &'static Skills, &'static WorkStreak, &'static HousingTier, &'static Inventory, &'static Furnishings), With<LocalPlayer>>,
+    pub player_q: Query<
+        'w,
+        's,
+        (
+            &'static PlayerStats,
+            &'static Skills,
+            &'static WorkStreak,
+            &'static HousingTier,
+            &'static Inventory,
+            &'static Furnishings,
+        ),
+        With<LocalPlayer>,
+    >,
 }
 
 #[derive(SystemParam)]
@@ -287,7 +299,19 @@ pub struct ApplyParamsA<'w, 's> {
     pub gt: ResMut<'w, GameTime>,
     pub ms: ResMut<'w, Milestones>,
     pub rating: ResMut<'w, LifeRating>,
-    pub player_q: Query<'w, 's, (&'static mut PlayerStats, &'static mut Skills, &'static mut WorkStreak, &'static mut HousingTier, &'static mut Inventory, &'static mut Furnishings), With<LocalPlayer>>,
+    pub player_q: Query<
+        'w,
+        's,
+        (
+            &'static mut PlayerStats,
+            &'static mut Skills,
+            &'static mut WorkStreak,
+            &'static mut HousingTier,
+            &'static mut Inventory,
+            &'static mut Furnishings,
+        ),
+        With<LocalPlayer>,
+    >,
 }
 
 #[derive(SystemParam)]

@@ -767,7 +767,16 @@ fn apply_daily_event(
 
 pub fn on_new_day(
     mut gt: ResMut<GameTime>,
-    mut player_q: Query<(&mut PlayerStats, &mut Skills, &mut WorkStreak, &mut HousingTier, &mut Inventory), With<LocalPlayer>>,
+    mut player_q: Query<
+        (
+            &mut PlayerStats,
+            &mut Skills,
+            &mut WorkStreak,
+            &mut HousingTier,
+            &mut Inventory,
+        ),
+        With<LocalPlayer>,
+    >,
     mut gs: ResMut<GameState>,
     mut goal: ResMut<DailyGoal>,
     mut notif: ResMut<Notification>,
