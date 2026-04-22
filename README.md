@@ -338,10 +338,15 @@ These require significant architecture work and are not blocked by any of the ab
 
 | Item | Description |
 |---|---|
-| M-02 | Replace 14 `get_single()` calls with filtered iterators for multiplayer safety |
 | M-03 | Introduce a `PlayerAction` event abstraction to decouple raw keyboard input from game logic |
 | M-04 | Restructure `SaveData` to support a `Vec<PlayerSave>` for per-player persistence |
 | Art pass | Replace colored rectangles with sprite sheets for characters, buildings, and props |
+
+**M-02: Replace `get_single()` calls with iterator-based access** ✅
+- All 20 `get_single_mut()` sites in `src/systems/hud.rs` and `src/systems/visual.rs` migrated to `iter_mut().next()` (the singleton-friendly equivalent)
+- Pattern: `let Ok(mut t) = q.get_single_mut() else { return; };` becomes `let Some(mut t) = q.iter_mut().next() else { return; };` (and the same for `if let` guards)
+- Forward-compatible with Bevy's deprecation of the `get_single*` family and tolerates 2+ matching entities (no silent error masking when extra players or duplicate UI nodes are added)
+- Verified: 171 tests passing, clean strict clippy
 
 **Tutorial: First-run overlay** ✅
 - `TUTORIAL_STEPS` and `TutorialState { step }` resource in `src/resources.rs` drive a 6-slide overlay (Welcome, Stats, Working, Eating/Sleeping, Socialising, Key Bindings)
