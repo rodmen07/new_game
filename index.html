@@ -8,7 +8,20 @@
     <link data-trunk rel="rust" />
     <script>
       (function () {
-        let started = false;
+        let started = !!window.wasmBindings;
+        let startupPollId = null;
+
+        function markStarted() {
+          started = true;
+          if (startupPollId !== null) {
+            clearInterval(startupPollId);
+            startupPollId = null;
+          }
+          const overlay = document.getElementById("startup-diagnostics");
+          if (overlay) {
+            overlay.style.display = "none";
+          }
+        }
 
         function ensureOverlay() {
           let overlay = document.getElementById("startup-diagnostics");
@@ -28,12 +41,16 @@
         }
 
         window.addEventListener("TrunkApplicationStarted", function () {
-          started = true;
-          const overlay = document.getElementById("startup-diagnostics");
-          if (overlay) {
-            overlay.style.display = "none";
-          }
+          markStarted();
         });
+
+        // Trunk can dispatch the startup event before this script runs.
+        // Polling window.wasmBindings covers that ordering race.
+        startupPollId = setInterval(function () {
+          if (window.wasmBindings) {
+            markStarted();
+          }
+        }, 250);
 
         window.addEventListener("error", function (event) {
           const detail = event && event.message ? event.message : "Unknown runtime error";
@@ -51,7 +68,7 @@
               "Game startup is taking too long. Check browser console for JS/WASM errors, disable aggressive blockers, and hard-refresh."
             );
           }
-        }, 12000);
+        }, 45000);
       })();
     </script>
     <style>

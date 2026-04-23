@@ -108,6 +108,7 @@ Notes for the web build:
 - game assets are served from the bundled assets directory
 - settings and save progress live in browser localStorage instead of config.toml and save.json
 - the canvas automatically fits the browser page
+- startup diagnostics now wait up to 45 seconds and also detect `window.wasmBindings` so delayed wasm init does not produce a false startup timeout
 
 ---
 
