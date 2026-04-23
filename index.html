@@ -10,12 +10,142 @@
       (function () {
         let started = !!window.wasmBindings;
         let startupPollId = null;
+        let startupTimeoutId = null;
+        const heldCodes = new Set();
+
+        function emitKey(type, code, key) {
+          const evt = new KeyboardEvent(type, {
+            code,
+            key,
+            bubbles: true,
+            cancelable: true,
+          });
+          window.dispatchEvent(evt);
+        }
+
+        function pressKey(code, key) {
+          if (heldCodes.has(code)) {
+            return;
+          }
+          heldCodes.add(code);
+          emitKey("keydown", code, key);
+        }
+
+        function releaseKey(code, key) {
+          if (!heldCodes.has(code)) {
+            return;
+          }
+          heldCodes.delete(code);
+          emitKey("keyup", code, key);
+        }
+
+        function tapKey(code, key) {
+          emitKey("keydown", code, key);
+          emitKey("keyup", code, key);
+        }
+
+        function bindTouchControl(button, code, key, mode) {
+          if (!button) {
+            return;
+          }
+
+          const onPress = function (event) {
+            event.preventDefault();
+            const canvas = document.getElementById("bevy");
+            if (canvas) {
+              canvas.focus();
+            }
+            if (mode === "hold") {
+              pressKey(code, key);
+            } else {
+              tapKey(code, key);
+            }
+          };
+
+          const onRelease = function (event) {
+            event.preventDefault();
+            if (mode === "hold") {
+              releaseKey(code, key);
+            }
+          };
+
+          button.addEventListener("pointerdown", onPress);
+          button.addEventListener("pointerup", onRelease);
+          button.addEventListener("pointercancel", onRelease);
+          button.addEventListener("pointerleave", onRelease);
+        }
+
+        function bindTapKeyButton(button) {
+          if (!button) {
+            return;
+          }
+          const code = button.dataset.code;
+          const key = button.dataset.key;
+          if (!code || !key) {
+            return;
+          }
+          button.addEventListener("pointerdown", function (event) {
+            event.preventDefault();
+            const canvas = document.getElementById("bevy");
+            if (canvas) {
+              canvas.focus();
+            }
+            tapKey(code, key);
+          });
+        }
+
+        function initMobileControls() {
+          bindTouchControl(document.getElementById("btn-up"), "KeyW", "w", "hold");
+          bindTouchControl(document.getElementById("btn-left"), "KeyA", "a", "hold");
+          bindTouchControl(document.getElementById("btn-down"), "KeyS", "s", "hold");
+          bindTouchControl(document.getElementById("btn-right"), "KeyD", "d", "hold");
+          bindTouchControl(document.getElementById("btn-sprint"), "ShiftLeft", "Shift", "hold");
+
+          bindTouchControl(document.getElementById("btn-interact"), "KeyE", "e", "tap");
+          bindTouchControl(document.getElementById("btn-gift"), "KeyG", "g", "tap");
+          bindTouchControl(document.getElementById("btn-hangout"), "KeyH", "h", "tap");
+          bindTouchControl(document.getElementById("btn-1"), "Digit1", "1", "tap");
+          bindTouchControl(document.getElementById("btn-2"), "Digit2", "2", "tap");
+          bindTouchControl(document.getElementById("btn-3"), "Digit3", "3", "tap");
+          bindTouchControl(document.getElementById("btn-confirm"), "Enter", "Enter", "tap");
+          bindTouchControl(document.getElementById("btn-cancel"), "Escape", "Escape", "tap");
+
+          const typingPanel = document.getElementById("typing-panel");
+          const typingToggle = document.getElementById("btn-typing-toggle");
+          if (typingPanel && typingToggle) {
+            typingToggle.addEventListener("pointerdown", function (event) {
+              event.preventDefault();
+              typingPanel.classList.toggle("open");
+            });
+          }
+
+          const typingKeys = document.querySelectorAll(".typing-key[data-code][data-key]");
+          for (const button of typingKeys) {
+            bindTapKeyButton(button);
+          }
+
+          const typingCancelBtn = document.getElementById("btn-typing-cancel");
+          if (typingCancelBtn) {
+            typingCancelBtn.addEventListener("pointerdown", function (event) {
+              event.preventDefault();
+              const canvas = document.getElementById("bevy");
+              if (canvas) {
+                canvas.focus();
+              }
+              tapKey("Backspace", "Backspace");
+            });
+          }
+        }
 
         function markStarted() {
           started = true;
           if (startupPollId !== null) {
             clearInterval(startupPollId);
             startupPollId = null;
+          }
+          if (startupTimeoutId !== null) {
+            clearTimeout(startupTimeoutId);
+            startupTimeoutId = null;
           }
           const overlay = document.getElementById("startup-diagnostics");
           if (overlay) {
@@ -44,6 +174,16 @@
           markStarted();
         });
 
+        // Hide the autoplay hint once the user interacts with the page.
+        function hideHint() {
+          const hint = document.querySelector(".hint");
+          if (hint) {
+            hint.style.display = "none";
+          }
+        }
+        window.addEventListener("pointerdown", hideHint, { once: true });
+        window.addEventListener("keydown", hideHint, { once: true });
+
         // Trunk can dispatch the startup event before this script runs.
         // Polling window.wasmBindings covers that ordering race.
         startupPollId = setInterval(function () {
@@ -62,13 +202,35 @@
           showDiagnostic("Startup rejected: " + reason);
         });
 
-        setTimeout(function () {
+        // Avoid false-positive timeout banners in successful starts where
+        // runtime startup events are not exposed by the current bundler path.
+        // Diagnostics are still shown on real runtime errors/rejections above.
+        startupTimeoutId = setTimeout(function () {
           if (!started) {
-            showDiagnostic(
-              "Game startup is taking too long. Check browser console for JS/WASM errors, disable aggressive blockers, and hard-refresh."
-            );
+            console.warn("Startup handshake not detected within timeout window.");
           }
         }, 45000);
+
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) {
+            return;
+          }
+          for (const code of Array.from(heldCodes)) {
+            let key = "";
+            if (code === "KeyW") key = "w";
+            if (code === "KeyA") key = "a";
+            if (code === "KeyS") key = "s";
+            if (code === "KeyD") key = "d";
+            if (code === "ShiftLeft") key = "Shift";
+            releaseKey(code, key);
+          }
+        });
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initMobileControls, { once: true });
+        } else {
+          initMobileControls();
+        }
       })();
     </script>
     <style>
@@ -98,12 +260,13 @@
       .hint {
         position: absolute;
         left: 12px;
-        top: 12px;
+        bottom: 16px;
         padding: 8px 10px;
         border-radius: 8px;
-        background: rgba(17, 24, 39, 0.78);
+        background: rgba(17, 24, 39, 0.66);
         font-size: 13px;
         pointer-events: none;
+        z-index: 20;
       }
 
       .startup-diagnostics {
@@ -120,6 +283,141 @@
         line-height: 1.4;
         display: none;
         z-index: 50;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        max-height: 60px;
+        overflow: hidden;
+      }
+
+      .mobile-controls {
+        display: none;
+      }
+
+      .typing-panel {
+        display: none;
+      }
+
+      @media (hover: none), (pointer: coarse) {
+        .mobile-controls {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 12px;
+          padding: 0 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          pointer-events: none;
+          z-index: 35;
+        }
+
+        .dpad,
+        .actions {
+          pointer-events: auto;
+          touch-action: none;
+          user-select: none;
+          -webkit-user-select: none;
+        }
+
+        .dpad {
+          display: grid;
+          grid-template-columns: 56px 56px 56px;
+          grid-template-rows: 56px 56px 56px;
+          gap: 6px;
+        }
+
+        .actions {
+          width: min(46vw, 260px);
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+        }
+
+        .touch-btn {
+          height: 50px;
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          border-radius: 10px;
+          background: rgba(17, 24, 39, 0.72);
+          color: #f3f4f6;
+          font-size: 13px;
+          font-weight: 600;
+          text-align: center;
+          padding: 0;
+          margin: 0;
+        }
+
+        .touch-btn:active {
+          background: rgba(59, 130, 246, 0.60);
+        }
+
+        .dpad .empty {
+          visibility: hidden;
+        }
+
+        .touch-btn.wide {
+          grid-column: span 2;
+        }
+
+        .hint {
+          bottom: 196px;
+          left: 12px;
+          transform: none;
+          font-size: 11px;
+          max-width: calc(100% - 280px);
+          text-align: left;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          background: rgba(17, 24, 39, 0.72);
+        }
+
+        .typing-panel {
+          position: absolute;
+          left: 12px;
+          right: 12px;
+          bottom: 196px;
+          background: rgba(17, 24, 39, 0.86);
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 12px;
+          padding: 8px;
+          z-index: 34;
+          pointer-events: none;
+        }
+
+        .typing-panel.open {
+          display: block;
+          pointer-events: auto;
+        }
+
+        .typing-row {
+          display: grid;
+          grid-template-columns: repeat(10, 1fr);
+          gap: 4px;
+          margin-bottom: 4px;
+        }
+
+        .typing-row:last-child {
+          margin-bottom: 0;
+        }
+
+        .typing-key {
+          height: 34px;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 8px;
+          background: rgba(55, 65, 81, 0.82);
+          color: #f9fafb;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 0;
+          margin: 0;
+        }
+
+        .typing-key:active {
+          background: rgba(37, 99, 235, 0.72);
+        }
+
+        .typing-key.wide {
+          grid-column: span 2;
+        }
       }
     </style>
   </head>
@@ -127,6 +425,67 @@
     <div id="app">
       <canvas id="bevy"></canvas>
       <div class="hint">Click the game once if your browser blocks audio autoplay.</div>
+      <div id="typing-panel" class="typing-panel" aria-hidden="true">
+        <div class="typing-row">
+          <button class="typing-key" data-code="KeyQ" data-key="q">Q</button>
+          <button class="typing-key" data-code="KeyW" data-key="w">W</button>
+          <button class="typing-key" data-code="KeyE" data-key="e">E</button>
+          <button class="typing-key" data-code="KeyR" data-key="r">R</button>
+          <button class="typing-key" data-code="KeyT" data-key="t">T</button>
+          <button class="typing-key" data-code="KeyY" data-key="y">Y</button>
+          <button class="typing-key" data-code="KeyU" data-key="u">U</button>
+          <button class="typing-key" data-code="KeyI" data-key="i">I</button>
+          <button class="typing-key" data-code="KeyO" data-key="o">O</button>
+          <button class="typing-key" data-code="KeyP" data-key="p">P</button>
+        </div>
+        <div class="typing-row">
+          <button class="typing-key" data-code="KeyA" data-key="a">A</button>
+          <button class="typing-key" data-code="KeyS" data-key="s">S</button>
+          <button class="typing-key" data-code="KeyD" data-key="d">D</button>
+          <button class="typing-key" data-code="KeyF" data-key="f">F</button>
+          <button class="typing-key" data-code="KeyG" data-key="g">G</button>
+          <button class="typing-key" data-code="KeyH" data-key="h">H</button>
+          <button class="typing-key" data-code="KeyJ" data-key="j">J</button>
+          <button class="typing-key" data-code="KeyK" data-key="k">K</button>
+          <button class="typing-key" data-code="KeyL" data-key="l">L</button>
+          <button class="typing-key" data-code="Backspace" data-key="Backspace">⌫</button>
+        </div>
+        <div class="typing-row">
+          <button class="typing-key" data-code="KeyZ" data-key="z">Z</button>
+          <button class="typing-key" data-code="KeyX" data-key="x">X</button>
+          <button class="typing-key" data-code="KeyC" data-key="c">C</button>
+          <button class="typing-key" data-code="KeyV" data-key="v">V</button>
+          <button class="typing-key" data-code="KeyB" data-key="b">B</button>
+          <button class="typing-key" data-code="KeyN" data-key="n">N</button>
+          <button class="typing-key" data-code="KeyM" data-key="m">M</button>
+          <button class="typing-key wide" data-code="Enter" data-key="Enter">Enter</button>
+          <button class="typing-key wide typing-cancel" id="btn-typing-cancel">Cancel</button>
+        </div>
+      </div>
+      <div class="mobile-controls" aria-hidden="true">
+        <div class="dpad">
+          <button id="btn-up" class="touch-btn">Up</button>
+          <button id="btn-sprint" class="touch-btn">Sprint</button>
+          <span class="empty"></span>
+          <button id="btn-left" class="touch-btn">Left</button>
+          <button id="btn-down" class="touch-btn">Down</button>
+          <button id="btn-right" class="touch-btn">Right</button>
+          <span class="empty"></span>
+          <span class="empty"></span>
+          <span class="empty"></span>
+        </div>
+        <div class="actions">
+          <button id="btn-interact" class="touch-btn">E</button>
+          <button id="btn-gift" class="touch-btn">G</button>
+          <button id="btn-hangout" class="touch-btn">H</button>
+          <button id="btn-1" class="touch-btn">1</button>
+          <button id="btn-2" class="touch-btn">2</button>
+          <button id="btn-3" class="touch-btn">3</button>
+          <button id="btn-typing-toggle" class="touch-btn">ABC</button>
+          <button id="btn-confirm" class="touch-btn wide">Enter</button>
+          <button id="btn-cancel" class="touch-btn">Esc</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

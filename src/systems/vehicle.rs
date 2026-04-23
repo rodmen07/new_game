@@ -2,8 +2,8 @@
 
 use bevy::prelude::*;
 
-use crate::components::{LocalPlayer, Player, Vehicle};
-use crate::resources::{ActionPrompt, PlayerMovement, Transport, TransportKind, VehicleState};
+use crate::components::{LocalPlayer, OwnedPetVisual, PetKind, Player, Vehicle};
+use crate::resources::{ActionPrompt, Pet, PlayerMovement, Transport, TransportKind, VehicleState};
 
 const CAR_SPEED: f32 = 340.0;
 const CAR_ACCEL: f32 = 800.0;
@@ -76,15 +76,42 @@ pub fn car_movement(
 
 pub fn reveal_car_on_purchase(
     transport: Res<Transport>,
+    pet: Res<Pet>,
     mut car_q: Query<&mut Visibility, With<Vehicle>>,
+    mut pet_q: Query<(&mut Visibility, &mut Sprite), With<OwnedPetVisual>>,
 ) {
-    if !transport.is_changed() {
-        return;
+    if transport.is_changed() {
+        let show_car = transport.kind == TransportKind::Car;
+        for mut vis in &mut car_q {
+            *vis = if show_car {
+                Visibility::Visible
+            } else {
+                Visibility::Hidden
+            };
+        }
     }
 
-    if transport.kind == TransportKind::Car {
-        for mut vis in &mut car_q {
-            *vis = Visibility::Visible;
+    if pet.is_changed() {
+        for (mut vis, mut sprite) in &mut pet_q {
+            if pet.has_pet {
+                *vis = Visibility::Visible;
+                match pet.kind {
+                    PetKind::Dog => {
+                        sprite.color = Color::srgb(0.70, 0.54, 0.34);
+                        sprite.custom_size = Some(Vec2::new(72., 44.));
+                    }
+                    PetKind::Cat => {
+                        sprite.color = Color::srgb(0.82, 0.58, 0.24);
+                        sprite.custom_size = Some(Vec2::new(64., 40.));
+                    }
+                    PetKind::Fish => {
+                        sprite.color = Color::srgb(0.33, 0.68, 0.92);
+                        sprite.custom_size = Some(Vec2::new(52., 28.));
+                    }
+                }
+            } else {
+                *vis = Visibility::Hidden;
+            }
         }
     }
 }

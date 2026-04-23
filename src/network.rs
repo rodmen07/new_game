@@ -188,7 +188,12 @@ pub mod wasm_net {
     pub fn net_receive(
         mut commands: Commands,
         net: Option<NonSendMut<NetState>>,
-        mut remote_q: Query<(Entity, &RemotePlayer, &mut Transform, &mut RemoteNetSmoothing)>,
+        mut remote_q: Query<(
+            Entity,
+            &RemotePlayer,
+            &mut Transform,
+            &mut RemoteNetSmoothing,
+        )>,
     ) {
         let Some(mut net) = net else {
             return;

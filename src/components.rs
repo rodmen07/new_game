@@ -48,6 +48,8 @@ pub enum PlayerAction {
 pub struct MainCamera;
 #[derive(Component)]
 pub struct Vehicle;
+#[derive(Component)]
+pub struct OwnedPetVisual;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum PetKind {

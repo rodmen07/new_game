@@ -3,10 +3,10 @@ use crate::components::{
     ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
     DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
     LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
-    PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
-    SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
-    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
-    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
+    OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar,
+    SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText,
+    TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
+    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
     TypingWordRowScale, TypingWordTyped, Vehicle,
 };
 use crate::resources::{
@@ -129,6 +129,7 @@ pub fn setup(mut commands: Commands) {
     spawn_terrain_and_roads(&mut commands);
     spawn_buildings_and_zones(&mut commands);
     spawn_vehicle(&mut commands);
+    spawn_owned_pet(&mut commands);
     spawn_world_objects(&mut commands);
     spawn_npcs(&mut commands);
     spawn_player_entity(&mut commands);
@@ -900,6 +901,47 @@ fn spawn_vehicle(commands: &mut Commands) {
                     Transform::from_xyz(wx, wy, 0.05),
                 ));
             }
+        });
+}
+
+fn spawn_owned_pet(commands: &mut Commands) {
+    // Pet entity near HOME, hidden until the player adopts one.
+    commands
+        .spawn((
+            Sprite {
+                color: Color::srgb(0.70, 0.54, 0.34),
+                custom_size: Some(Vec2::new(72., 44.)),
+                ..default()
+            },
+            Transform::from_xyz(-430. * S, 92. * S, 2.0),
+            OwnedPetVisual,
+            Visibility::Hidden,
+        ))
+        .with_children(|p| {
+            p.spawn((
+                Sprite {
+                    color: Color::srgb(0.10, 0.08, 0.08),
+                    custom_size: Some(Vec2::new(8., 8.)),
+                    ..default()
+                },
+                Transform::from_xyz(-14., 8., 0.1),
+            ));
+            p.spawn((
+                Sprite {
+                    color: Color::srgb(0.10, 0.08, 0.08),
+                    custom_size: Some(Vec2::new(8., 8.)),
+                    ..default()
+                },
+                Transform::from_xyz(14., 8., 0.1),
+            ));
+            p.spawn((
+                Sprite {
+                    color: Color::srgba(0.0, 0.0, 0.0, 0.22),
+                    custom_size: Some(Vec2::new(76., 18.)),
+                    ..default()
+                },
+                Transform::from_xyz(0., -20., -0.1),
+            ));
         });
 }
 

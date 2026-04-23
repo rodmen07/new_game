@@ -11,10 +11,7 @@ use bevy::prelude::*;
 /// Runs before `handle_interaction` and `handle_bank_input` each frame.
 /// Movement keys (WASD/Arrows/Shift) are intentionally excluded - they stay
 /// as continuous polling for smooth per-frame physics.
-pub fn read_player_actions(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut writer: EventWriter<PlayerAction>,
-) {
+pub fn read_player_actions(keys: Res<ButtonInput<KeyCode>>, mut writer: EventWriter<PlayerAction>) {
     if keys.just_pressed(KeyCode::KeyE) {
         writer.send(PlayerAction::Interact);
     }
@@ -53,15 +50,32 @@ pub fn read_player_actions(
         writer.send(PlayerAction::Number0);
     }
     let letter_map: &[(KeyCode, char)] = &[
-        (KeyCode::KeyA, 'a'), (KeyCode::KeyB, 'b'), (KeyCode::KeyC, 'c'),
-        (KeyCode::KeyD, 'd'), (KeyCode::KeyE, 'e'), (KeyCode::KeyF, 'f'),
-        (KeyCode::KeyG, 'g'), (KeyCode::KeyH, 'h'), (KeyCode::KeyI, 'i'),
-        (KeyCode::KeyJ, 'j'), (KeyCode::KeyK, 'k'), (KeyCode::KeyL, 'l'),
-        (KeyCode::KeyM, 'm'), (KeyCode::KeyN, 'n'), (KeyCode::KeyO, 'o'),
-        (KeyCode::KeyP, 'p'), (KeyCode::KeyQ, 'q'), (KeyCode::KeyR, 'r'),
-        (KeyCode::KeyS, 's'), (KeyCode::KeyT, 't'), (KeyCode::KeyU, 'u'),
-        (KeyCode::KeyV, 'v'), (KeyCode::KeyW, 'w'), (KeyCode::KeyX, 'x'),
-        (KeyCode::KeyY, 'y'), (KeyCode::KeyZ, 'z'),
+        (KeyCode::KeyA, 'a'),
+        (KeyCode::KeyB, 'b'),
+        (KeyCode::KeyC, 'c'),
+        (KeyCode::KeyD, 'd'),
+        (KeyCode::KeyE, 'e'),
+        (KeyCode::KeyF, 'f'),
+        (KeyCode::KeyG, 'g'),
+        (KeyCode::KeyH, 'h'),
+        (KeyCode::KeyI, 'i'),
+        (KeyCode::KeyJ, 'j'),
+        (KeyCode::KeyK, 'k'),
+        (KeyCode::KeyL, 'l'),
+        (KeyCode::KeyM, 'm'),
+        (KeyCode::KeyN, 'n'),
+        (KeyCode::KeyO, 'o'),
+        (KeyCode::KeyP, 'p'),
+        (KeyCode::KeyQ, 'q'),
+        (KeyCode::KeyR, 'r'),
+        (KeyCode::KeyS, 's'),
+        (KeyCode::KeyT, 't'),
+        (KeyCode::KeyU, 'u'),
+        (KeyCode::KeyV, 'v'),
+        (KeyCode::KeyW, 'w'),
+        (KeyCode::KeyX, 'x'),
+        (KeyCode::KeyY, 'y'),
+        (KeyCode::KeyZ, 'z'),
     ];
     for (kc, ch) in letter_map {
         if keys.just_pressed(*kc) {
@@ -1001,6 +1015,12 @@ fn handle_action_prompt_input(
     }
 
     if actions.iter().any(|a| matches!(a, PlayerAction::Backspace)) {
+        // If buffer is empty, Backspace acts as cancel (mobile-friendly)
+        if prompt.buffer.is_empty() {
+            prompt.clear();
+            notif.push("Typing challenge cancelled.", 1.5);
+            return None;
+        }
         prompt.buffer.pop();
         return None;
     }
@@ -1186,7 +1206,6 @@ fn handle_bank_keys(
         let half = (stats.money / 2.).floor().max(0.);
         let msg =
             if let Some((new_money, new_savings)) = try_deposit(stats.money, stats.savings, half) {
-                gt.advance_hours(0.25);
                 stats.money = new_money;
                 stats.savings = new_savings;
                 format!("Deposited ${:.0}. Savings: ${:.0}", half, stats.savings)
@@ -1199,7 +1218,6 @@ fn handle_bank_keys(
     }
     if p4 {
         if stats.loan < 200. {
-            gt.advance_hours(0.25);
             stats.loan += 100.;
             stats.money += 100.;
             stats.modify_stress(10.);
@@ -1214,7 +1232,6 @@ fn handle_bank_keys(
     if p5 {
         let pay = stats.loan.min(50.).min(stats.money);
         if pay > 0. {
-            gt.advance_hours(0.25);
             stats.loan -= pay;
             stats.money -= pay;
             stats.modify_stress(-5.);
@@ -1228,7 +1245,6 @@ fn handle_bank_keys(
     }
     if p6 {
         if stats.can_afford(50.) {
-            gt.advance_hours(0.25);
             stats.money -= 50.;
             invest.amount += 50.;
             if invest.risk == 0 {
@@ -1245,7 +1261,6 @@ fn handle_bank_keys(
     }
     if p7 {
         if stats.can_afford(50.) {
-            gt.advance_hours(0.25);
             stats.money -= 50.;
             invest.amount += 50.;
             invest.risk = 2;
@@ -1263,7 +1278,6 @@ fn handle_bank_keys(
     }
     if p8 {
         if invest.amount > 0. {
-            gt.advance_hours(0.25);
             let amt = invest.amount;
             stats.money += amt;
             invest.amount = 0.;
@@ -1281,7 +1295,6 @@ fn handle_bank_keys(
         if crisis.has_insurance {
             notif.message = format!("Already insured! ({} days left)", crisis.insurance_days);
         } else if stats.can_afford(75.) {
-            gt.advance_hours(0.25);
             stats.money -= 75.;
             crisis.has_insurance = true;
             crisis.insurance_days = 30;
@@ -1310,7 +1323,6 @@ fn handle_transport_keys(
         if transport.kind == TransportKind::Bike || transport.kind == TransportKind::Car {
             notif.message = "Already have a vehicle!".to_string();
         } else if stats.savings >= 80. {
-            gt.advance_hours(0.5);
             stats.savings -= 80.;
             transport.kind = TransportKind::Bike;
             transport.work_uses = 0;
@@ -1328,7 +1340,6 @@ fn handle_transport_keys(
         if transport.kind == TransportKind::Car {
             notif.message = "Already have a Car! Find it near the Garage.".to_string();
         } else if stats.savings >= 300. {
-            gt.advance_hours(0.5);
             stats.savings -= 300.;
             transport.kind = TransportKind::Car;
             transport.work_uses = 0;
@@ -1352,7 +1363,6 @@ fn handle_transport_keys(
                 transport.work_uses
             );
         } else if stats.can_afford(15.) {
-            gt.advance_hours(0.25);
             stats.money -= 15.;
             transport.maintenance_due = false;
             transport.work_uses = 0;
@@ -1384,7 +1394,6 @@ fn handle_craft_keys(
     quest_board: &mut QuestBoard,
 ) -> bool {
     if p1 {
-        gt.advance_hours(0.5);
         if inv.ingredient >= 2 {
             inv.ingredient -= 2;
             stats.meals += 3;
@@ -1410,7 +1419,6 @@ fn handle_craft_keys(
         return true;
     }
     if p2 {
-        gt.advance_hours(0.5);
         if inv.ingredient >= 1 && stats.can_afford(5.) {
             inv.ingredient -= 1;
             stats.money -= 5.;
@@ -1439,7 +1447,6 @@ fn handle_craft_keys(
         return true;
     }
     if p3 {
-        gt.advance_hours(0.5);
         if inv.ingredient >= 2 {
             inv.ingredient -= 2;
             inv.smoothie += 1;
@@ -1920,7 +1927,6 @@ fn handle_relax(
         }
         festival.activities_today += 1;
         festival.festivals_total += 1;
-        gt.advance_hours(1.);
         stats.cooldown = 3.;
         return;
     }
@@ -2222,18 +2228,42 @@ pub fn handle_interaction(
     let mut pe = actions.iter().any(|a| matches!(a, PlayerAction::Interact));
     let mut pg = actions.iter().any(|a| matches!(a, PlayerAction::Gift));
     let ph = actions.iter().any(|a| matches!(a, PlayerAction::Hangout));
-    let pf1 = actions.iter().any(|a| matches!(a, PlayerAction::FunctionKey(1)));
-    let pf2 = actions.iter().any(|a| matches!(a, PlayerAction::FunctionKey(2)));
-    let pf3 = actions.iter().any(|a| matches!(a, PlayerAction::FunctionKey(3)));
-    let mut p1 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(1)));
-    let mut p2 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(2)));
-    let mut p3 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(3)));
-    let mut p4 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(4)));
-    let mut p5 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(5)));
-    let mut p6 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(6)));
-    let mut p7 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(7)));
-    let mut p8 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(8)));
-    let mut p9 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(9)));
+    let pf1 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::FunctionKey(1)));
+    let pf2 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::FunctionKey(2)));
+    let pf3 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::FunctionKey(3)));
+    let mut p1 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(1)));
+    let mut p2 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(2)));
+    let mut p3 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(3)));
+    let mut p4 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(4)));
+    let mut p5 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(5)));
+    let mut p6 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(6)));
+    let mut p7 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(7)));
+    let mut p8 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(8)));
+    let mut p9 = actions
+        .iter()
+        .any(|a| matches!(a, PlayerAction::NumberKey(9)));
     let mut forced_action: Option<ActionKind> = None;
     let mut forced_entity: Option<Entity> = None;
 
@@ -2480,10 +2510,6 @@ pub fn handle_interaction(
             return;
         }
         stats.money -= repair_fee;
-    }
-
-    if !matches!(&inter.action, ActionKind::Bank) {
-        gt.advance_hours(action_time_hours(&inter.action));
     }
 
     match forced_action.unwrap_or_else(|| inter.action.clone()) {
@@ -2752,7 +2778,6 @@ pub fn handle_interaction(
             if let Some(cost) = housing.upgrade_cost() {
                 if stats.savings >= cost {
                     if let Some(next) = housing.next() {
-                        gt.advance_hours(0.25);
                         let had_access = housing.has_access();
                         stats.savings -= cost;
                         let label = next.label().to_string();
@@ -2776,12 +2801,12 @@ pub fn handle_interaction(
                     notif.push(
                         if housing.has_access() {
                         format!(
-                            "Bank: ${:.0} saved. [1]Dep [2]Wth [3]HalfDep [4]Loan [5]Repay [6]Invest(lo) [7]Invest(md) [8]CashOut [9]Insurance. Upgrade: ${:.0} for {}. [F1]Desk$60 [F2]Bed$80 [F3]Kitchen$100",
+                            "Bank: ${:.0} saved. [1]Dep [2]Wth [3]Half [4]Loan [5]Repay [6]Inv(lo) [7]Inv(md) [8]Out [9]Ins | Upgrade: ${:.0} for {}",
                             stats.savings, cost, next_label
                         )
                     } else {
                         format!(
-                            "Bank: ${:.0} saved — ${:.0} more for {}. [1]Deposit [2]Withdraw [3]HalfDep [4]Loan+$100 [5]Repay$50.",
+                            "Bank: ${:.0} saved — ${:.0} more for {}. [1]Dep [2]Wth [3]Half [4]Loan [5]Repay",
                             stats.savings, needed, next_label
                         )
                     },
@@ -3182,7 +3207,6 @@ pub fn handle_interaction(
             if !extras.transport.kind.is_vehicle() {
                 notif.push("No vehicle to repair!", 2.);
             } else if stats.can_afford(25.) {
-                gt.advance_hours(1.0);
                 stats.money -= 25.;
                 extras.transport.maintenance_due = false;
                 extras.transport.work_uses = 0;
@@ -3254,6 +3278,7 @@ pub fn handle_bank_input(
     mut raw_actions: EventReader<PlayerAction>,
     mut player_bank_q: Query<&mut BankInput, With<LocalPlayer>>,
     mut player_stats_q: Query<&mut PlayerStats, With<LocalPlayer>>,
+    mut player_housing_q: Query<&mut HousingTier, With<LocalPlayer>>,
     mut notif: ResMut<Notification>,
     mut gt: ResMut<GameTime>,
     mut goal: ResMut<DailyGoal>,
@@ -3267,6 +3292,9 @@ pub fn handle_bank_input(
         return;
     }
     let Some(mut stats) = player_stats_q.iter_mut().next() else {
+        return;
+    };
+    let Some(mut housing) = player_housing_q.iter_mut().next() else {
         return;
     };
 
@@ -3323,7 +3351,24 @@ pub fn handle_bank_input(
                     stats.money = new_money;
                     stats.savings = new_savings;
                     stats.modify_stress(-3.);
-                    gt.advance_hours(0.25);
+                    if !housing.has_access()
+                        && let Some(cost) = housing.upgrade_cost()
+                        && stats.savings >= cost
+                        && let Some(next) = housing.next()
+                    {
+                        stats.savings -= cost;
+                        *housing = next;
+                        let label = housing.label().to_string();
+                        let rent = housing.rent() as i32;
+                        notif.push(
+                            format!(
+                                "Home secured! {} signed. Rent ${}/day - work daily to stay ahead.",
+                                label, rent
+                            ),
+                            7.,
+                        );
+                        return;
+                    }
                     if matches!(&goal.kind, GoalKind::SaveMoney) && !goal.completed {
                         goal.progress = stats.savings;
                         if goal.progress >= goal.target {
@@ -3348,7 +3393,6 @@ pub fn handle_bank_input(
                 {
                     stats.savings = new_savings;
                     stats.money = new_money;
-                    gt.advance_hours(0.25);
                     notif.push(
                         format!("Withdrew ${:.0}. Savings: ${:.0}", amount, stats.savings),
                         3.,
