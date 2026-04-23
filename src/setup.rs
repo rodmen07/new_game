@@ -1053,61 +1053,92 @@ fn spawn_world_objects(commands: &mut Commands) {
         1.08,
     );
 
-    // OFFICE interior - front desk area, side desk, filing cabinets
+    // OFFICE interior - filing cabinet bank on west wall, desk surfaces for back row
+    // Filing cabinet bank (west wall)
     rect(
         commands,
-        468.,
-        162.,
-        36.,
-        20.,
-        Color::srgb(0.36, 0.28, 0.16),
-        1.06,
-    );
-    rect(
-        commands,
-        468.,
-        162.,
-        32.,
-        16.,
-        Color::srgb(0.48, 0.38, 0.24),
-        1.08,
-    );
-    rect(
-        commands,
-        382.,
-        210.,
-        28.,
-        16.,
-        Color::srgb(0.40, 0.32, 0.18),
-        1.06,
-    );
-    rect(
-        commands,
-        382.,
-        210.,
-        24.,
-        12.,
-        Color::srgb(0.52, 0.42, 0.26),
-        1.08,
-    );
-    rect(
-        commands,
-        375.,
-        246.,
-        14.,
-        36.,
+        345.,
+        200.,
+        8.,
+        60.,
         Color::srgb(0.32, 0.34, 0.38),
         1.06,
     );
     rect(
         commands,
-        375.,
-        246.,
-        10.,
-        32.,
+        345.,
+        200.,
+        5.,
+        56.,
         Color::srgb(0.40, 0.42, 0.46),
+        1.07,
+    );
+    rect(
+        commands,
+        345.,
+        176.,
+        5.,
+        2.,
+        Color::srgb(0.55, 0.56, 0.60),
         1.08,
     );
+    rect(
+        commands,
+        345.,
+        200.,
+        5.,
+        2.,
+        Color::srgb(0.55, 0.56, 0.60),
+        1.08,
+    );
+    rect(
+        commands,
+        345.,
+        224.,
+        5.,
+        2.,
+        Color::srgb(0.55, 0.56, 0.60),
+        1.08,
+    );
+    // Back-row desk surfaces (three desks in a line at y=235)
+    for dx in [385., 425., 465.] {
+        rect(
+            commands,
+            dx,
+            235.,
+            30.,
+            16.,
+            Color::srgb(0.38, 0.30, 0.16),
+            1.06,
+        );
+        rect(
+            commands,
+            dx,
+            235.,
+            26.,
+            12.,
+            Color::srgb(0.52, 0.42, 0.24),
+            1.07,
+        );
+        rect(
+            commands,
+            dx - 8.,
+            237.,
+            10.,
+            7.,
+            Color::srgb(0.10, 0.12, 0.18),
+            1.08,
+        );
+        rect(
+            commands,
+            dx - 8.,
+            233.,
+            10.,
+            4.,
+            Color::srgb(0.30, 0.32, 0.38),
+            1.08,
+        );
+    }
 
     // STORE interior - shelving rows
     for sy in [-210., -180., -150.] {
@@ -1131,16 +1162,119 @@ fn spawn_world_objects(commands: &mut Commands) {
         );
     }
 
-    // LIBRARY interior - wider book rows
-    for lx in [-148., -116., -84., -52., -20.] {
+    // LIBRARY interior - two columns of horizontal bookshelves with center aisle
+    // Left stack column (near west wall)
+    for sy in [268., 252., 236.] {
         rect(
             commands,
-            lx,
-            212.,
-            8.,
-            56.,
-            Color::srgb(0.30, 0.22, 0.12),
+            -150.,
+            sy,
+            28.,
+            10.,
+            Color::srgb(0.28, 0.20, 0.10),
             1.06,
+        );
+        rect(
+            commands,
+            -150.,
+            sy + 1.,
+            26.,
+            7.,
+            Color::srgb(0.44, 0.32, 0.18),
+            1.07,
+        );
+        rect(
+            commands,
+            -160.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.22, 0.38, 0.60),
+            1.08,
+        );
+        rect(
+            commands,
+            -152.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.60, 0.22, 0.24),
+            1.08,
+        );
+        rect(
+            commands,
+            -144.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.24, 0.58, 0.32),
+            1.08,
+        );
+        rect(
+            commands,
+            -136.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.72, 0.62, 0.18),
+            1.08,
+        );
+    }
+    // Right stack column (near east wall)
+    for sy in [268., 252., 236.] {
+        rect(
+            commands,
+            -22.,
+            sy,
+            28.,
+            10.,
+            Color::srgb(0.28, 0.20, 0.10),
+            1.06,
+        );
+        rect(
+            commands,
+            -22.,
+            sy + 1.,
+            26.,
+            7.,
+            Color::srgb(0.44, 0.32, 0.18),
+            1.07,
+        );
+        rect(
+            commands,
+            -32.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.50, 0.26, 0.60),
+            1.08,
+        );
+        rect(
+            commands,
+            -24.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.22, 0.50, 0.54),
+            1.08,
+        );
+        rect(
+            commands,
+            -16.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.62, 0.38, 0.22),
+            1.08,
+        );
+        rect(
+            commands,
+            -8.,
+            sy + 1.,
+            4.,
+            7.,
+            Color::srgb(0.36, 0.60, 0.26),
+            1.08,
         );
     }
 
@@ -2582,33 +2716,33 @@ fn spawn_world_objects(commands: &mut Commands) {
 
     // -- Extra collective-building objects (3 additional per building) ----------
 
-    // OFFICE (425, 180): three extra work desks
+    // OFFICE (425, 180): three back-row work desks (organized line at y=235)
     obj(
         commands,
-        395.,
-        220.,
-        34.,
-        18.,
+        385.,
+        235.,
+        30.,
+        16.,
         Color::srgb(0.32, 0.22, 0.10),
         ActionKind::Work,
         "[E] Work (desk 2)",
     );
     obj(
         commands,
-        455.,
-        220.,
-        34.,
-        18.,
+        425.,
+        235.,
+        30.,
+        16.,
         Color::srgb(0.32, 0.22, 0.10),
         ActionKind::Work,
         "[E] Work (desk 3)",
     );
     obj(
         commands,
-        425.,
-        135.,
-        34.,
-        18.,
+        465.,
+        235.,
+        30.,
+        16.,
         Color::srgb(0.32, 0.22, 0.10),
         ActionKind::Work,
         "[E] Work (desk 4)",
