@@ -7,6 +7,78 @@ use crate::resources::*;
 use crate::settings::GameSettings;
 use bevy::prelude::*;
 
+/// Translates raw `ButtonInput<KeyCode>` presses into typed `PlayerAction` events.
+/// Runs before `handle_interaction` and `handle_bank_input` each frame.
+/// Movement keys (WASD/Arrows/Shift) are intentionally excluded - they stay
+/// as continuous polling for smooth per-frame physics.
+pub fn read_player_actions(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut writer: EventWriter<PlayerAction>,
+) {
+    if keys.just_pressed(KeyCode::KeyE) {
+        writer.send(PlayerAction::Interact);
+    }
+    if keys.just_pressed(KeyCode::KeyG) {
+        writer.send(PlayerAction::Gift);
+    }
+    if keys.just_pressed(KeyCode::KeyH) {
+        writer.send(PlayerAction::Hangout);
+    }
+    if keys.just_pressed(KeyCode::F1) {
+        writer.send(PlayerAction::FunctionKey(1));
+    }
+    if keys.just_pressed(KeyCode::F2) {
+        writer.send(PlayerAction::FunctionKey(2));
+    }
+    if keys.just_pressed(KeyCode::F3) {
+        writer.send(PlayerAction::FunctionKey(3));
+    }
+    let digit_map: &[(KeyCode, u8)] = &[
+        (KeyCode::Digit1, 1),
+        (KeyCode::Digit2, 2),
+        (KeyCode::Digit3, 3),
+        (KeyCode::Digit4, 4),
+        (KeyCode::Digit5, 5),
+        (KeyCode::Digit6, 6),
+        (KeyCode::Digit7, 7),
+        (KeyCode::Digit8, 8),
+        (KeyCode::Digit9, 9),
+    ];
+    for (kc, n) in digit_map {
+        if keys.just_pressed(*kc) {
+            writer.send(PlayerAction::NumberKey(*n));
+        }
+    }
+    if keys.just_pressed(KeyCode::Digit0) {
+        writer.send(PlayerAction::Number0);
+    }
+    let letter_map: &[(KeyCode, char)] = &[
+        (KeyCode::KeyA, 'a'), (KeyCode::KeyB, 'b'), (KeyCode::KeyC, 'c'),
+        (KeyCode::KeyD, 'd'), (KeyCode::KeyE, 'e'), (KeyCode::KeyF, 'f'),
+        (KeyCode::KeyG, 'g'), (KeyCode::KeyH, 'h'), (KeyCode::KeyI, 'i'),
+        (KeyCode::KeyJ, 'j'), (KeyCode::KeyK, 'k'), (KeyCode::KeyL, 'l'),
+        (KeyCode::KeyM, 'm'), (KeyCode::KeyN, 'n'), (KeyCode::KeyO, 'o'),
+        (KeyCode::KeyP, 'p'), (KeyCode::KeyQ, 'q'), (KeyCode::KeyR, 'r'),
+        (KeyCode::KeyS, 's'), (KeyCode::KeyT, 't'), (KeyCode::KeyU, 'u'),
+        (KeyCode::KeyV, 'v'), (KeyCode::KeyW, 'w'), (KeyCode::KeyX, 'x'),
+        (KeyCode::KeyY, 'y'), (KeyCode::KeyZ, 'z'),
+    ];
+    for (kc, ch) in letter_map {
+        if keys.just_pressed(*kc) {
+            writer.send(PlayerAction::Letter(*ch));
+        }
+    }
+    if keys.just_pressed(KeyCode::Backspace) {
+        writer.send(PlayerAction::Backspace);
+    }
+    if keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter) {
+        writer.send(PlayerAction::Confirm);
+    }
+    if keys.just_pressed(KeyCode::Escape) {
+        writer.send(PlayerAction::Cancel);
+    }
+}
+
 fn action_time_hours(action: &ActionKind) -> f32 {
     match action {
         ActionKind::Sleep => 8.0,
@@ -880,43 +952,13 @@ fn normalize_prompt_text(input: &str) -> String {
         .join(" ")
 }
 
-fn append_prompt_char(keys: &ButtonInput<KeyCode>, buffer: &mut String, kc: KeyCode, ch: char) {
-    if keys.just_pressed(kc) && buffer.len() < 48 {
-        buffer.push(ch);
-    }
-}
-
-fn collect_prompt_text(keys: &ButtonInput<KeyCode>, buffer: &mut String) {
-    let letters = [
-        (KeyCode::KeyA, 'a'),
-        (KeyCode::KeyB, 'b'),
-        (KeyCode::KeyC, 'c'),
-        (KeyCode::KeyD, 'd'),
-        (KeyCode::KeyE, 'e'),
-        (KeyCode::KeyF, 'f'),
-        (KeyCode::KeyG, 'g'),
-        (KeyCode::KeyH, 'h'),
-        (KeyCode::KeyI, 'i'),
-        (KeyCode::KeyJ, 'j'),
-        (KeyCode::KeyK, 'k'),
-        (KeyCode::KeyL, 'l'),
-        (KeyCode::KeyM, 'm'),
-        (KeyCode::KeyN, 'n'),
-        (KeyCode::KeyO, 'o'),
-        (KeyCode::KeyP, 'p'),
-        (KeyCode::KeyQ, 'q'),
-        (KeyCode::KeyR, 'r'),
-        (KeyCode::KeyS, 's'),
-        (KeyCode::KeyT, 't'),
-        (KeyCode::KeyU, 'u'),
-        (KeyCode::KeyV, 'v'),
-        (KeyCode::KeyW, 'w'),
-        (KeyCode::KeyX, 'x'),
-        (KeyCode::KeyY, 'y'),
-        (KeyCode::KeyZ, 'z'),
-    ];
-    for (kc, ch) in letters {
-        append_prompt_char(keys, buffer, kc, ch);
+fn collect_prompt_text(actions: &[PlayerAction], buffer: &mut String) {
+    for action in actions {
+        if let PlayerAction::Letter(ch) = action
+            && buffer.len() < 48
+        {
+            buffer.push(*ch);
+        }
     }
 }
 
@@ -943,7 +985,7 @@ fn begin_action_prompt(
 }
 
 fn handle_action_prompt_input(
-    keys: &ButtonInput<KeyCode>,
+    actions: &[PlayerAction],
     prompt: &mut ActionPrompt,
     notif: &mut Notification,
     sfx: &mut EventWriter<PlaySfx>,
@@ -952,19 +994,19 @@ fn handle_action_prompt_input(
         return None;
     }
 
-    if keys.just_pressed(KeyCode::Escape) {
+    if actions.iter().any(|a| matches!(a, PlayerAction::Cancel)) {
         prompt.clear();
         notif.push("Typing challenge cancelled.", 1.5);
         return None;
     }
 
-    if keys.just_pressed(KeyCode::Backspace) {
+    if actions.iter().any(|a| matches!(a, PlayerAction::Backspace)) {
         prompt.buffer.pop();
         return None;
     }
 
     let len_before = prompt.buffer.len();
-    collect_prompt_text(keys, &mut prompt.buffer);
+    collect_prompt_text(actions, &mut prompt.buffer);
     if prompt.buffer.len() > len_before {
         sfx.send(PlaySfx(SfxKind::KeyPress));
     }
@@ -983,7 +1025,7 @@ fn handle_action_prompt_input(
     }
 
     // Keep Enter as a manual fallback confirm.
-    if keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter) {
+    if actions.iter().any(|a| matches!(a, PlayerAction::Confirm)) {
         if attempt == target {
             let label = prompt.label.clone();
             let pending = prompt.pending.take();
@@ -2135,7 +2177,7 @@ fn handle_study(
 
 #[allow(clippy::type_complexity)]
 pub fn handle_interaction(
-    keys: Res<ButtonInput<KeyCode>>,
+    mut raw_actions: EventReader<PlayerAction>,
     nearby: Res<NearbyInteractable>,
     inter_q: Query<&Interactable>,
     npc_q: Query<(&Npc, &NpcId)>,
@@ -2176,26 +2218,27 @@ pub fn handle_interaction(
     else {
         return;
     };
-    let mut pe = keys.just_pressed(KeyCode::KeyE);
-    let mut pg = keys.just_pressed(KeyCode::KeyG);
-    let ph = keys.just_pressed(KeyCode::KeyH);
-    let pf1 = keys.just_pressed(KeyCode::F1);
-    let pf2 = keys.just_pressed(KeyCode::F2);
-    let pf3 = keys.just_pressed(KeyCode::F3);
-    let mut p1 = keys.just_pressed(KeyCode::Digit1);
-    let mut p2 = keys.just_pressed(KeyCode::Digit2);
-    let mut p3 = keys.just_pressed(KeyCode::Digit3);
-    let mut p4 = keys.just_pressed(KeyCode::Digit4);
-    let mut p5 = keys.just_pressed(KeyCode::Digit5);
-    let mut p6 = keys.just_pressed(KeyCode::Digit6);
-    let mut p7 = keys.just_pressed(KeyCode::Digit7);
-    let mut p8 = keys.just_pressed(KeyCode::Digit8);
-    let mut p9 = keys.just_pressed(KeyCode::Digit9);
+    let actions: Vec<PlayerAction> = raw_actions.read().cloned().collect();
+    let mut pe = actions.iter().any(|a| matches!(a, PlayerAction::Interact));
+    let mut pg = actions.iter().any(|a| matches!(a, PlayerAction::Gift));
+    let ph = actions.iter().any(|a| matches!(a, PlayerAction::Hangout));
+    let pf1 = actions.iter().any(|a| matches!(a, PlayerAction::FunctionKey(1)));
+    let pf2 = actions.iter().any(|a| matches!(a, PlayerAction::FunctionKey(2)));
+    let pf3 = actions.iter().any(|a| matches!(a, PlayerAction::FunctionKey(3)));
+    let mut p1 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(1)));
+    let mut p2 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(2)));
+    let mut p3 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(3)));
+    let mut p4 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(4)));
+    let mut p5 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(5)));
+    let mut p6 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(6)));
+    let mut p7 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(7)));
+    let mut p8 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(8)));
+    let mut p9 = actions.iter().any(|a| matches!(a, PlayerAction::NumberKey(9)));
     let mut forced_action: Option<ActionKind> = None;
     let mut forced_entity: Option<Entity> = None;
 
     if let Some((pending, target)) =
-        handle_action_prompt_input(&keys, &mut action_prompt, &mut notif, &mut sfx)
+        handle_action_prompt_input(&actions, &mut action_prompt, &mut notif, &mut sfx)
     {
         forced_entity = target;
         match pending {
@@ -3208,7 +3251,7 @@ pub fn handle_interaction(
 }
 
 pub fn handle_bank_input(
-    keys: Res<ButtonInput<KeyCode>>,
+    mut raw_actions: EventReader<PlayerAction>,
     mut player_bank_q: Query<&mut BankInput, With<LocalPlayer>>,
     mut player_stats_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut notif: ResMut<Notification>,
@@ -3219,11 +3262,15 @@ pub fn handle_bank_input(
         return;
     };
     if !bank_input.active {
+        // Drain events so they don't accumulate when bank is closed.
+        raw_actions.clear();
         return;
     }
     let Some(mut stats) = player_stats_q.iter_mut().next() else {
         return;
     };
+
+    let actions: Vec<PlayerAction> = raw_actions.read().cloned().collect();
 
     let kind_str = if bank_input.kind == BankInputKind::Deposit {
         "Deposit"
@@ -3236,37 +3283,31 @@ pub fn handle_bank_input(
     );
     notif.timer = 2.0;
 
-    if keys.just_pressed(KeyCode::Escape) {
+    if actions.iter().any(|a| matches!(a, PlayerAction::Cancel)) {
         bank_input.active = false;
         bank_input.buffer.clear();
         notif.push("Cancelled.", 1.5);
         return;
     }
 
-    if keys.just_pressed(KeyCode::Backspace) {
+    if actions.iter().any(|a| matches!(a, PlayerAction::Backspace)) {
         bank_input.buffer.pop();
         return;
     }
 
-    let digit_keys = [
-        (KeyCode::Digit0, '0'),
-        (KeyCode::Digit1, '1'),
-        (KeyCode::Digit2, '2'),
-        (KeyCode::Digit3, '3'),
-        (KeyCode::Digit4, '4'),
-        (KeyCode::Digit5, '5'),
-        (KeyCode::Digit6, '6'),
-        (KeyCode::Digit7, '7'),
-        (KeyCode::Digit8, '8'),
-        (KeyCode::Digit9, '9'),
-    ];
-    for (kc, ch) in digit_keys {
-        if keys.just_pressed(kc) && bank_input.buffer.len() < 7 {
-            bank_input.buffer.push(ch);
+    for action in &actions {
+        match action {
+            PlayerAction::NumberKey(n) if bank_input.buffer.len() < 7 => {
+                bank_input.buffer.push(char::from(b'0' + n));
+            }
+            PlayerAction::Number0 if bank_input.buffer.len() < 7 => {
+                bank_input.buffer.push('0');
+            }
+            _ => {}
         }
     }
 
-    if keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter) {
+    if actions.iter().any(|a| matches!(a, PlayerAction::Confirm)) {
         let amount: f32 = bank_input.buffer.parse().unwrap_or(0.);
         bank_input.active = false;
         bank_input.buffer.clear();

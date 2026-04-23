@@ -14,6 +14,7 @@ use bevy::{asset::AssetPlugin, prelude::*};
 use bevy_tweening::TweeningPlugin;
 use menu::{AppState, MenuPlugin, reset_start_kind};
 use network::wasm_net::MultiplayerPlugin;
+use components::PlayerAction;
 use resources::*;
 use save::{
     PendingLoad, SaveRequest, apply_save_data, handle_save, reset_game, start_tutorial_if_new_game,
@@ -99,6 +100,7 @@ fn main() {
         // ── Save / load ───────────────────────────────────────────────────────
         .init_resource::<PendingLoad>()
         .add_event::<SaveRequest>()
+        .add_event::<PlayerAction>()
         // ── Systems ───────────────────────────────────────────────────────────
         .add_systems(Startup, (apply_settings, setup).chain())
         // Reset + apply save data every time we enter Playing (skipped on Resume).
@@ -149,6 +151,7 @@ fn main() {
             (
                 detect_nearby,
                 update_highlight,
+                read_player_actions,
                 handle_bank_input,
                 handle_interaction,
                 quest_offer_system,
