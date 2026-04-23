@@ -131,7 +131,7 @@ pub fn player_visuals(
     gt: Res<GameTime>,
     mut player_q: Query<
         (&Children, &mut Transform, &PlayerMovement, &PlayerStats),
-        With<LocalPlayer>,
+        (With<LocalPlayer>, With<Player>),
     >,
     mut parts_q: Query<
         (&BodyPart, &mut Sprite, &mut Transform),
