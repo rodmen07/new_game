@@ -208,7 +208,7 @@ pub fn player_visuals(
 }
 
 pub fn camera_follow(
-    player_q: Query<(&Transform, &PlayerMovement), With<LocalPlayer>>,
+    player_q: Query<(&Transform, &PlayerMovement), (With<LocalPlayer>, With<Player>)>,
     mut cam_q: Query<
         (&mut Transform, &mut OrthographicProjection),
         (With<MainCamera>, Without<Player>),
