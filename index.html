@@ -8,10 +8,37 @@
     <link data-trunk rel="rust" />
     <script>
       (function () {
+        // Browser autoplay policies can suspend WebAudio until a user gesture.
+        // Track created contexts and resume them on first interaction.
+        const webAudioCtor = window.AudioContext || window.webkitAudioContext;
+        const trackedAudioContexts = new Set();
+        if (webAudioCtor) {
+          const WrappedAudioContext = function (...args) {
+            const ctx = new webAudioCtor(...args);
+            trackedAudioContexts.add(ctx);
+            return ctx;
+          };
+          WrappedAudioContext.prototype = webAudioCtor.prototype;
+          window.AudioContext = WrappedAudioContext;
+          if (window.webkitAudioContext) {
+            window.webkitAudioContext = WrappedAudioContext;
+          }
+        }
+
         let started = !!window.wasmBindings;
         let startupPollId = null;
         let startupTimeoutId = null;
         const heldCodes = new Set();
+
+        function resumeTrackedAudioContexts() {
+          for (const ctx of trackedAudioContexts) {
+            if (ctx && ctx.state === "suspended") {
+              ctx.resume().catch(function () {
+                // Best-effort unlock; browser may still require another gesture.
+              });
+            }
+          }
+        }
 
         function emitKey(type, code, key) {
           const evt = new KeyboardEvent(type, {
@@ -183,6 +210,9 @@
         }
         window.addEventListener("pointerdown", hideHint, { once: true });
         window.addEventListener("keydown", hideHint, { once: true });
+        window.addEventListener("pointerdown", resumeTrackedAudioContexts, { capture: true });
+        window.addEventListener("keydown", resumeTrackedAudioContexts, { capture: true });
+        window.addEventListener("touchstart", resumeTrackedAudioContexts, { capture: true });
 
         // Trunk can dispatch the startup event before this script runs.
         // Polling window.wasmBindings covers that ordering race.

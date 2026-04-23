@@ -77,8 +77,11 @@ pub fn car_movement(
 pub fn reveal_car_on_purchase(
     transport: Res<Transport>,
     pet: Res<Pet>,
-    mut car_q: Query<&mut Visibility, With<Vehicle>>,
-    mut pet_q: Query<(&mut Visibility, &mut Sprite), With<OwnedPetVisual>>,
+    mut car_q: Query<&mut Visibility, (With<Vehicle>, Without<OwnedPetVisual>)>,
+    mut pet_q: Query<
+        (&mut Visibility, &mut Sprite),
+        (With<OwnedPetVisual>, Without<Vehicle>),
+    >,
 ) {
     if transport.is_changed() {
         let show_car = transport.kind == TransportKind::Car;
