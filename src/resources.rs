@@ -161,14 +161,6 @@ impl Default for GameTime {
     }
 }
 impl GameTime {
-    pub fn advance_hours(&mut self, added_hours: f32) {
-        self.hours += added_hours.max(0.);
-        while self.hours >= 24. {
-            self.hours -= 24.;
-            self.day += 1;
-        }
-    }
-
     pub fn display(&self) -> String {
         let h = self.hours as u32 % 24;
         let m = (self.hours.fract() * 60.) as u32;

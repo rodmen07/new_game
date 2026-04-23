@@ -15,6 +15,7 @@ Time scale: 60x (1 real second = 1 in-game minute)
 The current playable build focuses on daily survival and long-term stability. You start with very little, work toward housing access, manage core needs, build friendships, survive bad luck, and slowly unlock stronger routines and milestone goals.
 
 Current implemented highlights include:
+- expanded HOME, LIBRARY, and OFFICE footprints with updated wall bounds and reorganized furniture layouts for improved room flow
 - full-screen typing overlay: one random word per action, per-character green/highlight/gray feedback, auto-confirms on completion
 - expanded word banks (15-20 words per action category, 35+ categories) for high variety
 - save and load with JSON persistence

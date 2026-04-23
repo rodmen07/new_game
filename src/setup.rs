@@ -248,13 +248,13 @@ fn spawn_terrain_and_roads(commands: &mut Commands) {
 
 fn spawn_buildings_and_zones(commands: &mut Commands) {
     // -- Zones ------------------------------------------------------------------
-    // North row (center_y=180, 150x200, doors face south at y=80)
+    // North row (center_y=180, mixed footprints, doors face south)
     zone(
         commands,
         -425.,
         180.,
-        150.,
-        200.,
+        180.,
+        220.,
         Color::srgb(0.72, 0.58, 0.42),
         "HOME",
     );
@@ -271,8 +271,8 @@ fn spawn_buildings_and_zones(commands: &mut Commands) {
         commands,
         -85.,
         180.,
-        150.,
-        200.,
+        180.,
+        220.,
         Color::srgb(0.30, 0.42, 0.58),
         "LIBRARY",
     );
@@ -289,8 +289,8 @@ fn spawn_buildings_and_zones(commands: &mut Commands) {
         commands,
         425.,
         180.,
-        150.,
-        200.,
+        180.,
+        220.,
         Color::srgb(0.42, 0.52, 0.68),
         "OFFICE",
     );
@@ -977,48 +977,48 @@ fn spawn_world_objects(commands: &mut Commands) {
 
     // -- Zone interior details --------------------------------------------------
 
-    // HOME interior - bedroom rug, dining table, sofa
+    // HOME interior - larger lounge rug, dining corner, and sofa wall
     rect(
         commands,
-        -465.,
-        220.,
-        50.,
-        30.,
+        -455.,
+        232.,
+        68.,
+        36.,
         Color::srgb(0.55, 0.32, 0.22),
         1.06,
     ); // rug outer
     rect(
         commands,
-        -465.,
-        220.,
-        42.,
-        22.,
+        -455.,
+        232.,
+        58.,
+        28.,
         Color::srgb(0.62, 0.38, 0.28),
         1.07,
     ); // rug inner
     rect(
         commands,
-        -405.,
-        145.,
-        30.,
-        16.,
+        -365.,
+        156.,
+        34.,
+        18.,
         Color::srgb(0.42, 0.28, 0.12),
         1.06,
     ); // table
     rect(
         commands,
-        -405.,
-        145.,
-        26.,
-        12.,
+        -365.,
+        156.,
+        30.,
+        14.,
         Color::srgb(0.50, 0.34, 0.16),
         1.08,
     );
-    for cx in [-416., -394.] {
+    for cx in [-378., -352.] {
         rect(
             commands,
             cx,
-            137.,
+            147.,
             8.,
             8.,
             Color::srgb(0.42, 0.28, 0.12),
@@ -1027,7 +1027,7 @@ fn spawn_world_objects(commands: &mut Commands) {
         rect(
             commands,
             cx,
-            153.,
+            165.,
             8.,
             8.,
             Color::srgb(0.42, 0.28, 0.12),
@@ -1036,28 +1036,28 @@ fn spawn_world_objects(commands: &mut Commands) {
     }
     rect(
         commands,
-        -492.,
-        180.,
-        14.,
-        36.,
+        -500.,
+        186.,
+        16.,
+        46.,
         Color::srgb(0.48, 0.30, 0.22),
         1.06,
     ); // sofa
     rect(
         commands,
-        -492.,
-        180.,
-        10.,
-        32.,
+        -500.,
+        186.,
+        12.,
+        40.,
         Color::srgb(0.58, 0.38, 0.28),
         1.08,
     );
 
-    // OFFICE interior - desk area, filing cabinets
+    // OFFICE interior - front desk area, side desk, filing cabinets
     rect(
         commands,
-        455.,
-        200.,
+        468.,
+        162.,
         36.,
         20.,
         Color::srgb(0.36, 0.28, 0.16),
@@ -1065,8 +1065,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        455.,
-        200.,
+        468.,
+        162.,
         32.,
         16.,
         Color::srgb(0.48, 0.38, 0.24),
@@ -1074,8 +1074,26 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
+        382.,
+        210.,
+        28.,
+        16.,
+        Color::srgb(0.40, 0.32, 0.18),
+        1.06,
+    );
+    rect(
+        commands,
+        382.,
+        210.,
+        24.,
+        12.,
+        Color::srgb(0.52, 0.42, 0.26),
+        1.08,
+    );
+    rect(
+        commands,
         375.,
-        230.,
+        246.,
         14.,
         36.,
         Color::srgb(0.32, 0.34, 0.38),
@@ -1084,7 +1102,7 @@ fn spawn_world_objects(commands: &mut Commands) {
     rect(
         commands,
         375.,
-        230.,
+        246.,
         10.,
         32.,
         Color::srgb(0.40, 0.42, 0.46),
@@ -1113,14 +1131,14 @@ fn spawn_world_objects(commands: &mut Commands) {
         );
     }
 
-    // LIBRARY interior - book rows
-    for lx in [-130., -100., -70., -40.] {
+    // LIBRARY interior - wider book rows
+    for lx in [-148., -116., -84., -52., -20.] {
         rect(
             commands,
             lx,
-            210.,
+            212.,
             8.,
-            46.,
+            56.,
             Color::srgb(0.30, 0.22, 0.12),
             1.06,
         );
@@ -1212,11 +1230,11 @@ fn spawn_world_objects(commands: &mut Commands) {
 
     // -- Interactive objects -----------------------------------------------------
 
-    // HOME - BED (-470, 235)
+    // HOME - BED (-498, 250)
     obj(
         commands,
-        -470.,
-        235.,
+        -498.,
+        250.,
         40.,
         20.,
         Color::srgb(0.30, 0.18, 0.09),
@@ -1225,8 +1243,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -470.,
-        235.,
+        -498.,
+        250.,
         36.,
         16.,
         Color::srgb(0.90, 0.87, 0.82),
@@ -1234,8 +1252,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -482.,
-        238.,
+        -510.,
+        253.,
         10.,
         6.,
         Color::srgb(0.96, 0.94, 0.92),
@@ -1243,8 +1261,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -470.,
-        238.,
+        -498.,
+        253.,
         10.,
         6.,
         Color::srgb(0.96, 0.94, 0.92),
@@ -1252,19 +1270,19 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -460.,
-        231.,
+        -488.,
+        246.,
         18.,
         8.,
         Color::srgb(0.48, 0.28, 0.65),
         2.15,
     );
 
-    // HOME - FRIDGE (-370, 135)
+    // HOME - FRIDGE (-350, 118)
     obj(
         commands,
-        -370.,
-        135.,
+        -350.,
+        118.,
         20.,
         34.,
         Color::srgb(0.55, 0.58, 0.56),
@@ -1273,8 +1291,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -370.,
-        143.,
+        -350.,
+        126.,
         16.,
         18.,
         Color::srgb(0.82, 0.86, 0.84),
@@ -1282,8 +1300,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -370.,
-        125.,
+        -350.,
+        108.,
         16.,
         10.,
         Color::srgb(0.76, 0.80, 0.78),
@@ -1291,19 +1309,19 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -363.,
-        143.,
+        -343.,
+        126.,
         2.,
         12.,
         Color::srgb(0.48, 0.50, 0.54),
         2.2,
     );
 
-    // HOME - SHOWER (-362, 245)
+    // HOME - SHOWER (-348, 252)
     obj(
         commands,
-        -362.,
-        245.,
+        -348.,
+        252.,
         18.,
         24.,
         Color::srgb(0.45, 0.60, 0.72),
@@ -1312,8 +1330,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -362.,
-        245.,
+        -348.,
+        252.,
         14.,
         20.,
         Color::srgb(0.78, 0.88, 0.94),
@@ -1321,8 +1339,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -362.,
-        253.,
+        -348.,
+        260.,
         8.,
         2.,
         Color::srgb(0.50, 0.54, 0.60),
@@ -1330,8 +1348,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -362.,
-        237.,
+        -348.,
+        244.,
         4.,
         4.,
         Color::srgb(0.46, 0.50, 0.56),
@@ -1377,11 +1395,11 @@ fn spawn_world_objects(commands: &mut Commands) {
         2.3,
     );
 
-    // HOME - FREELANCE DESK (-440, 190)
+    // HOME - FREELANCE DESK (-430, 220)
     obj(
         commands,
-        -440.,
-        190.,
+        -430.,
+        220.,
         34.,
         16.,
         Color::srgb(0.38, 0.26, 0.12),
@@ -1390,8 +1408,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -440.,
-        190.,
+        -430.,
+        220.,
         30.,
         12.,
         Color::srgb(0.58, 0.44, 0.26),
@@ -1399,8 +1417,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -450.,
-        193.,
+        -440.,
+        223.,
         10.,
         8.,
         Color::srgb(0.10, 0.12, 0.18),
@@ -1408,8 +1426,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -450.,
-        193.,
+        -440.,
+        223.,
         8.,
         6.,
         Color::srgb(0.12, 0.36, 0.62),
@@ -1417,8 +1435,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -440.,
-        188.,
+        -430.,
+        218.,
         14.,
         4.,
         Color::srgb(0.20, 0.20, 0.24),
@@ -1426,8 +1444,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -430.,
-        191.,
+        -420.,
+        221.,
         4.,
         4.,
         Color::srgb(0.22, 0.22, 0.26),
@@ -1709,11 +1727,11 @@ fn spawn_world_objects(commands: &mut Commands) {
         2.2,
     );
 
-    // HOME - CRAFT STATION (-410, 145)
+    // HOME - CRAFT STATION (-396, 130)
     obj(
         commands,
-        -410.,
-        145.,
+        -396.,
+        130.,
         20.,
         16.,
         Color::srgb(0.32, 0.40, 0.28),
@@ -1722,8 +1740,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -410.,
-        147.,
+        -396.,
+        132.,
         16.,
         10.,
         Color::srgb(0.44, 0.52, 0.38),
@@ -1731,8 +1749,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -414.,
-        149.,
+        -400.,
+        134.,
         5.,
         5.,
         Color::srgb(0.72, 0.42, 0.18),
@@ -1740,19 +1758,19 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -406.,
-        149.,
+        -392.,
+        134.,
         5.,
         5.,
         Color::srgb(0.22, 0.62, 0.32),
         2.2,
     );
 
-    // HOME - PARTY CORNER (-365, 248)
+    // HOME - PARTY CORNER (-395, 270)
     obj(
         commands,
-        -365.,
-        248.,
+        -395.,
+        270.,
         20.,
         20.,
         Color::srgb(0.58, 0.20, 0.36),
@@ -1761,8 +1779,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -365.,
-        250.,
+        -395.,
+        272.,
         14.,
         12.,
         Color::srgb(0.70, 0.30, 0.48),
@@ -1770,8 +1788,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -365.,
-        253.,
+        -395.,
+        275.,
         7.,
         6.,
         Color::srgb(0.95, 0.88, 0.35),
@@ -1779,8 +1797,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -365.,
-        256.,
+        -395.,
+        278.,
         2.,
         4.,
         Color::srgb(0.95, 0.88, 0.35),
@@ -1788,8 +1806,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -365.,
-        258.,
+        -395.,
+        280.,
         3.,
         2.,
         Color::srgb(0.95, 0.55, 0.20),
@@ -1797,8 +1815,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -371.,
-        243.,
+        -401.,
+        265.,
         3.,
         3.,
         Color::srgb(0.95, 0.38, 0.38),
@@ -1806,19 +1824,19 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -359.,
-        244.,
+        -389.,
+        266.,
         3.,
         3.,
         Color::srgb(0.38, 0.72, 0.95),
         2.1,
     );
 
-    // OFFICE - WORK DESK (425, 180)
+    // OFFICE - WORK DESK (455, 160)
     obj(
         commands,
-        425.,
-        180.,
+        455.,
+        160.,
         44.,
         24.,
         Color::srgb(0.32, 0.22, 0.10),
@@ -1827,8 +1845,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        425.,
-        180.,
+        455.,
+        160.,
         40.,
         20.,
         Color::srgb(0.46, 0.34, 0.18),
@@ -1836,8 +1854,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        413.,
-        183.,
+        443.,
+        163.,
         12.,
         10.,
         Color::srgb(0.08, 0.10, 0.16),
@@ -1845,8 +1863,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        413.,
-        183.,
+        443.,
+        163.,
         9.,
         7.,
         Color::srgb(0.12, 0.38, 0.68),
@@ -1854,8 +1872,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        413.,
-        176.,
+        443.,
+        156.,
         4.,
         3.,
         Color::srgb(0.36, 0.36, 0.40),
@@ -1863,8 +1881,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        427.,
-        180.,
+        457.,
+        160.,
         16.,
         4.,
         Color::srgb(0.18, 0.18, 0.22),
@@ -1872,8 +1890,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        439.,
-        184.,
+        469.,
+        164.,
         8.,
         6.,
         Color::srgb(0.88, 0.86, 0.82),
@@ -1881,8 +1899,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        439.,
-        175.,
+        469.,
+        155.,
         4.,
         5.,
         Color::srgb(0.55, 0.35, 0.20),
@@ -2111,11 +2129,11 @@ fn spawn_world_objects(commands: &mut Commands) {
         2.2,
     );
 
-    // LIBRARY - READING DESK (-85, 180)
+    // LIBRARY - READING DESK (-60, 160)
     obj(
         commands,
-        -85.,
-        180.,
+        -60.,
+        160.,
         40.,
         24.,
         Color::srgb(0.34, 0.24, 0.12),
@@ -2124,8 +2142,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -85.,
-        182.,
+        -60.,
+        162.,
         36.,
         18.,
         Color::srgb(0.48, 0.36, 0.20),
@@ -2133,8 +2151,8 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -85.,
-        183.,
+        -60.,
+        163.,
         16.,
         10.,
         Color::srgb(0.92, 0.90, 0.84),
@@ -3295,16 +3313,16 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     // N-row buildings: door on SOUTH face (y=80).
     // S-row buildings: door on NORTH face (y=-80).
 
-    // HOME (-425, 180, 150x200) - south door at x=-425
+    // HOME (-425, 180, 180x220) - south door at x=-425
     let c = Color::srgb(0.50, 0.36, 0.22);
     let f = Color::srgb(0.62, 0.44, 0.28);
-    vis_wall(commands, -425., 280., 150., 10., c); // north
-    vis_wall(commands, -500., 180., 10., 200., c); // west
-    vis_wall(commands, -350., 180., 10., 200., c); // east
-    vis_wall(commands, -475., 80., 50., 10., c); // south-left
-    vis_wall(commands, -375., 80., 50., 10., c); // south-right
-    rect(commands, -450., 82., 8., 10., f, 1.5);
-    rect(commands, -400., 82., 8., 10., f, 1.5);
+    vis_wall(commands, -425., 290., 180., 10., c); // north
+    vis_wall(commands, -515., 180., 10., 220., c); // west
+    vis_wall(commands, -335., 180., 10., 220., c); // east
+    vis_wall(commands, -482.5, 70., 65., 10., c); // south-left
+    vis_wall(commands, -367.5, 70., 65., 10., c); // south-right
+    rect(commands, -450., 72., 8., 10., f, 1.5);
+    rect(commands, -400., 72., 8., 10., f, 1.5);
 
     // WELLNESS (-255, 180, 150x200) - south door at x=-255
     let c = Color::srgb(0.22, 0.46, 0.40);
@@ -3316,29 +3334,29 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     rect(commands, -280., 82., 8., 10., f, 1.5);
     rect(commands, -230., 82., 8., 10., f, 1.5);
 
-    // LIBRARY (-85, 180, 150x200) - south door at x=-85
+    // LIBRARY (-85, 180, 180x220) - south door at x=-85
     let c = Color::srgb(0.18, 0.28, 0.44);
     let f = Color::srgb(0.26, 0.38, 0.56);
-    vis_wall(commands, -85., 280., 150., 10., c); // north
-    vis_wall(commands, -160., 180., 10., 200., c); // west
-    vis_wall(commands, -10., 180., 10., 200., c); // east
-    vis_wall(commands, -135., 80., 50., 10., c); // south-left
-    vis_wall(commands, -35., 80., 50., 10., c); // south-right
-    rect(commands, -110., 82., 8., 10., f, 1.5);
-    rect(commands, -60., 82., 8., 10., f, 1.5);
+    vis_wall(commands, -85., 290., 180., 10., c); // north
+    vis_wall(commands, -175., 180., 10., 220., c); // west
+    vis_wall(commands, 5., 180., 10., 220., c); // east
+    vis_wall(commands, -142.5, 70., 65., 10., c); // south-left
+    vis_wall(commands, -27.5, 70., 65., 10., c); // south-right
+    rect(commands, -110., 72., 8., 10., f, 1.5);
+    rect(commands, -60., 72., 8., 10., f, 1.5);
 
     // PARK (85, 180, 150x160) - open, no walls
 
-    // OFFICE (425, 180, 150x200) - south door at x=425
+    // OFFICE (425, 180, 180x220) - south door at x=425
     let c = Color::srgb(0.25, 0.32, 0.45);
     let f = Color::srgb(0.35, 0.44, 0.60);
-    vis_wall(commands, 425., 280., 150., 10., c); // north
-    vis_wall(commands, 350., 180., 10., 200., c); // west
-    vis_wall(commands, 500., 180., 10., 200., c); // east
-    vis_wall(commands, 375., 80., 50., 10., c); // south-left
-    vis_wall(commands, 475., 80., 50., 10., c); // south-right
-    rect(commands, 400., 82., 8., 10., f, 1.5);
-    rect(commands, 450., 82., 8., 10., f, 1.5);
+    vis_wall(commands, 425., 290., 180., 10., c); // north
+    vis_wall(commands, 335., 180., 10., 220., c); // west
+    vis_wall(commands, 515., 180., 10., 220., c); // east
+    vis_wall(commands, 367.5, 70., 65., 10., c); // south-left
+    vis_wall(commands, 482.5, 70., 65., 10., c); // south-right
+    rect(commands, 400., 72., 8., 10., f, 1.5);
+    rect(commands, 450., 72., 8., 10., f, 1.5);
 
     // BANK (-425, -180, 150x200) - north door at x=-425
     let c = Color::srgb(0.40, 0.34, 0.20);
