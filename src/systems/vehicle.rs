@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::components::{LocalPlayer, Player, Vehicle};
 use crate::resources::{
-    ActionPrompt, PlayerInput, PlayerMovement, Transport, TransportKind, VehicleState,
+    ActionPrompt, PlayerMovement, Transport, TransportKind, VehicleState,
 };
 
 const CAR_SPEED: f32 = 340.0;
@@ -12,7 +12,7 @@ const CAR_ACCEL: f32 = 800.0;
 const CAR_FRICTION: f32 = 400.0;
 
 pub fn car_movement(
-    player_input: Res<PlayerInput>,
+    keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut player_q: Query<
         (
@@ -34,7 +34,19 @@ pub fn car_movement(
     }
 
     let dt = time.delta_secs();
-    let wish = player_input.move_dir;
+    let mut wish = Vec2::ZERO;
+    if keys.any_pressed([KeyCode::ArrowUp, KeyCode::KeyW]) {
+        wish.y += 1.0;
+    }
+    if keys.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
+        wish.y -= 1.0;
+    }
+    if keys.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
+        wish.x -= 1.0;
+    }
+    if keys.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
+        wish.x += 1.0;
+    }
 
     if wish != Vec2::ZERO {
         pm.velocity += wish.normalize() * CAR_ACCEL * dt;
