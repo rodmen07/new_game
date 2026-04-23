@@ -889,7 +889,10 @@ pub fn update_typing_overlay(
 pub fn update_typing_word_row_scale(
     time: Res<Time>,
     prompt_q: Query<&ActionPrompt, With<LocalPlayer>>,
-    mut row_q: Query<(&mut Transform, &mut TypingWordRowScale), With<TypingWordRow>>,
+    mut row_q: Query<
+        (&mut Transform, &mut TypingWordRowScale),
+        (With<TypingWordRow>, Without<LocalPlayer>),
+    >,
 ) {
     let active = prompt_q.iter().next().map(|p| p.active).unwrap_or(false);
     let dt = time.delta_secs();
