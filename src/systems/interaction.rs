@@ -93,43 +93,6 @@ pub fn read_player_actions(keys: Res<ButtonInput<KeyCode>>, mut writer: EventWri
     }
 }
 
-fn action_time_hours(action: &ActionKind) -> f32 {
-    match action {
-        ActionKind::Sleep => 8.0,
-        ActionKind::Eat => 0.5,
-        ActionKind::Work => 4.0,
-        ActionKind::Freelance => 3.0,
-        ActionKind::Shop => 0.5,
-        ActionKind::Relax => 1.0,
-        ActionKind::Shower => 0.25,
-        ActionKind::Chat => 0.5,
-        ActionKind::Exercise => 1.25,
-        ActionKind::Meditate => 1.0,
-        ActionKind::Bank => 0.25,
-        ActionKind::UseItem(_) => 0.25,
-        ActionKind::Hobby(_) => 1.5,
-        ActionKind::StudyCourse => 2.0,
-        ActionKind::FeedPet => 0.25,
-        ActionKind::ThrowParty => 3.0,
-        ActionKind::BuyTransport => 0.5,
-        ActionKind::GymSession => 1.5,
-        ActionKind::Cafe => 0.5,
-        ActionKind::Clinic => 2.0,
-        ActionKind::EnterVehicle => 0.,
-        ActionKind::AdoptPet(_) => 0.25,
-        ActionKind::SleepRough => 8.0,
-        ActionKind::Craft => 0.5,
-        ActionKind::RentUnit(_) => 0.5,
-        ActionKind::GasUp => 0.25,
-        ActionKind::RepairVehicle => 1.0,
-        ActionKind::DentalVisit => 1.5,
-        ActionKind::EyeExam => 1.0,
-        ActionKind::ComputerLab => 2.0,
-        ActionKind::PrintShop => 0.25,
-        ActionKind::Hangout => 1.0,
-    }
-}
-
 fn needs_home_access(action: &ActionKind) -> bool {
     matches!(
         action,
@@ -1181,7 +1144,7 @@ fn handle_bank_keys(
     p7: bool,
     p8: bool,
     p9: bool,
-    gt: &mut GameTime,
+    _gt: &mut GameTime,
     stats: &mut PlayerStats,
     notif: &mut Notification,
     bank_input: &mut BankInput,
@@ -1314,7 +1277,7 @@ fn handle_transport_keys(
     p1: bool,
     p2: bool,
     p3: bool,
-    gt: &mut GameTime,
+    _gt: &mut GameTime,
     stats: &mut PlayerStats,
     notif: &mut Notification,
     transport: &mut Transport,
@@ -1385,7 +1348,7 @@ fn handle_craft_keys(
     p1: bool,
     p2: bool,
     p3: bool,
-    gt: &mut GameTime,
+    _gt: &mut GameTime,
     stats: &mut PlayerStats,
     notif: &mut Notification,
     inv: &mut Inventory,
@@ -1735,7 +1698,7 @@ fn handle_relax(
     p2: bool,
     p3: bool,
     p4: bool,
-    gt: &mut GameTime,
+    _gt: &mut GameTime,
     stats: &mut PlayerStats,
     skills: &mut Skills,
     gs: &mut GameState,
@@ -3280,7 +3243,6 @@ pub fn handle_bank_input(
     mut player_stats_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut player_housing_q: Query<&mut HousingTier, With<LocalPlayer>>,
     mut notif: ResMut<Notification>,
-    mut gt: ResMut<GameTime>,
     mut goal: ResMut<DailyGoal>,
 ) {
     let Some(mut bank_input) = player_bank_q.iter_mut().next() else {
