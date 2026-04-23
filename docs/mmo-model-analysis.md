@@ -51,3 +51,9 @@ The game has no model for two players acting on the same NPC, shop inventory, qu
 - [src/systems/interaction.rs](d:\Projects\new_game\src\systems\interaction.rs): convert direct stat mutation into action requests.
 - [src/systems/time.rs](d:\Projects\new_game\src\systems\time.rs): define server-driven world time semantics.
 - [src/systems/npc.rs](d:\Projects\new_game\src\systems\npc.rs): decide whether NPCs are globally shared, instanced, or sharded.
+
+## Implemented (Transport Stability Increment)
+
+- Added client-side interpolation for remote player transforms between relay updates.
+- Added stale remote cleanup when leave events are missed during transient network loss.
+- Kept authority boundaries unchanged: gameplay state remains local/client-owned in this phase.
