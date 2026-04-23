@@ -5,12 +5,26 @@ use bevy::prelude::*;
 /// Player AABB half-extents — slightly forgiving (9px) vs visual 10px.
 pub const PLAYER_HALF: Vec2 = Vec2::new(9., 9.);
 
+type PlayerCollisionQuery<'w, 's> = Query<
+    'w,
+    's,
+    (&'static mut Transform, &'static mut PlayerMovement),
+    (With<LocalPlayer>, With<Player>),
+>;
+
+type WorldColliderQuery<'w, 's> = Query<
+    'w,
+    's,
+    (&'static Transform, &'static Collider),
+    (Without<Player>, Without<LocalPlayer>),
+>;
+
 /// Resolves AABB collisions between the player and all `Collider` entities.
 /// Runs after `player_movement`. Sub-steps the frame displacement into increments
 /// no larger than PLAYER_HALF.x to prevent tunneling through thin walls at sprint speed.
 pub fn resolve_collisions(
-    mut player_q: Query<(&mut Transform, &mut PlayerMovement), With<LocalPlayer>>,
-    colliders_q: Query<(&Transform, &Collider), Without<Player>>,
+    mut player_q: PlayerCollisionQuery,
+    colliders_q: WorldColliderQuery,
 ) {
     let Some((mut ptf, mut pm)) = player_q.iter_mut().next() else {
         return;

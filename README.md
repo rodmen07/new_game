@@ -109,6 +109,8 @@ Notes for the web build:
 - settings and save progress live in browser localStorage instead of config.toml and save.json
 - the canvas automatically fits the browser page
 - startup diagnostics now wait up to 45 seconds and also detect `window.wasmBindings` so delayed wasm init does not produce a false startup timeout
+- Bevy ECS on wasm will panic at startup if a system has overlapping `Query` access to the same component type (for example `Transform`), so queries must be made explicitly disjoint with `With`/`Without` filters
+- Resolved: `resolve_collisions` now uses explicitly disjoint `Transform` queries (`LocalPlayer` + `Player` vs `Without<Player>` + `Without<LocalPlayer>`) to avoid Bevy `B0001` startup panic on web
 
 ---
 
