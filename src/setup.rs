@@ -1230,10 +1230,10 @@ fn spawn_world_objects(commands: &mut Commands) {
 
     // -- Interactive objects -----------------------------------------------------
 
-    // HOME - BED (-498, 250)
+    // HOME - BED (-490, 250)
     obj(
         commands,
-        -498.,
+        -490.,
         250.,
         40.,
         20.,
@@ -1243,7 +1243,7 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -498.,
+        -490.,
         250.,
         36.,
         16.,
@@ -1252,7 +1252,7 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -510.,
+        -502.,
         253.,
         10.,
         6.,
@@ -1261,7 +1261,7 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -498.,
+        -490.,
         253.,
         10.,
         6.,
@@ -1270,7 +1270,7 @@ fn spawn_world_objects(commands: &mut Commands) {
     );
     rect(
         commands,
-        -488.,
+        -480.,
         246.,
         18.,
         8.,
