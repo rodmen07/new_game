@@ -35,6 +35,12 @@ pub mod wasm_net {
     /// How often (seconds) we send our position to the server.
     const NET_SEND_INTERVAL: f32 = 0.05; // 20 Hz
 
+    /// Exponential interpolation rate used to smooth remote player motion.
+    const REMOTE_INTERP_RATE: f32 = 16.0;
+
+    /// If no updates are received for this long, despawn the remote player.
+    const REMOTE_STALE_SECS: f32 = 12.0;
+
     // ── Incoming message types ────────────────────────────────────────────────
 
     #[derive(Deserialize, Debug)]
@@ -62,6 +68,12 @@ pub mod wasm_net {
         pub send_timer: f32,
     }
 
+    #[derive(Component)]
+    struct RemoteNetSmoothing {
+        target_position: Vec2,
+        seconds_since_update: f32,
+    }
+
     // ── Plugin ────────────────────────────────────────────────────────────────
 
     pub struct MultiplayerPlugin;
@@ -72,7 +84,12 @@ pub mod wasm_net {
                 .add_systems(OnExit(crate::menu::AppState::Playing), net_disconnect)
                 .add_systems(
                     Update,
-                    (net_send, net_receive)
+                    (
+                        net_send,
+                        net_receive,
+                        net_smooth_remote_players,
+                        net_prune_stale_remote_players,
+                    )
                         .chain()
                         .run_if(bevy::prelude::in_state(crate::menu::AppState::Playing)),
                 );
@@ -128,6 +145,12 @@ pub mod wasm_net {
             let _ = state.socket.close();
         }
 
+        let mut q = world.query_filtered::<Entity, With<RemotePlayer>>();
+        let remote_entities: Vec<Entity> = q.iter(world).collect();
+        for entity in remote_entities {
+            let _ = world.despawn(entity);
+        }
+
         let _ = world.remove_non_send_resource::<NetState>();
     }
 
@@ -165,7 +188,7 @@ pub mod wasm_net {
     pub fn net_receive(
         mut commands: Commands,
         net: Option<NonSendMut<NetState>>,
-        mut remote_q: Query<(Entity, &RemotePlayer, &mut Transform)>,
+        mut remote_q: Query<(Entity, &RemotePlayer, &mut Transform, &mut RemoteNetSmoothing)>,
     ) {
         let Some(mut net) = net else {
             return;
@@ -184,20 +207,32 @@ pub mod wasm_net {
                         continue;
                     }
 
-                    let existing = remote_q.iter_mut().find(|(_, rp, _)| rp.net_id == id).map(
-                        |(e, _, mut tf)| {
+                    let mut found_existing = false;
+                    for (_, rp, mut tf, mut smoothing) in &mut remote_q {
+                        if rp.net_id != id {
+                            continue;
+                        }
+
+                        let target = Vec2::new(x, y);
+                        smoothing.target_position = target;
+                        smoothing.seconds_since_update = 0.0;
+
+                        // Snap if we fell too far behind (late packet burst/reconnect).
+                        if tf.translation.truncate().distance_squared(target) > 2500.0 {
                             tf.translation.x = x;
                             tf.translation.y = y;
-                            e
-                        },
-                    );
+                        }
 
-                    if existing.is_none() {
+                        found_existing = true;
+                        break;
+                    }
+
+                    if !found_existing {
                         spawn_remote(&mut commands, id, x, y);
                     }
                 }
                 ServerMsg::Leave { id } => {
-                    for (entity, rp, _) in &remote_q {
+                    for (entity, rp, _, _) in &remote_q {
                         if rp.net_id == id {
                             commands.entity(entity).despawn_recursive();
                             bevy::log::info!("net: player {id} left");
@@ -209,11 +244,45 @@ pub mod wasm_net {
         }
     }
 
+    pub fn net_smooth_remote_players(
+        time: Res<Time>,
+        mut remote_q: Query<(&mut Transform, &RemoteNetSmoothing), With<RemotePlayer>>,
+    ) {
+        let dt = time.delta_secs().max(0.0);
+        let t = (1.0 - (-REMOTE_INTERP_RATE * dt).exp()).clamp(0.0, 1.0);
+
+        for (mut tf, smoothing) in &mut remote_q {
+            let current = tf.translation.truncate();
+            let next = current.lerp(smoothing.target_position, t);
+            tf.translation.x = next.x;
+            tf.translation.y = next.y;
+        }
+    }
+
+    pub fn net_prune_stale_remote_players(
+        mut commands: Commands,
+        time: Res<Time>,
+        mut remote_q: Query<(Entity, &RemotePlayer, &mut RemoteNetSmoothing)>,
+    ) {
+        let dt = time.delta_secs();
+        for (entity, rp, mut smoothing) in &mut remote_q {
+            smoothing.seconds_since_update += dt;
+            if smoothing.seconds_since_update > REMOTE_STALE_SECS {
+                bevy::log::info!("net: pruning stale remote player {}", rp.net_id);
+                commands.entity(entity).despawn_recursive();
+            }
+        }
+    }
+
     fn spawn_remote(commands: &mut Commands, id: String, x: f32, y: f32) {
         bevy::log::info!("net: spawning remote player {id}");
         commands.spawn((
             Player,
             RemotePlayer { net_id: id },
+            RemoteNetSmoothing {
+                target_position: Vec2::new(x, y),
+                seconds_since_update: 0.0,
+            },
             Sprite {
                 color: Color::srgb(0.35, 0.60, 1.0), // blue tint for remote players
                 custom_size: Some(Vec2::new(20., 32.)),

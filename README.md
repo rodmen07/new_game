@@ -225,7 +225,7 @@ src/
 | Settings screen | Implemented |
 | Audio fallback | Implemented |
 | Browser build | Live at rodmen07.github.io/new_game |
-| Multiplayer support | Early groundwork only |
+| Multiplayer support | Position sync with interpolation and stale-peer cleanup |
 
 The project is currently a playable, feature-rich prototype with a clean verified Rust baseline and ongoing expansion work.
 
