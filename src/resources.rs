@@ -13,19 +13,6 @@ pub struct NearbyInteractable {
     pub prompt: String,
 }
 
-// ── PlayerInput ───────────────────────────────────────────────────────────────
-
-/// Continuous input state updated once per frame by `emit_player_input`.
-/// Movement and vehicle systems read this instead of `ButtonInput<KeyCode>`.
-#[derive(Resource, Default)]
-pub struct PlayerInput {
-    /// Normalised wish direction from WASD / arrow keys, or zero if no key held.
-    pub move_dir: Vec2,
-    /// True while Shift is held.
-    #[allow(dead_code)]
-    pub sprint: bool,
-}
-
 // ── PlayerMovement ────────────────────────────────────────────────────────────
 
 #[derive(Component)]
