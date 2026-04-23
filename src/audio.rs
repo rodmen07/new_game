@@ -109,9 +109,9 @@ fn load_audio_handles(mut handles: ResMut<AudioHandles>, server: Res<AssetServer
     handles.fail = load_optional_audio(&server, "audio/fail.ogg");
     handles.bgm_day = load_optional_audio(&server, "audio/bgm_day.ogg");
     handles.bgm_night = load_optional_audio(&server, "audio/bgm_night.ogg");
-    handles.rain_loop = load_optional_audio(&server, "audio/rain_loop.wav");
-    handles.storm_loop = load_optional_audio(&server, "audio/storm_loop.wav");
-    handles.thunder = load_optional_audio(&server, "audio/thunder.wav");
+    handles.rain_loop = load_optional_audio(&server, "audio/rain_loop.ogg");
+    handles.storm_loop = load_optional_audio(&server, "audio/storm_loop.ogg");
+    handles.thunder = load_optional_audio(&server, "audio/thunder.ogg");
 }
 
 fn start_ambient_if_needed(
@@ -129,7 +129,7 @@ fn start_ambient_if_needed(
         AmbientMusic,
         AudioPlayer::<AudioSource>(ambient),
         PlaybackSettings {
-            volume: Volume::new(0.35),
+            volume: Volume::new(0.15),
             ..PlaybackSettings::LOOP
         },
     ));
