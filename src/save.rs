@@ -539,13 +539,17 @@ impl Default for SaveData {
 impl SaveData {
     /// Convenience accessor for the local player save slot.
     pub fn local_player(&self) -> &PlayerSave {
-        self.players.first().expect("SaveData must have at least one player")
+        self.players
+            .first()
+            .expect("SaveData must have at least one player")
     }
 
     /// Mutable convenience accessor for the local player save slot.
-        #[allow(dead_code)]
+    #[allow(dead_code)]
     pub fn local_player_mut(&mut self) -> &mut PlayerSave {
-           self.players.first_mut().expect("SaveData must have at least one player")
+        self.players
+            .first_mut()
+            .expect("SaveData must have at least one player")
     }
 }
 
@@ -967,9 +971,7 @@ pub fn apply_save_data(
     friendship.levels.clear();
     for (entity, npc_id) in &npc_q {
         if npc_id.0 < 6 {
-            friendship
-                .levels
-                .insert(entity, p.npc_friendship[npc_id.0]);
+            friendship.levels.insert(entity, p.npc_friendship[npc_id.0]);
         }
     }
 }

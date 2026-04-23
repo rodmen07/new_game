@@ -20,11 +20,14 @@ Current implemented highlights include:
 - save and load with JSON persistence
 - Menu, Playing, Paused, and Settings screens
 - banking, loans, investments, housing, and transport upgrades
+- acquired pets and cars appear as visible world elements
+- top-left HUD overlap reduced by moving/hiding the autoplay hint, and startup timeout now logs to console instead of showing a false in-game error banner
 - NPC friendship, quests, narrative unlocks, and reputation systems
 - pets, crisis events, seasonal festivals, and weather-driven visuals
 - universal typed action prompts with seniority-based retries and subject-aware phrases before tasks resolve
+- immediate apartment unlock when a bank deposit crosses the first housing threshold
 
-The current baseline is verified with a successful build, a clean strict clippy run, and 171 passing tests.
+The current baseline is verified with a successful build, a clean strict clippy run, and 172 passing tests.
 
 ---
 
@@ -345,6 +348,27 @@ These require significant architecture work and are not blocked by any of the ab
 | M-03 | Introduce a `PlayerAction` event abstraction to decouple raw keyboard input from game logic |
 | M-04 | Restructure `SaveData` to support a `Vec<PlayerSave>` for per-player persistence |
 | Art pass | Replace colored rectangles with sprite sheets for characters, buildings, and props |
+
+### Mobile roadmap (M1-M5)
+
+Mobile support work has started.
+
+| Item | Description | Status |
+|---|---|---|
+| M1 | Touch input foundation for mobile web (virtual controls mapped to existing actions) | In progress (M1-A and M1-B complete) |
+| M2 | Responsive HUD and layout tuning for phone and tablet viewports | Planned |
+| M3 | Touch-first interaction UX for number/action selection flows | Planned |
+| M4 | Mobile web performance and compatibility hardening | Planned |
+| M5 | Mobile QA matrix and rollout criteria | Planned |
+
+M1-A implemented in `index.html`:
+- coarse-pointer mobile control overlay (virtual D-pad + sprint + action buttons)
+- touch buttons emit keyboard-equivalent events so existing Bevy input systems keep working
+- visibility-change safety releases held movement keys to avoid stuck movement
+
+M1-B implemented in `index.html`:
+- mobile on-screen typing keyboard (`ABC` toggle) with letters A-Z, Backspace, Enter, and Esc
+- typing keys emit keyboard-equivalent events to reuse existing Bevy prompt input logic
 
 **M-02: Replace `get_single()` calls with iterator-based access** ✅
 - All 20 `get_single_mut()` sites in `src/systems/hud.rs` and `src/systems/visual.rs` migrated to `iter_mut().next()` (the singleton-friendly equivalent)
