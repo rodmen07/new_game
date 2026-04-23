@@ -338,6 +338,7 @@ These require significant architecture work and are not blocked by any of the ab
 
 | Item | Description |
 |---|---|
+| Wasm deployment issue | Pre-existing "Startup error: Uncaught RuntimeError: unreachable" on deployed site. Not caused by P2-B, M-02, or any local changes (171 local tests pass, clean clippy). Deploy infrastructure issue - needs browser console diagnostics. |
 | M-03 | Introduce a `PlayerAction` event abstraction to decouple raw keyboard input from game logic |
 | M-04 | Restructure `SaveData` to support a `Vec<PlayerSave>` for per-player persistence |
 | Art pass | Replace colored rectangles with sprite sheets for characters, buildings, and props |
