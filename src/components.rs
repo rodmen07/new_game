@@ -16,6 +16,34 @@ pub struct PlayerId(pub u32);
 pub struct RemotePlayer {
     pub net_id: String,
 }
+
+/// Discrete input actions emitted once per frame by `read_player_actions`.
+/// Game logic systems consume these events instead of polling `ButtonInput<KeyCode>` directly,
+/// decoupling raw input from game state mutation and enabling remote players to inject actions.
+#[derive(Event, Clone, Debug, PartialEq)]
+pub enum PlayerAction {
+    /// E key - trigger the nearest interactable
+    Interact,
+    /// G key - gift a nearby NPC
+    Gift,
+    /// H key - hang out with a nearby NPC
+    Hangout,
+    /// F1/F2/F3 keys; value is 1, 2, or 3
+    FunctionKey(u8),
+    /// Digit 1-9; value is 1-9; used for slot selection and bank digit entry
+    NumberKey(u8),
+    /// Digit 0; used for bank digit entry
+    Number0,
+    /// A-Z letter keys (lowercased); used by the typing challenge
+    Letter(char),
+    /// Backspace key
+    Backspace,
+    /// Enter or NumpadEnter
+    Confirm,
+    /// Escape key
+    Cancel,
+}
+
 #[derive(Component)]
 pub struct MainCamera;
 #[derive(Component)]
