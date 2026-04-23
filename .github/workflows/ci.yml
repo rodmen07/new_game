@@ -58,5 +58,14 @@ jobs:
       - name: Build
         run: cargo build --all-targets
 
+      - name: Install wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Wasm target check
+        run: cargo check --target wasm32-unknown-unknown --all-targets
+
+      - name: Startup smoke test
+        run: cargo test reveal_car_on_purchase_query_params_are_disjoint -- --exact
+
       - name: Test
         run: cargo test --all-targets
