@@ -76,10 +76,263 @@ pub struct SaveRequest;
 #[derive(Resource, Default)]
 pub struct PendingLoad(pub Option<SaveData>);
 
-// ── SaveData ──────────────────────────────────────────────────────────────────
+// ── SaveDataLegacy (v1 flat format - for migration only) ─────────────────────
 
 #[derive(Serialize, Deserialize, Default, Clone)]
-pub struct SaveData {
+struct SaveDataLegacy {
+    pub energy: f32,
+    pub hunger: f32,
+    pub happiness: f32,
+    pub health: f32,
+    pub stress: f32,
+    pub sleep_debt: f32,
+    pub money: f32,
+    pub savings: f32,
+    pub loan: f32,
+    pub meals: u32,
+    pub unpaid_rent_days: u32,
+    pub meditation_buff: f32,
+    pub day: u32,
+    pub skill_cooking: f32,
+    pub skill_career: f32,
+    pub skill_fitness: f32,
+    pub skill_social: f32,
+    pub streak_days: u32,
+    #[serde(default)]
+    pub promotion_notified: u8,
+    pub housing: u8,
+    pub inv_coffee: u32,
+    pub inv_vitamins: u32,
+    pub inv_books: u32,
+    pub inv_coffee_age: u32,
+    #[serde(default)]
+    pub inv_ingredient: u32,
+    #[serde(default)]
+    pub inv_gift_box: u32,
+    #[serde(default)]
+    pub inv_smoothie: u32,
+    pub ms_saved_100: bool,
+    pub ms_exec: bool,
+    pub ms_best_friend: bool,
+    pub ms_streak_7: bool,
+    pub ms_rating_a: bool,
+    pub ms_debt_free: bool,
+    pub ms_penthouse: bool,
+    pub ms_investor: bool,
+    pub ms_hobbyist: bool,
+    pub ms_famous: bool,
+    pub ms_scholar: bool,
+    pub ms_pet_owner: bool,
+    pub ms_party_animal: bool,
+    pub ms_commuter: bool,
+    pub ms_all_seasons: bool,
+    #[serde(default)]
+    pub ms_quest_master: bool,
+    #[serde(default)]
+    pub ms_master_chef: bool,
+    #[serde(default)]
+    pub ms_gift_giver: bool,
+    #[serde(default)]
+    pub ms_popular: bool,
+    #[serde(default)]
+    pub ms_crisis_survivor: bool,
+    pub rating_score: f32,
+    pub rating_days: u32,
+    pub hobby_painting: f32,
+    pub hobby_gaming: f32,
+    pub hobby_music: f32,
+    pub burnout: bool,
+    pub burnout_days: u32,
+    pub malnourished: bool,
+    pub malnourish_days: u32,
+    pub hospitalized: bool,
+    pub hospital_timer: f32,
+    #[serde(default)]
+    pub mental_fatigue: bool,
+    #[serde(default)]
+    pub high_stress_days: u32,
+    #[serde(default)]
+    pub low_stress_days: u32,
+    pub invest_amount: f32,
+    pub invest_risk: u8,
+    pub invest_rate: f32,
+    pub invest_total_return: f32,
+    pub rep_score: f32,
+    pub transport: u8,
+    #[serde(default)]
+    pub transport_work_uses: u32,
+    #[serde(default)]
+    pub transport_maintenance_due: bool,
+    pub has_pet: bool,
+    pub pet_hunger: f32,
+    pub pet_name: String,
+    #[serde(default)]
+    pub pet_kind: u8,
+    pub parties_thrown: u32,
+    pub npc_friendship: [f32; 6],
+    pub days_survived: u32,
+    #[serde(default)]
+    pub quests_completed_total: u32,
+    #[serde(default)]
+    pub total_gifts: u32,
+    #[serde(default)]
+    pub total_crafted: u32,
+    #[serde(default)]
+    pub total_quests: u32,
+    #[serde(default)]
+    pub crisis_kind: u8,
+    #[serde(default)]
+    pub crisis_days_left: u32,
+    #[serde(default)]
+    pub crises_survived: u32,
+    #[serde(default)]
+    pub crisis_last_day: u32,
+    #[serde(default)]
+    pub has_insurance: bool,
+    #[serde(default)]
+    pub insurance_days: u32,
+    #[serde(default)]
+    pub festival_tokens: u32,
+    #[serde(default)]
+    pub festival_spring: bool,
+    #[serde(default)]
+    pub festival_summer: bool,
+    #[serde(default)]
+    pub festival_autumn: bool,
+    #[serde(default)]
+    pub festival_winter: bool,
+    #[serde(default)]
+    pub festivals_total: u32,
+    #[serde(default)]
+    pub ms_festival_goer: bool,
+    #[serde(default)]
+    pub furnishing_desk: bool,
+    #[serde(default)]
+    pub furnishing_bed: bool,
+    #[serde(default)]
+    pub furnishing_kitchen: bool,
+}
+
+impl SaveDataLegacy {
+    fn into_v2(self) -> SaveData {
+        let player = PlayerSave {
+            player_id: 0,
+            energy: self.energy,
+            hunger: self.hunger,
+            happiness: self.happiness,
+            health: self.health,
+            stress: self.stress,
+            sleep_debt: self.sleep_debt,
+            money: self.money,
+            savings: self.savings,
+            loan: self.loan,
+            meals: self.meals,
+            unpaid_rent_days: self.unpaid_rent_days,
+            meditation_buff: self.meditation_buff,
+            skill_cooking: self.skill_cooking,
+            skill_career: self.skill_career,
+            skill_fitness: self.skill_fitness,
+            skill_social: self.skill_social,
+            streak_days: self.streak_days,
+            promotion_notified: self.promotion_notified,
+            housing: self.housing,
+            inv_coffee: self.inv_coffee,
+            inv_vitamins: self.inv_vitamins,
+            inv_books: self.inv_books,
+            inv_coffee_age: self.inv_coffee_age,
+            inv_ingredient: self.inv_ingredient,
+            inv_gift_box: self.inv_gift_box,
+            inv_smoothie: self.inv_smoothie,
+            ms_saved_100: self.ms_saved_100,
+            ms_exec: self.ms_exec,
+            ms_best_friend: self.ms_best_friend,
+            ms_streak_7: self.ms_streak_7,
+            ms_rating_a: self.ms_rating_a,
+            ms_debt_free: self.ms_debt_free,
+            ms_penthouse: self.ms_penthouse,
+            ms_investor: self.ms_investor,
+            ms_hobbyist: self.ms_hobbyist,
+            ms_famous: self.ms_famous,
+            ms_scholar: self.ms_scholar,
+            ms_pet_owner: self.ms_pet_owner,
+            ms_party_animal: self.ms_party_animal,
+            ms_commuter: self.ms_commuter,
+            ms_all_seasons: self.ms_all_seasons,
+            ms_quest_master: self.ms_quest_master,
+            ms_master_chef: self.ms_master_chef,
+            ms_gift_giver: self.ms_gift_giver,
+            ms_popular: self.ms_popular,
+            ms_crisis_survivor: self.ms_crisis_survivor,
+            ms_festival_goer: self.ms_festival_goer,
+            rating_score: self.rating_score,
+            rating_days: self.rating_days,
+            hobby_painting: self.hobby_painting,
+            hobby_gaming: self.hobby_gaming,
+            hobby_music: self.hobby_music,
+            burnout: self.burnout,
+            burnout_days: self.burnout_days,
+            malnourished: self.malnourished,
+            malnourish_days: self.malnourish_days,
+            hospitalized: self.hospitalized,
+            hospital_timer: self.hospital_timer,
+            mental_fatigue: self.mental_fatigue,
+            high_stress_days: self.high_stress_days,
+            low_stress_days: self.low_stress_days,
+            invest_amount: self.invest_amount,
+            invest_risk: self.invest_risk,
+            invest_rate: self.invest_rate,
+            invest_total_return: self.invest_total_return,
+            rep_score: self.rep_score,
+            transport: self.transport,
+            transport_work_uses: self.transport_work_uses,
+            transport_maintenance_due: self.transport_maintenance_due,
+            has_pet: self.has_pet,
+            pet_hunger: self.pet_hunger,
+            pet_name: self.pet_name,
+            pet_kind: self.pet_kind,
+            parties_thrown: self.parties_thrown,
+            npc_friendship: self.npc_friendship,
+            days_survived: self.days_survived,
+        };
+        let world = WorldSave {
+            day: self.day,
+            quests_completed_total: self.quests_completed_total,
+            total_gifts: self.total_gifts,
+            total_crafted: self.total_crafted,
+            total_quests: self.total_quests,
+            crisis_kind: self.crisis_kind,
+            crisis_days_left: self.crisis_days_left,
+            crises_survived: self.crises_survived,
+            crisis_last_day: self.crisis_last_day,
+            has_insurance: self.has_insurance,
+            insurance_days: self.insurance_days,
+            festival_tokens: self.festival_tokens,
+            festival_spring: self.festival_spring,
+            festival_summer: self.festival_summer,
+            festival_autumn: self.festival_autumn,
+            festival_winter: self.festival_winter,
+            festivals_total: self.festivals_total,
+            furnishing_desk: self.furnishing_desk,
+            furnishing_bed: self.furnishing_bed,
+            furnishing_kitchen: self.furnishing_kitchen,
+        };
+        SaveData {
+            version: 2,
+            world,
+            players: vec![player],
+        }
+    }
+}
+
+// ── PlayerSave ────────────────────────────────────────────────────────────────
+
+/// Per-player persistent state. Index 0 is the local player.
+#[derive(Serialize, Deserialize, Default, Clone)]
+pub struct PlayerSave {
+    /// Stable player identifier. 0 = local / single-player.
+    #[serde(default)]
+    pub player_id: u32,
+
     // ── PlayerStats ───────────────────────────────────────────────────────────
     pub energy: f32,
     pub hunger: f32,
@@ -94,10 +347,6 @@ pub struct SaveData {
     pub unpaid_rent_days: u32,
     pub meditation_buff: f32,
 
-    // ── GameTime ──────────────────────────────────────────────────────────────
-    /// Day number (hours reset to 8 on load).
-    pub day: u32,
-
     // ── Skills ────────────────────────────────────────────────────────────────
     pub skill_cooking: f32,
     pub skill_career: f32,
@@ -110,7 +359,6 @@ pub struct SaveData {
     pub promotion_notified: u8,
 
     // ── HousingTier ───────────────────────────────────────────────────────────
-    /// 0 = Unhoused, 1 = Apartment, 2 = Condo, 3 = Penthouse
     pub housing: u8,
 
     // ── Inventory ─────────────────────────────────────────────────────────────
@@ -151,6 +399,8 @@ pub struct SaveData {
     pub ms_popular: bool,
     #[serde(default)]
     pub ms_crisis_survivor: bool,
+    #[serde(default)]
+    pub ms_festival_goer: bool,
 
     // ── LifeRating ────────────────────────────────────────────────────────────
     pub rating_score: f32,
@@ -185,7 +435,6 @@ pub struct SaveData {
     pub rep_score: f32,
 
     // ── Transport ─────────────────────────────────────────────────────────────
-    /// 0 = Walk, 1 = Bike, 2 = Car
     pub transport: u8,
     #[serde(default)]
     pub transport_work_uses: u32,
@@ -196,7 +445,6 @@ pub struct SaveData {
     pub has_pet: bool,
     pub pet_hunger: f32,
     pub pet_name: String,
-    /// 0 = Dog, 1 = Cat, 2 = Fish
     #[serde(default)]
     pub pet_kind: u8,
 
@@ -204,11 +452,19 @@ pub struct SaveData {
     pub parties_thrown: u32,
 
     // ── NPC Friendship ────────────────────────────────────────────────────────
-    /// Indexed by NpcId: [Alex(0), Sam(1), Mia(2), Jordan(3), Taylor(4), Casey(5)]
     pub npc_friendship: [f32; 6],
 
     // ── GameState ─────────────────────────────────────────────────────────────
     pub days_survived: u32,
+}
+
+// ── WorldSave ─────────────────────────────────────────────────────────────────
+
+/// Shared world state, independent of which player is active.
+#[derive(Serialize, Deserialize, Default, Clone)]
+pub struct WorldSave {
+    // ── GameTime ──────────────────────────────────────────────────────────────
+    pub day: u32,
 
     // ── Quests ────────────────────────────────────────────────────────────────
     #[serde(default)]
@@ -247,8 +503,6 @@ pub struct SaveData {
     pub festival_winter: bool,
     #[serde(default)]
     pub festivals_total: u32,
-    #[serde(default)]
-    pub ms_festival_goer: bool,
 
     // ── Furnishings ───────────────────────────────────────────────────────────
     #[serde(default)]
@@ -257,6 +511,42 @@ pub struct SaveData {
     pub furnishing_bed: bool,
     #[serde(default)]
     pub furnishing_kitchen: bool,
+}
+
+// ── SaveData (v2) ─────────────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SaveData {
+    /// Format version. 1 = legacy flat format (handled by SaveDataLegacy),
+    /// 2 = current per-player format.
+    pub version: u32,
+    /// Shared world state.
+    pub world: WorldSave,
+    /// Per-player state. `players[0]` is always the local/single player.
+    pub players: Vec<PlayerSave>,
+}
+
+impl Default for SaveData {
+    fn default() -> Self {
+        Self {
+            version: 2,
+            world: WorldSave::default(),
+            players: vec![PlayerSave::default()],
+        }
+    }
+}
+
+impl SaveData {
+    /// Convenience accessor for the local player save slot.
+    pub fn local_player(&self) -> &PlayerSave {
+        self.players.first().expect("SaveData must have at least one player")
+    }
+
+    /// Mutable convenience accessor for the local player save slot.
+        #[allow(dead_code)]
+    pub fn local_player_mut(&mut self) -> &mut PlayerSave {
+           self.players.first_mut().expect("SaveData must have at least one player")
+    }
 }
 
 // ── SystemParam groups (Bevy 16-param limit) ──────────────────────────────────
@@ -339,10 +629,18 @@ pub fn save_exists() -> bool {
     read_save_text().is_some()
 }
 
-/// Load raw save data from storage. Returns `None` if no save or parse error.
+/// Load save data from storage, migrating from legacy format if needed.
+/// Returns `None` if no save exists or data is completely unparseable.
 pub fn load_save_data() -> Option<SaveData> {
     let contents = read_save_text()?;
-    serde_json::from_str(&contents).ok()
+    // Try current v2 format first.
+    if let Ok(data) = serde_json::from_str::<SaveData>(&contents) {
+        return Some(data);
+    }
+    // Fall back to legacy v1 flat format and migrate.
+    serde_json::from_str::<SaveDataLegacy>(&contents)
+        .ok()
+        .map(SaveDataLegacy::into_v2)
 }
 
 // ── Systems ───────────────────────────────────────────────────────────────────
@@ -372,7 +670,8 @@ pub fn handle_save(
         }
     }
 
-    let data = SaveData {
+    let player = PlayerSave {
+        player_id: 0,
         energy: stats.energy,
         hunger: stats.hunger,
         happiness: stats.happiness,
@@ -385,7 +684,6 @@ pub fn handle_save(
         meals: stats.meals,
         unpaid_rent_days: stats.unpaid_rent_days,
         meditation_buff: stats.meditation_buff,
-        day: a.gt.day,
         skill_cooking: skills.cooking,
         skill_career: skills.career,
         skill_fitness: skills.fitness,
@@ -420,6 +718,7 @@ pub fn handle_save(
         ms_gift_giver: a.ms.gift_giver,
         ms_popular: a.ms.popular,
         ms_crisis_survivor: a.ms.crisis_survivor,
+        ms_festival_goer: a.ms.festival_goer,
         rating_score: a.rating.score,
         rating_days: a.rating.days,
         hobby_painting: b.hobbies.painting,
@@ -449,6 +748,9 @@ pub fn handle_save(
         parties_thrown: b.social.parties_thrown,
         npc_friendship,
         days_survived: b.gs.days_survived,
+    };
+    let world = WorldSave {
+        day: a.gt.day,
         quests_completed_total: b.quest_board.completed_total,
         total_gifts: b.gs.total_gifts,
         total_crafted: b.gs.total_crafted,
@@ -465,10 +767,14 @@ pub fn handle_save(
         festival_autumn: b.festival.autumn_attended,
         festival_winter: b.festival.winter_attended,
         festivals_total: b.festival.festivals_total,
-        ms_festival_goer: a.ms.festival_goer,
         furnishing_desk: furnishings.desk,
         furnishing_bed: furnishings.bed,
         furnishing_kitchen: furnishings.kitchen,
+    };
+    let data = SaveData {
+        version: 2,
+        world,
+        players: vec![player],
     };
 
     match serde_json::to_string_pretty(&data) {
@@ -502,6 +808,9 @@ pub fn apply_save_data(
     }
     let Some(data) = pending.0.take() else { return };
 
+    let p = data.local_player();
+    let w = &data.world;
+
     let Some((mut stats, mut skills, mut streak, mut housing, mut inv, mut furnishings)) =
         a.player_q.iter_mut().next()
     else {
@@ -509,106 +818,107 @@ pub fn apply_save_data(
     };
 
     // ── PlayerStats ───────────────────────────────────────────────────────────
-    stats.energy = data.energy;
-    stats.hunger = data.hunger;
-    stats.happiness = data.happiness;
-    stats.health = data.health;
-    stats.stress = data.stress;
-    stats.sleep_debt = data.sleep_debt;
-    stats.money = data.money;
-    stats.savings = data.savings;
-    stats.loan = data.loan;
-    stats.meals = data.meals;
-    stats.unpaid_rent_days = data.unpaid_rent_days;
-    stats.meditation_buff = data.meditation_buff;
+    stats.energy = p.energy;
+    stats.hunger = p.hunger;
+    stats.happiness = p.happiness;
+    stats.health = p.health;
+    stats.stress = p.stress;
+    stats.sleep_debt = p.sleep_debt;
+    stats.money = p.money;
+    stats.savings = p.savings;
+    stats.loan = p.loan;
+    stats.meals = p.meals;
+    stats.unpaid_rent_days = p.unpaid_rent_days;
+    stats.meditation_buff = p.meditation_buff;
 
     // ── GameTime ──────────────────────────────────────────────────────────────
-    a.gt.day = data.day;
-    a.gt.prev_day = data.day; // prevent false new-day trigger
+    a.gt.day = w.day;
+    a.gt.prev_day = w.day; // prevent false new-day trigger
     a.gt.hours = 8.; // start each loaded session in the morning
 
     // ── Skills ────────────────────────────────────────────────────────────────
-    skills.cooking = data.skill_cooking;
-    skills.career = data.skill_career;
-    skills.fitness = data.skill_fitness;
-    skills.social = data.skill_social;
+    skills.cooking = p.skill_cooking;
+    skills.career = p.skill_career;
+    skills.fitness = p.skill_fitness;
+    skills.social = p.skill_social;
 
     // ── WorkStreak ────────────────────────────────────────────────────────────
-    streak.days = data.streak_days;
-    streak.promotion_notified = data.promotion_notified;
+    streak.days = p.streak_days;
+    streak.promotion_notified = p.promotion_notified;
 
     // ── HousingTier ───────────────────────────────────────────────────────────
-    *housing = HousingTier::from(data.housing);
+    *housing = HousingTier::from(p.housing);
 
     // ── Furnishings ───────────────────────────────────────────────────────────
-    furnishings.desk = data.furnishing_desk;
-    furnishings.bed = data.furnishing_bed;
-    furnishings.kitchen = data.furnishing_kitchen;
+    furnishings.desk = w.furnishing_desk;
+    furnishings.bed = w.furnishing_bed;
+    furnishings.kitchen = w.furnishing_kitchen;
 
     // ── Inventory ─────────────────────────────────────────────────────────────
-    inv.coffee = data.inv_coffee;
-    inv.vitamins = data.inv_vitamins;
-    inv.books = data.inv_books;
-    inv.coffee_age = data.inv_coffee_age;
-    inv.ingredient = data.inv_ingredient;
-    inv.gift_box = data.inv_gift_box;
-    inv.smoothie = data.inv_smoothie;
+    inv.coffee = p.inv_coffee;
+    inv.vitamins = p.inv_vitamins;
+    inv.books = p.inv_books;
+    inv.coffee_age = p.inv_coffee_age;
+    inv.ingredient = p.inv_ingredient;
+    inv.gift_box = p.inv_gift_box;
+    inv.smoothie = p.inv_smoothie;
 
     // ── Milestones ────────────────────────────────────────────────────────────
-    a.ms.saved_100 = data.ms_saved_100;
-    a.ms.exec = data.ms_exec;
-    a.ms.best_friend = data.ms_best_friend;
-    a.ms.streak_7 = data.ms_streak_7;
-    a.ms.rating_a = data.ms_rating_a;
-    a.ms.debt_free = data.ms_debt_free;
-    a.ms.penthouse = data.ms_penthouse;
-    a.ms.investor = data.ms_investor;
-    a.ms.hobbyist = data.ms_hobbyist;
-    a.ms.famous = data.ms_famous;
-    a.ms.scholar = data.ms_scholar;
-    a.ms.pet_owner = data.ms_pet_owner;
-    a.ms.party_animal = data.ms_party_animal;
-    a.ms.commuter = data.ms_commuter;
-    a.ms.all_seasons = data.ms_all_seasons;
-    a.ms.quest_master = data.ms_quest_master;
-    a.ms.master_chef = data.ms_master_chef;
-    a.ms.gift_giver = data.ms_gift_giver;
-    a.ms.popular = data.ms_popular;
-    a.ms.crisis_survivor = data.ms_crisis_survivor;
+    a.ms.saved_100 = p.ms_saved_100;
+    a.ms.exec = p.ms_exec;
+    a.ms.best_friend = p.ms_best_friend;
+    a.ms.streak_7 = p.ms_streak_7;
+    a.ms.rating_a = p.ms_rating_a;
+    a.ms.debt_free = p.ms_debt_free;
+    a.ms.penthouse = p.ms_penthouse;
+    a.ms.investor = p.ms_investor;
+    a.ms.hobbyist = p.ms_hobbyist;
+    a.ms.famous = p.ms_famous;
+    a.ms.scholar = p.ms_scholar;
+    a.ms.pet_owner = p.ms_pet_owner;
+    a.ms.party_animal = p.ms_party_animal;
+    a.ms.commuter = p.ms_commuter;
+    a.ms.all_seasons = p.ms_all_seasons;
+    a.ms.quest_master = p.ms_quest_master;
+    a.ms.master_chef = p.ms_master_chef;
+    a.ms.gift_giver = p.ms_gift_giver;
+    a.ms.popular = p.ms_popular;
+    a.ms.crisis_survivor = p.ms_crisis_survivor;
+    a.ms.festival_goer = p.ms_festival_goer;
 
     // ── LifeRating ────────────────────────────────────────────────────────────
-    a.rating.score = data.rating_score;
-    a.rating.days = data.rating_days;
+    a.rating.score = p.rating_score;
+    a.rating.days = p.rating_days;
 
     // ── Hobbies ───────────────────────────────────────────────────────────────
-    b.hobbies.painting = data.hobby_painting;
-    b.hobbies.gaming = data.hobby_gaming;
-    b.hobbies.music = data.hobby_music;
+    b.hobbies.painting = p.hobby_painting;
+    b.hobbies.gaming = p.hobby_gaming;
+    b.hobbies.music = p.hobby_music;
 
     // ── Conditions ────────────────────────────────────────────────────────────
-    b.conds.burnout = data.burnout;
-    b.conds.burnout_days = data.burnout_days;
-    b.conds.malnourished = data.malnourished;
-    b.conds.malnourish_days = data.malnourish_days;
-    b.conds.hospitalized = data.hospitalized;
-    b.conds.hospital_timer = data.hospital_timer;
-    b.conds.mental_fatigue = data.mental_fatigue;
-    b.conds.high_stress_days = data.high_stress_days;
-    b.conds.low_stress_days = data.low_stress_days;
+    b.conds.burnout = p.burnout;
+    b.conds.burnout_days = p.burnout_days;
+    b.conds.malnourished = p.malnourished;
+    b.conds.malnourish_days = p.malnourish_days;
+    b.conds.hospitalized = p.hospitalized;
+    b.conds.hospital_timer = p.hospital_timer;
+    b.conds.mental_fatigue = p.mental_fatigue;
+    b.conds.high_stress_days = p.high_stress_days;
+    b.conds.low_stress_days = p.low_stress_days;
 
     // ── Investment ────────────────────────────────────────────────────────────
-    b.invest.amount = data.invest_amount;
-    b.invest.risk = data.invest_risk;
-    b.invest.daily_return_rate = data.invest_rate;
-    b.invest.total_return = data.invest_total_return;
+    b.invest.amount = p.invest_amount;
+    b.invest.risk = p.invest_risk;
+    b.invest.daily_return_rate = p.invest_rate;
+    b.invest.total_return = p.invest_total_return;
 
     // ── Reputation ────────────────────────────────────────────────────────────
-    b.rep.score = data.rep_score;
+    b.rep.score = p.rep_score;
 
     // ── Transport ─────────────────────────────────────────────────────────────
-    b.transport.kind = TransportKind::from(data.transport);
-    b.transport.work_uses = data.transport_work_uses;
-    b.transport.maintenance_due = data.transport_maintenance_due;
+    b.transport.kind = TransportKind::from(p.transport);
+    b.transport.work_uses = p.transport_work_uses;
+    b.transport.maintenance_due = p.transport_maintenance_due;
     if b.transport.kind == TransportKind::Car {
         for mut vis in &mut vehicle_q {
             *vis = Visibility::Visible;
@@ -616,43 +926,42 @@ pub fn apply_save_data(
     }
 
     // ── Pet ───────────────────────────────────────────────────────────────────
-    b.pet.has_pet = data.has_pet;
-    b.pet.hunger = data.pet_hunger;
-    b.pet.name = data.pet_name;
+    b.pet.has_pet = p.has_pet;
+    b.pet.hunger = p.pet_hunger;
+    b.pet.name = p.pet_name.clone();
     b.pet.fed_today = false;
-    b.pet.kind = PetKind::from(data.pet_kind);
+    b.pet.kind = PetKind::from(p.pet_kind);
 
     // ── SocialEvents ──────────────────────────────────────────────────────────
-    b.social.parties_thrown = data.parties_thrown;
+    b.social.parties_thrown = p.parties_thrown;
 
     // ── Season (derived from day) ─────────────────────────────────────────────
-    b.season.current = SeasonKind::from_day(data.day);
+    b.season.current = SeasonKind::from_day(w.day);
 
     // ── GameState ─────────────────────────────────────────────────────────────
-    b.gs.days_survived = data.days_survived;
+    b.gs.days_survived = p.days_survived;
 
     // ── Quests ────────────────────────────────────────────────────────────────
-    b.quest_board.completed_total = data.quests_completed_total;
-    b.gs.total_gifts = data.total_gifts;
-    b.gs.total_crafted = data.total_crafted;
-    b.gs.total_quests = data.total_quests;
+    b.quest_board.completed_total = w.quests_completed_total;
+    b.gs.total_gifts = w.total_gifts;
+    b.gs.total_crafted = w.total_crafted;
+    b.gs.total_quests = w.total_quests;
 
     // ── Crisis ────────────────────────────────────────────────────────────────
-    b.crisis.active = CrisisKind::from_u8(data.crisis_kind);
-    b.crisis.days_left = data.crisis_days_left;
-    b.crisis.crises_survived = data.crises_survived;
-    b.crisis.last_crisis_day = data.crisis_last_day;
-    b.crisis.has_insurance = data.has_insurance;
-    b.crisis.insurance_days = data.insurance_days;
+    b.crisis.active = CrisisKind::from_u8(w.crisis_kind);
+    b.crisis.days_left = w.crisis_days_left;
+    b.crisis.crises_survived = w.crises_survived;
+    b.crisis.last_crisis_day = w.crisis_last_day;
+    b.crisis.has_insurance = w.has_insurance;
+    b.crisis.insurance_days = w.insurance_days;
 
     // ── Festival ──────────────────────────────────────────────────────────────
-    b.festival.tokens = data.festival_tokens;
-    b.festival.spring_attended = data.festival_spring;
-    b.festival.summer_attended = data.festival_summer;
-    b.festival.autumn_attended = data.festival_autumn;
-    b.festival.winter_attended = data.festival_winter;
-    b.festival.festivals_total = data.festivals_total;
-    a.ms.festival_goer = data.ms_festival_goer;
+    b.festival.tokens = w.festival_tokens;
+    b.festival.spring_attended = w.festival_spring;
+    b.festival.summer_attended = w.festival_summer;
+    b.festival.autumn_attended = w.festival_autumn;
+    b.festival.winter_attended = w.festival_winter;
+    b.festival.festivals_total = w.festivals_total;
 
     // ── NPC Friendship ────────────────────────────────────────────────────────
     friendship.levels.clear();
@@ -660,7 +969,7 @@ pub fn apply_save_data(
         if npc_id.0 < 6 {
             friendship
                 .levels
-                .insert(entity, data.npc_friendship[npc_id.0]);
+                .insert(entity, p.npc_friendship[npc_id.0]);
         }
     }
 }
@@ -759,15 +1068,16 @@ pub fn start_tutorial_if_new_game(
 #[cfg(test)]
 #[allow(clippy::field_reassign_with_default)]
 mod tests {
-    use super::SaveData;
+    use super::{PlayerSave, SaveData, SaveDataLegacy, WorldSave};
 
     // Adding a new SaveData field checklist:
-    // 1. Add field + #[serde(default)] to SaveData struct
-    // 2. Serialize in handle_save (data.field = resource.field)
-    // 3. Deserialize in apply_save_data (resource.field = data.field)
-    // 4. Add field to sample_save() below (compile error if missed)
-    fn sample_save() -> SaveData {
-        SaveData {
+    // 1. Add field + #[serde(default)] to PlayerSave or WorldSave
+    // 2. Serialize in handle_save (player.field = ... or world.field = ...)
+    // 3. Deserialize in apply_save_data (p.field or w.field)
+    // 4. Update sample_save() below (compile error if missed)
+    fn sample_player() -> PlayerSave {
+        PlayerSave {
+            player_id: 0,
             energy: 75.5,
             hunger: 30.0,
             happiness: 60.0,
@@ -780,7 +1090,6 @@ mod tests {
             meals: 2,
             unpaid_rent_days: 0,
             meditation_buff: 0.0,
-            day: 5,
             skill_cooking: 1.5,
             skill_career: 2.0,
             skill_fitness: 0.5,
@@ -792,6 +1101,9 @@ mod tests {
             inv_vitamins: 1,
             inv_books: 0,
             inv_coffee_age: 2,
+            inv_ingredient: 0,
+            inv_gift_box: 0,
+            inv_smoothie: 0,
             ms_saved_100: false,
             ms_exec: true,
             ms_best_friend: false,
@@ -812,6 +1124,7 @@ mod tests {
             ms_gift_giver: false,
             ms_popular: false,
             ms_crisis_survivor: false,
+            ms_festival_goer: false,
             rating_score: 72.0,
             rating_days: 5,
             hobby_painting: 0.0,
@@ -841,13 +1154,16 @@ mod tests {
             parties_thrown: 1,
             npc_friendship: [2.0, 3.5, 1.0, 0.0, 0.5, 1.5],
             days_survived: 5,
+        }
+    }
+
+    fn sample_world() -> WorldSave {
+        WorldSave {
+            day: 5,
             quests_completed_total: 0,
             total_gifts: 0,
             total_crafted: 0,
             total_quests: 0,
-            inv_ingredient: 0,
-            inv_gift_box: 0,
-            inv_smoothie: 0,
             crisis_kind: 0,
             crisis_days_left: 0,
             crises_survived: 0,
@@ -860,10 +1176,17 @@ mod tests {
             festival_autumn: false,
             festival_winter: false,
             festivals_total: 0,
-            ms_festival_goer: false,
             furnishing_desk: false,
             furnishing_bed: false,
             furnishing_kitchen: false,
+        }
+    }
+
+    fn sample_save() -> SaveData {
+        SaveData {
+            version: 2,
+            world: sample_world(),
+            players: vec![sample_player()],
         }
     }
 
@@ -873,55 +1196,64 @@ mod tests {
         let json = serde_json::to_string(&original).expect("serialize");
         let restored: SaveData = serde_json::from_str(&json).expect("deserialize");
 
-        assert!((original.energy - restored.energy).abs() < f32::EPSILON);
-        assert!((original.money - restored.money).abs() < f32::EPSILON);
-        assert_eq!(original.day, restored.day);
-        assert_eq!(original.housing, restored.housing);
-        assert_eq!(original.ms_exec, restored.ms_exec);
-        assert_eq!(original.ms_debt_free, restored.ms_debt_free);
-        assert_eq!(original.transport, restored.transport);
-        assert!((original.npc_friendship[1] - restored.npc_friendship[1]).abs() < f32::EPSILON);
+        let op = original.local_player();
+        let rp = restored.local_player();
+        assert!((op.energy - rp.energy).abs() < f32::EPSILON);
+        assert!((op.money - rp.money).abs() < f32::EPSILON);
+        assert_eq!(original.world.day, restored.world.day);
+        assert_eq!(op.housing, rp.housing);
+        assert_eq!(op.ms_exec, rp.ms_exec);
+        assert_eq!(op.ms_debt_free, rp.ms_debt_free);
+        assert_eq!(op.transport, rp.transport);
+        assert!((op.npc_friendship[1] - rp.npc_friendship[1]).abs() < f32::EPSILON);
     }
 
     #[test]
     fn save_data_default_is_valid_json() {
         let data = SaveData::default();
         let json = serde_json::to_string(&data).expect("serialize default");
-        let _: SaveData = serde_json::from_str(&json).expect("deserialize default");
+        let restored: SaveData = serde_json::from_str(&json).expect("deserialize default");
+        assert_eq!(restored.version, 2);
+        assert_eq!(restored.players.len(), 1);
     }
 
     #[test]
     fn penthouse_housing_round_trips() {
         let mut data = sample_save();
-        data.housing = 3; // Penthouse
+        data.local_player_mut().housing = 3; // Penthouse
         let json = serde_json::to_string(&data).expect("serialize");
         let restored: SaveData = serde_json::from_str(&json).expect("deserialize");
-        assert_eq!(restored.housing, 3);
+        assert_eq!(restored.local_player().housing, 3);
     }
 
     #[test]
     fn pet_kind_fish_round_trips() {
         let mut data = sample_save();
-        data.has_pet = true;
-        data.pet_kind = 2; // Fish
-        data.pet_name = "Nemo".to_string();
-        data.pet_hunger = 15.;
+        {
+            let p = data.local_player_mut();
+            p.has_pet = true;
+            p.pet_kind = 2; // Fish
+            p.pet_name = "Nemo".to_string();
+            p.pet_hunger = 15.;
+        }
         let json = serde_json::to_string(&data).expect("serialize");
         let restored: SaveData = serde_json::from_str(&json).expect("deserialize");
-        assert_eq!(restored.pet_kind, 2);
-        assert_eq!(restored.pet_name, "Nemo");
-        assert!((restored.pet_hunger - 15.).abs() < f32::EPSILON);
+        let rp = restored.local_player();
+        assert_eq!(rp.pet_kind, 2);
+        assert_eq!(rp.pet_name, "Nemo");
+        assert!((rp.pet_hunger - 15.).abs() < f32::EPSILON);
     }
 
     #[test]
     fn friendship_boundary_values_round_trip() {
         let mut data = sample_save();
-        data.npc_friendship = [0., 5., 0., 5., 2.5, 0.];
+        data.local_player_mut().npc_friendship = [0., 5., 0., 5., 2.5, 0.];
         let json = serde_json::to_string(&data).expect("serialize");
         let restored: SaveData = serde_json::from_str(&json).expect("deserialize");
-        assert!((restored.npc_friendship[0] - 0.).abs() < f32::EPSILON);
-        assert!((restored.npc_friendship[1] - 5.).abs() < f32::EPSILON);
-        assert!((restored.npc_friendship[4] - 2.5).abs() < f32::EPSILON);
+        let rp = restored.local_player();
+        assert!((rp.npc_friendship[0] - 0.).abs() < f32::EPSILON);
+        assert!((rp.npc_friendship[1] - 5.).abs() < f32::EPSILON);
+        assert!((rp.npc_friendship[4] - 2.5).abs() < f32::EPSILON);
     }
 
     #[test]
@@ -941,29 +1273,56 @@ mod tests {
     #[test]
     fn all_milestone_flags_round_trip() {
         let mut data = SaveData::default();
-        data.ms_saved_100 = true;
-        data.ms_exec = true;
-        data.ms_best_friend = true;
-        data.ms_streak_7 = true;
-        data.ms_rating_a = true;
-        data.ms_debt_free = true;
-        data.ms_penthouse = true;
-        data.ms_investor = true;
-        data.ms_hobbyist = true;
-        data.ms_famous = true;
-        data.ms_scholar = true;
-        data.ms_pet_owner = true;
-        data.ms_party_animal = true;
-        data.ms_commuter = true;
-        data.ms_all_seasons = true;
+        {
+            let p = data.local_player_mut();
+            p.ms_saved_100 = true;
+            p.ms_exec = true;
+            p.ms_best_friend = true;
+            p.ms_streak_7 = true;
+            p.ms_rating_a = true;
+            p.ms_debt_free = true;
+            p.ms_penthouse = true;
+            p.ms_investor = true;
+            p.ms_hobbyist = true;
+            p.ms_famous = true;
+            p.ms_scholar = true;
+            p.ms_pet_owner = true;
+            p.ms_party_animal = true;
+            p.ms_commuter = true;
+            p.ms_all_seasons = true;
+        }
         let json = serde_json::to_string(&data).expect("serialize");
         let restored: SaveData = serde_json::from_str(&json).expect("deserialize");
+        let rp = restored.local_player();
         assert!(
-            restored.ms_saved_100
-                && restored.ms_exec
-                && restored.ms_penthouse
-                && restored.ms_all_seasons
-                && restored.ms_party_animal
+            rp.ms_saved_100
+                && rp.ms_exec
+                && rp.ms_penthouse
+                && rp.ms_all_seasons
+                && rp.ms_party_animal
         );
+    }
+
+    #[test]
+    fn legacy_v1_save_migrates_to_v2() {
+        // Build a minimal legacy flat save and verify it round-trips through migration.
+        let legacy = SaveDataLegacy {
+            energy: 80.0,
+            money: 250.0,
+            day: 10,
+            ms_exec: true,
+            npc_friendship: [1., 2., 3., 4., 5., 6.],
+            ..SaveDataLegacy::default()
+        };
+        let json = serde_json::to_string(&legacy).expect("serialize legacy");
+        // Manually call migration path.
+        let migrated: SaveData = serde_json::from_str::<SaveDataLegacy>(&json)
+            .expect("deserialize legacy")
+            .into_v2();
+        assert_eq!(migrated.version, 2);
+        assert_eq!(migrated.world.day, 10);
+        assert!((migrated.local_player().energy - 80.0).abs() < f32::EPSILON);
+        assert!(migrated.local_player().ms_exec);
+        assert!((migrated.local_player().npc_friendship[4] - 5.).abs() < f32::EPSILON);
     }
 }
