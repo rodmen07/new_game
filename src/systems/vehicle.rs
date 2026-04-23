@@ -115,3 +115,36 @@ pub fn reveal_car_on_purchase(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reveal_car_on_purchase_query_params_are_disjoint() {
+        let mut app = App::new();
+        app.insert_resource(Transport::default());
+        app.insert_resource(Pet::default());
+        app.add_systems(Update, reveal_car_on_purchase);
+
+        app.world_mut().spawn((Vehicle, Visibility::Hidden));
+        app.world_mut()
+            .spawn((OwnedPetVisual, Visibility::Hidden, Sprite::default()));
+
+        // Running one update validates system-param setup and catches B0001 conflicts.
+        app.update();
+
+        let mut car_q = app
+            .world_mut()
+            .query_filtered::<&Visibility, With<Vehicle>>();
+        let mut pet_q = app
+            .world_mut()
+            .query_filtered::<&Visibility, With<OwnedPetVisual>>();
+
+        let car_vis = car_q.single(app.world());
+        let pet_vis = pet_q.single(app.world());
+
+        assert_eq!(*car_vis, Visibility::Hidden);
+        assert_eq!(*pet_vis, Visibility::Hidden);
+    }
+}
