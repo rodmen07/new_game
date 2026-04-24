@@ -71,10 +71,13 @@ pub fn quest_offer_system(
     mut actions: EventReader<PlayerAction>,
     mut commands: Commands,
 ) {
-    if !actions
-        .read()
-        .any(|a| matches!(a, PlayerAction::RequestQuest))
-    {
+    let mut requested = false;
+    for action in actions.read() {
+        if matches!(action, PlayerAction::RequestQuest) {
+            requested = true;
+        }
+    }
+    if !requested {
         return;
     }
 
