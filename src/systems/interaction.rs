@@ -1432,35 +1432,24 @@ fn handle_bank_keys(
         return true;
     }
     if p6 {
-        if stats.can_afford(50.) {
-            stats.money -= 50.;
-            invest.amount += 50.;
-            if invest.risk == 0 {
-                invest.risk = 1;
-                invest.daily_return_rate = 0.04;
-            }
-            notif.message = format!("Invested $50 (Low risk). Portfolio: ${:.0}", invest.amount);
-        } else {
-            notif.message = "Need $50 to invest!".to_string();
-        }
-        notif.flush_message(3.);
+        bank_input.active = true;
+        bank_input.kind = BankInputKind::InvestLow;
+        bank_input.buffer.clear();
+        notif.push(
+            "Invest (low risk) amount: $_ [Enter]=confirm [Esc]=cancel",
+            10.,
+        );
         stats.cooldown = 0.5;
         return true;
     }
     if p7 {
-        if stats.can_afford(50.) {
-            stats.money -= 50.;
-            invest.amount += 50.;
-            invest.risk = 2;
-            invest.daily_return_rate = 0.10;
-            notif.message = format!(
-                "Invested $50 (Medium risk). Portfolio: ${:.0}",
-                invest.amount
-            );
-        } else {
-            notif.message = "Need $50!".to_string();
-        }
-        notif.flush_message(3.);
+        bank_input.active = true;
+        bank_input.kind = BankInputKind::InvestMedium;
+        bank_input.buffer.clear();
+        notif.push(
+            "Invest (medium risk) amount: $_ [Enter]=confirm [Esc]=cancel",
+            10.,
+        );
         stats.cooldown = 0.5;
         return true;
     }
@@ -2987,7 +2976,7 @@ pub fn handle_interaction(
                     notif.push(
                         if housing.has_access() {
                         format!(
-                            "Bank: ${:.0} saved. [1]Dep [2]Wth [3]Half [4]Loan [5]Repay [6]Inv(lo) [7]Inv(md) [8]Out [9]Ins | Upgrade: ${:.0} for {}",
+                            "Bank: ${:.0} saved. [1]Dep [2]Wth [3]Half [4]Loan [5]Repay [6]Inv$(lo) [7]Inv$(md) [8]Out [9]Ins | Upgrade: ${:.0} for {}",
                             stats.savings, cost, next_label
                         )
                     } else {
@@ -3465,6 +3454,7 @@ pub fn handle_bank_input(
     mut player_bank_q: Query<&mut BankInput, With<LocalPlayer>>,
     mut player_stats_q: Query<&mut PlayerStats, With<LocalPlayer>>,
     mut player_housing_q: Query<&mut HousingTier, With<LocalPlayer>>,
+    mut invest: ResMut<Investment>,
     mut notif: ResMut<Notification>,
     mut goal: ResMut<DailyGoal>,
 ) {
@@ -3485,10 +3475,11 @@ pub fn handle_bank_input(
 
     let actions: Vec<PlayerAction> = raw_actions.read().cloned().collect();
 
-    let kind_str = if bank_input.kind == BankInputKind::Deposit {
-        "Deposit"
-    } else {
-        "Withdraw"
+    let kind_str = match bank_input.kind {
+        BankInputKind::Deposit => "Deposit",
+        BankInputKind::Withdraw => "Withdraw",
+        BankInputKind::InvestLow => "Invest (low)",
+        BankInputKind::InvestMedium => "Invest (medium)",
     };
     notif.message = format!(
         "{} amount: ${}_ [Enter]=confirm [Esc]=cancel",
@@ -3587,6 +3578,42 @@ pub fn handle_bank_input(
                         format!("Not enough savings! (Have ${:.0})", stats.savings),
                         2.,
                     );
+                }
+            }
+            BankInputKind::InvestLow => {
+                if stats.can_afford(amount) {
+                    stats.money -= amount;
+                    invest.amount += amount;
+                    if invest.risk == 0 {
+                        invest.risk = 1;
+                        invest.daily_return_rate = 0.04;
+                    }
+                    notif.push(
+                        format!(
+                            "Invested ${:.0} (Low risk). Portfolio: ${:.0}",
+                            amount, invest.amount
+                        ),
+                        3.,
+                    );
+                } else {
+                    notif.push(format!("Not enough cash! (Have ${:.0})", stats.money), 2.);
+                }
+            }
+            BankInputKind::InvestMedium => {
+                if stats.can_afford(amount) {
+                    stats.money -= amount;
+                    invest.amount += amount;
+                    invest.risk = 2;
+                    invest.daily_return_rate = 0.10;
+                    notif.push(
+                        format!(
+                            "Invested ${:.0} (Medium risk). Portfolio: ${:.0}",
+                            amount, invest.amount
+                        ),
+                        3.,
+                    );
+                } else {
+                    notif.push(format!("Not enough cash! (Have ${:.0})", stats.money), 2.);
                 }
             }
         }

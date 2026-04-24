@@ -2,7 +2,7 @@ use crate::menu::AppState;
 use crate::resources::{GameTime, LightningTimer, WeatherKind};
 use bevy::audio::Volume;
 use bevy::prelude::*;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(any(test, not(target_arch = "wasm32")))]
 use std::path::PathBuf;
 
 // ── Event ─────────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ impl Plugin for GameAudioPlugin {
 
 // ── Systems ───────────────────────────────────────────────────────────────────
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(any(test, not(target_arch = "wasm32")))]
 fn asset_disk_path(relative: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("assets")
@@ -276,7 +276,7 @@ fn update_weather_audio(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::asset_disk_path;
 
     #[test]
     fn asset_disk_path_points_into_assets_dir() {
