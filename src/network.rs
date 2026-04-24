@@ -69,7 +69,7 @@ pub mod wasm_net {
     }
 
     #[derive(Component)]
-    struct RemoteNetSmoothing {
+    pub(crate) struct RemoteNetSmoothing {
         target_position: Vec2,
         seconds_since_update: f32,
     }

@@ -19,8 +19,8 @@ Current implemented highlights include:
 - wasm startup guard added to CI: wasm-target compile check plus a startup smoke test that catches Bevy query-parameter conflicts before deploy
 - web startup stability improvements: resolved wasm query conflict in vehicle/pet visibility updates and added user-gesture audio context resume for browser autoplay policies
 - expanded HOME, LIBRARY, and OFFICE footprints with updated wall bounds and reorganized furniture layouts for improved room flow
-- full-screen typing overlay: one random word per action, per-character green/highlight/gray feedback, auto-confirms on completion
-- expanded word banks (15-20 words per action category, 35+ categories) for high variety
+- full-screen typing overlay: one random word per skill-progression action, per-character green/highlight/gray feedback, auto-confirms on completion
+- expanded skill word banks (30+ words per skill action category) for high variety
 - save and load with JSON persistence
 - Menu, Playing, Paused, and Settings screens
 - banking, loans, investments, housing, and transport upgrades
@@ -28,10 +28,10 @@ Current implemented highlights include:
 - top-left HUD overlap reduced by moving/hiding the autoplay hint, and startup timeout now logs to console instead of showing a false in-game error banner
 - NPC friendship, quests, narrative unlocks, and reputation systems
 - pets, crisis events, seasonal festivals, and weather-driven visuals
-- universal typed action prompts with seniority-based retries and subject-aware phrases before tasks resolve
+- typed action prompts for skill-progression and multi-option menu confirmations, with seniority-based retries
 - immediate apartment unlock when a bank deposit crosses the first housing threshold
 
-The current baseline is verified with a successful build, a clean strict clippy run, and 172 passing tests.
+The current baseline is verified with a successful build, a clean strict clippy run, and 173 passing tests.
 
 ---
 
@@ -135,7 +135,7 @@ Notes for the web build:
 | Esc | Pause, cancel a typed prompt, or access settings |
 | Mouse wheel | Camera zoom |
 
-Interaction prompts appear at the bottom of the HUD whenever you are in range of something useful. When you trigger an action, a full-screen overlay appears with a single word to type - characters turn green as you type, the current character is highlighted, and the action confirms automatically when the word is complete.
+Interaction prompts appear at the bottom of the HUD whenever you are in range of something useful. Skill-progression actions and multi-option confirmations open a full-screen typing overlay with a single word to type - characters turn green as you type, the current character is highlighted, and the action confirms automatically when the word is complete.
 
 ---
 
@@ -190,6 +190,7 @@ src/
 
 ### Economy and progression
 - Cash, savings, loan pressure, rent, eviction risk, and seeded investment returns
+- Amount-based investing at the bank (low and medium risk entries)
 - Housing upgrades from unhoused to apartment, condo, and penthouse
 - Transport progression from walking to bike and car, with movement and work bonuses
 - Skills, hobbies, reputation, courses, and goal rewards feeding long-term progression
@@ -210,7 +211,7 @@ src/
 
 ### Presentation and UX
 - Main menu, pause flow, and in-game settings screen for difficulty and volume
-- Full-screen typing challenge overlay: one random word per action drawn from 35+ category word banks (15-20 words each), with per-character green/highlight/gray feedback and auto-confirm on word completion - no Enter required
+- Full-screen typing challenge overlay for skill-progression and menu-confirm actions, with per-character green/highlight/gray feedback and auto-confirm on word completion
 - Seniority-based retry count so skilled characters get fewer chances to fail
 - Dual-panel HUD with goals, warnings, conditions, inventory, weather, story summary, and live interaction tips
 - Smooth animated stat bars that lerp toward their real values instead of snapping, and a notification panel that slides in from above on new messages

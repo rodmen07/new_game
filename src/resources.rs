@@ -1242,6 +1242,8 @@ pub enum BankInputKind {
     #[default]
     Deposit,
     Withdraw,
+    InvestLow,
+    InvestMedium,
 }
 
 #[derive(Component, Default)]
