@@ -29,7 +29,7 @@ const S: f32 = 4.0;
 /// (Bevy world pixels).  Because S=4, one tile covers 16 pre-scale units.
 const TILE_PX: u32 = 64;
 /// Total number of distinct tile types (= columns in the atlas row).
-const TILE_COUNT: u32 = 16;
+const TILE_COUNT: u32 = 18;
 /// Tilemap dimensions in tiles.
 const MAP_COLS: u32 = 90;
 const MAP_ROWS: u32 = 62;
@@ -55,25 +55,30 @@ const T_CAFE: u32 = 12;
 const T_ADOPTION: u32 = 13;
 const T_GARAGE: u32 = 14;
 const T_APARTMENTS: u32 = 15;
+// April 2026 map redesign additions:
+const T_SCHOOL: u32 = 16;
+const T_TRANSIT: u32 = 17;
 
 /// sRGB u8 colour for each tile type (matches the original Bevy Color::srgb values).
-const TILE_COLORS: [[u8; 3]; 16] = [
+const TILE_COLORS: [[u8; 3]; 18] = [
     [71, 66, 59],    // 0  Ground
     [92, 87, 77],    // 1  Road
     [107, 102, 92],  // 2  Sidewalk
     [87, 82, 71],    // 3  Alley
     [184, 148, 107], // 4  HOME
-    [89, 158, 140],  // 5  WELLNESS
+    [89, 158, 140],  // 5  GYM (was WELLNESS)
     [77, 107, 148],  // 6  LIBRARY
     [71, 148, 71],   // 7  PARK
     [107, 133, 173], // 8  OFFICE
     [140, 122, 82],  // 9  BANK
-    [217, 230, 224], // 10 CLINIC
-    [82, 133, 148],  // 11 STORE
-    [209, 173, 115], // 12 CAFÉ
+    [217, 230, 224], // 10 HOSPITAL (was CLINIC)
+    [82, 133, 148],  // 11 MARKET (was STORE)
+    [209, 173, 115], // 12 RESTAURANT (was CAFÉ)
     [158, 128, 199], // 13 ADOPTION
     [102, 97, 115],  // 14 GARAGE
     [158, 140, 199], // 15 APARTMENTS
+    [199, 87, 71],   // 16 SCHOOL
+    [128, 140, 153], // 17 TRANSIT
 ];
 
 /// Convert a pre-scale x coordinate to the nearest tilemap column index.
@@ -137,6 +142,11 @@ fn build_tile_grid() -> Vec<u32> {
 
     // Apartments complex (north of back road)
     fill_tiles(&mut g, -250., 250., 380., 540., T_APARTMENTS);
+
+    // Back-street additions (April 2026): SCHOOL west of apartments,
+    // TRANSIT station east of apartments.
+    fill_tiles(&mut g, -525., -375., 380., 540., T_SCHOOL);
+    fill_tiles(&mut g, 375., 525., 380., 540., T_TRANSIT);
 
     g
 }
@@ -401,17 +411,20 @@ fn spawn_buildings_and_zones(commands: &mut Commands) {
     // -- Zone labels (tilemap provides the floor colour) ------------------------
     // North row
     zone_label(commands, -425., 180., 220., "HOME");
-    zone_label(commands, -255., 180., 200., "WELLNESS");
+    zone_label(commands, -255., 180., 200., "GYM");
     zone_label(commands, -85., 180., 220., "LIBRARY");
     zone_label(commands, 85., 180., 200., "PARK");
     zone_label(commands, 425., 180., 220., "OFFICE");
     // South row
     zone_label(commands, -425., -180., 200., "BANK");
-    zone_label(commands, -255., -180., 200., "CLINIC");
-    zone_label(commands, -85., -180., 200., "STORE");
-    zone_label(commands, 85., -180., 200., "CAFÉ");
+    zone_label(commands, -255., -180., 200., "HOSPITAL");
+    zone_label(commands, -85., -180., 200., "MARKET");
+    zone_label(commands, 85., -180., 200., "RESTAURANT");
     zone_label(commands, 255., -180., 200., "ADOPTION");
     zone_label(commands, 425., -180., 200., "GARAGE");
+    // Back-street row (April 2026 additions)
+    zone_label(commands, -450., 460., 160., "SCHOOL");
+    zone_label(commands, 450., 460., 160., "TRANSIT");
 
     // -- Building facade details ------------------------------------------------
     let wc = Color::srgb(0.82, 0.92, 0.98); // window glass
@@ -3431,13 +3444,113 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     vis_wall(commands, 100., 380., 200., 10., ac); // south-right
     // doorway gap is at x=0 ± 50 (100px wide)
 
+    // SCHOOL building walls (design center -450, 460; size 150x160)
+    let sc = Color::srgb(0.55, 0.22, 0.18);
+    vis_wall(commands, -450., 540., 150., 10., sc); // north
+    vis_wall(commands, -525., 460., 10., 160., sc); // west
+    vis_wall(commands, -375., 460., 10., 160., sc); // east
+    vis_wall(commands, -495., 380., 60., 10., sc); // south-left  (-525..-465)
+    vis_wall(commands, -405., 380., 60., 10., sc); // south-right (-435..-375)
+    // doorway gap is at x=-450 ± 15 (30px wide)
+    // Decorative: white classroom windows
+    rect(commands, -490., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
+    rect(commands, -450., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
+    rect(commands, -410., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
+    // Flagpole + flag
+    rect(commands, -380., 555., 2., 50., Color::srgb(0.20, 0.20, 0.20), 1.55);
+    rect(commands, -370., 590., 18., 12., Color::srgb(0.85, 0.20, 0.18), 1.6);
+    // "Blackboard" interior strip
+    rect(commands, -450., 470., 90., 6., Color::srgb(0.10, 0.16, 0.10), 1.7);
+    // SCHOOL interactables (interior, accessible via south door at x=-450)
+    obj(
+        commands,
+        -480.,
+        440.,
+        22.,
+        18.,
+        Color::srgb(0.42, 0.28, 0.18),
+        ActionKind::StudyCourse,
+        "[E] Attend Class",
+    );
+    obj(
+        commands,
+        -420.,
+        440.,
+        22.,
+        18.,
+        Color::srgb(0.30, 0.42, 0.58),
+        ActionKind::ComputerLab,
+        "[E] Computer Lab",
+    );
+    obj(
+        commands,
+        -450.,
+        490.,
+        24.,
+        14.,
+        Color::srgb(0.55, 0.40, 0.22),
+        ActionKind::Hobby(HobbyKind::Painting),
+        "[E] Art Class",
+    );
+
+    // TRANSIT station walls (design center 450, 460; size 150x160)
+    let tc = Color::srgb(0.32, 0.36, 0.42);
+    vis_wall(commands, 450., 540., 150., 10., tc); // north (back wall)
+    vis_wall(commands, 375., 460., 10., 160., tc); // west
+    vis_wall(commands, 525., 460., 10., 160., tc); // east
+    vis_wall(commands, 405., 380., 60., 10., tc); // south-left  (375..435)
+    vis_wall(commands, 495., 380., 60., 10., tc); // south-right (465..525)
+    // doorway gap is at x=450 ± 15 (30px wide)
+    // Concrete platform inset
+    rect(commands, 450., 460., 130., 130., Color::srgb(0.62, 0.62, 0.64), 1.4);
+    // Yellow safety stripe along the south edge of the platform
+    rect(commands, 450., 400., 130., 4., Color::srgb(0.95, 0.78, 0.18), 1.55);
+    // Stylised bus parked along the back wall
+    rect(commands, 450., 510., 100., 26., Color::srgb(0.85, 0.78, 0.30), 1.5);
+    rect(commands, 420., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
+    rect(commands, 450., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
+    rect(commands, 480., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
+    // Departures sign
+    rect(commands, 450., 478., 70., 10., Color::srgb(0.10, 0.12, 0.18), 1.6);
+    // TRANSIT interactables
+    obj(
+        commands,
+        420.,
+        440.,
+        22.,
+        18.,
+        Color::srgb(0.85, 0.55, 0.18),
+        ActionKind::BuyTransport,
+        "[E] Buy Transit Pass",
+    );
+    obj(
+        commands,
+        480.,
+        440.,
+        22.,
+        12.,
+        Color::srgb(0.45, 0.32, 0.22),
+        ActionKind::Relax,
+        "[E] Wait on Bench",
+    );
+    obj(
+        commands,
+        450.,
+        420.,
+        20.,
+        14.,
+        Color::srgb(0.72, 0.32, 0.20),
+        ActionKind::UseItem(ItemKind::Coffee),
+        "[E] Vending Coffee",
+    );
+
     // -- Building classification markers ---------------------------------------
     commands.spawn(Building {
         name: "HOME",
         kind: BuildingKind::Individual,
     });
     commands.spawn(Building {
-        name: "WELLNESS",
+        name: "GYM",
         kind: BuildingKind::Collective,
     });
     commands.spawn(Building {
@@ -3457,15 +3570,15 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
         kind: BuildingKind::Collective,
     });
     commands.spawn(Building {
-        name: "CLINIC",
+        name: "HOSPITAL",
         kind: BuildingKind::Collective,
     });
     commands.spawn(Building {
-        name: "STORE",
+        name: "MARKET",
         kind: BuildingKind::Collective,
     });
     commands.spawn(Building {
-        name: "CAFÉ",
+        name: "RESTAURANT",
         kind: BuildingKind::Collective,
     });
     commands.spawn(Building {
@@ -3474,6 +3587,14 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     });
     commands.spawn(Building {
         name: "GARAGE",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "SCHOOL",
+        kind: BuildingKind::Collective,
+    });
+    commands.spawn(Building {
+        name: "TRANSIT",
         kind: BuildingKind::Collective,
     });
 
