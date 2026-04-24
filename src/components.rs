@@ -517,6 +517,10 @@ mod tests {
 
     #[test]
     fn quest_description_fetch_item_uses_item_name() {
+        // These tests pin the *current* production behavior. The format string
+        // always uses the plural noun even when N == 1 (e.g. "1 vitamins"),
+        // which is intentional in the production code today; if that grammar
+        // is ever fixed these expectations should be updated in lockstep.
         assert_eq!(
             QuestKind::FetchItem(ItemKind::Coffee, 2).description(),
             "Bring me 2 coffee"
@@ -545,6 +549,9 @@ mod tests {
 
     #[test]
     fn quest_description_do_activity_pluralizes() {
+        // Note: pluralization here is naive ("shifts", "sessions"), and the
+        // catch-all branch yields "activitys" (see the next test). These
+        // assertions document existing behavior, not ideal grammar.
         // Singular form ("Do a X") uses the action label.
         assert_eq!(
             QuestKind::DoActivity(ActionKind::Work, 1).description(),
