@@ -651,19 +651,23 @@ fn warnings(s: &PlayerStats, conds: &Conditions) -> String {
 
 // ── Skill panel ───────────────────────────────────────────────────────────────
 
-/// Toggles the skill panel on/off with the Tab key.
+/// Toggles the skill panel on/off when the `ToggleSkillPanel` action fires (Tab key).
 pub fn toggle_skill_panel(
-    keys: Res<ButtonInput<KeyCode>>,
+    mut actions: EventReader<PlayerAction>,
     mut panel_q: Query<&mut Visibility, With<SkillPanel>>,
 ) {
-    if keys.just_pressed(KeyCode::Tab) {
-        for mut vis in &mut panel_q {
-            *vis = if *vis == Visibility::Hidden {
-                Visibility::Visible
-            } else {
-                Visibility::Hidden
-            };
-        }
+    if !actions
+        .read()
+        .any(|a| matches!(a, PlayerAction::ToggleSkillPanel))
+    {
+        return;
+    }
+    for mut vis in &mut panel_q {
+        *vis = if *vis == Visibility::Hidden {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
     }
 }
 
@@ -913,22 +917,28 @@ fn next_word_row_scale(current: f32, dt: f32, active: bool) -> f32 {
 }
 
 /// Drives the tutorial overlay: shows/hides it based on `TutorialState`,
-/// advances on Space/Enter, and allows skipping with Esc.
+/// advances on `Advance`/`Confirm` (Space/Enter), and dismisses on `Cancel` (Esc).
 pub fn update_tutorial(
-    keys: Res<ButtonInput<KeyCode>>,
+    mut actions: EventReader<PlayerAction>,
     mut state: ResMut<TutorialState>,
     mut overlay_q: Query<&mut Visibility, With<TutorialOverlay>>,
     mut body_q: Query<&mut Text, (With<TutorialBodyText>, Without<TutorialHintText>)>,
     mut hint_q: Query<&mut Text, (With<TutorialHintText>, Without<TutorialBodyText>)>,
 ) {
-    // Advance or dismiss on key press.
+    // Advance or dismiss on action events.
     if state.is_active() {
-        if keys.just_pressed(KeyCode::Escape) {
+        let mut cancelled = false;
+        let mut advance = false;
+        for a in actions.read() {
+            match a {
+                PlayerAction::Cancel => cancelled = true,
+                PlayerAction::Advance | PlayerAction::Confirm => advance = true,
+                _ => {}
+            }
+        }
+        if cancelled {
             state.dismiss();
-        } else if keys.just_pressed(KeyCode::Space)
-            || keys.just_pressed(KeyCode::Enter)
-            || keys.just_pressed(KeyCode::NumpadEnter)
-        {
+        } else if advance {
             state.advance();
         }
     }

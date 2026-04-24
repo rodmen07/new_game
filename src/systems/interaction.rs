@@ -91,6 +91,15 @@ pub fn read_player_actions(keys: Res<ButtonInput<KeyCode>>, mut writer: EventWri
     if keys.just_pressed(KeyCode::Escape) {
         writer.send(PlayerAction::Cancel);
     }
+    if keys.just_pressed(KeyCode::Space) {
+        writer.send(PlayerAction::Advance);
+    }
+    if keys.just_pressed(KeyCode::Tab) {
+        writer.send(PlayerAction::ToggleSkillPanel);
+    }
+    if keys.just_pressed(KeyCode::KeyQ) {
+        writer.send(PlayerAction::RequestQuest);
+    }
 }
 
 fn needs_home_access(action: &ActionKind) -> bool {
