@@ -1784,4 +1784,327 @@ mod tests {
         let expected = 0.70_f32 * 0.85;
         assert!((c.work_pay_mult() - expected).abs() < 0.001);
     }
+
+    // ── Notification ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn notification_default_is_empty() {
+        let n = Notification::default();
+        assert!(n.message.is_empty());
+        assert!((n.timer - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn notification_push_displays_immediately_when_idle() {
+        let mut n = Notification::default();
+        n.push("hello", 3.0);
+        assert_eq!(n.message, "hello");
+        assert!((n.timer - 3.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn notification_push_queues_when_busy() {
+        let mut n = Notification::default();
+        n.push("first", 5.0);
+        n.push("second", 2.0);
+        // First is shown; second is in the queue.
+        assert_eq!(n.message, "first");
+        // Tick past the first message to surface the queued one.
+        n.tick(5.0);
+        assert_eq!(n.message, "second");
+        assert!((n.timer - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn notification_queue_caps_at_four() {
+        let mut n = Notification::default();
+        n.push("displayed", 1.0);
+        for i in 0..6 {
+            n.push(format!("queued-{i}"), 1.0);
+        }
+        // Drain and count: first display + 4 queued = 5 messages survive,
+        // the last 2 pushes are dropped on the floor.
+        let mut seen = vec![n.message.clone()];
+        for _ in 0..6 {
+            n.tick(1.0);
+            if !n.message.is_empty() && !seen.contains(&n.message) {
+                seen.push(n.message.clone());
+            }
+        }
+        assert_eq!(seen.len(), 5, "got {:?}", seen);
+        assert_eq!(seen[0], "displayed");
+        assert_eq!(seen[1], "queued-0");
+        assert_eq!(seen[4], "queued-3");
+    }
+
+    #[test]
+    fn notification_tick_does_nothing_when_idle() {
+        let mut n = Notification::default();
+        n.tick(1.0);
+        assert!(n.message.is_empty());
+        assert!((n.timer - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn notification_tick_decrements_timer() {
+        let mut n = Notification::default();
+        n.push("msg", 5.0);
+        n.tick(1.5);
+        assert!((n.timer - 3.5).abs() < 0.0001);
+        assert_eq!(n.message, "msg");
+    }
+
+    #[test]
+    fn notification_flush_message_pushes_through_queue() {
+        let mut n = Notification::default();
+        // Direct write (as some systems do), then flush.
+        n.message = "direct".into();
+        n.flush_message(2.0);
+        assert_eq!(n.message, "direct");
+        assert!((n.timer - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn notification_flush_message_no_op_on_empty() {
+        let mut n = Notification::default();
+        n.flush_message(2.0);
+        assert!(n.message.is_empty());
+        assert!((n.timer - 0.0).abs() < f32::EPSILON);
+    }
+
+    // ── FestivalKind / FestivalState ──────────────────────────────────────────
+
+    #[test]
+    fn festival_kind_label_per_season() {
+        assert_eq!(FestivalKind::SpringFair.label(), "Spring Fair");
+        assert_eq!(FestivalKind::SummerBBQ.label(), "Summer BBQ");
+        assert_eq!(FestivalKind::AutumnHarvest.label(), "Autumn Harvest");
+        assert_eq!(FestivalKind::WinterGala.label(), "Winter Gala");
+    }
+
+    #[test]
+    fn festival_state_is_active_reflects_active_field() {
+        let mut f = FestivalState::default();
+        assert!(!f.is_active());
+        f.active = Some(FestivalKind::SpringFair);
+        assert!(f.is_active());
+        f.active = None;
+        assert!(!f.is_active());
+    }
+
+    #[test]
+    fn festival_state_all_seasons_attended_requires_all_four() {
+        let mut f = FestivalState::default();
+        assert!(!f.all_seasons_attended());
+        f.spring_attended = true;
+        f.summer_attended = true;
+        f.autumn_attended = true;
+        assert!(!f.all_seasons_attended(), "missing winter");
+        f.winter_attended = true;
+        assert!(f.all_seasons_attended());
+    }
+
+    // ── QuestBoard ────────────────────────────────────────────────────────────
+
+    fn make_quest(npc_id: usize, completed: bool) -> NpcQuest {
+        NpcQuest {
+            npc_id,
+            kind: crate::components::QuestKind::EarnMoney(60.),
+            description: "test".into(),
+            reward_money: 10.,
+            reward_friendship: 0.5,
+            progress: 0,
+            target: 1,
+            completed,
+        }
+    }
+
+    #[test]
+    fn quest_board_active_count_excludes_completed() {
+        let mut qb = QuestBoard::default();
+        assert_eq!(qb.active_count(), 0);
+        qb.quests.push(make_quest(0, false));
+        qb.quests.push(make_quest(1, true));
+        qb.quests.push(make_quest(2, false));
+        assert_eq!(qb.active_count(), 2);
+    }
+
+    #[test]
+    fn quest_board_has_quest_from_only_matches_active() {
+        let mut qb = QuestBoard::default();
+        assert!(!qb.has_quest_from(0));
+        qb.quests.push(make_quest(0, false));
+        assert!(qb.has_quest_from(0));
+        assert!(!qb.has_quest_from(1));
+        // Completed quests for an NPC do not block giving a new one.
+        qb.quests.clear();
+        qb.quests.push(make_quest(0, true));
+        assert!(!qb.has_quest_from(0));
+    }
+
+    // ── SeasonKind ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn season_from_day_cycles_every_120_days() {
+        assert!(matches!(SeasonKind::from_day(0), SeasonKind::Spring));
+        assert!(matches!(SeasonKind::from_day(29), SeasonKind::Spring));
+        assert!(matches!(SeasonKind::from_day(30), SeasonKind::Summer));
+        assert!(matches!(SeasonKind::from_day(60), SeasonKind::Autumn));
+        assert!(matches!(SeasonKind::from_day(90), SeasonKind::Winter));
+        // Wraps after 120 days.
+        assert!(matches!(SeasonKind::from_day(120), SeasonKind::Spring));
+        assert!(matches!(SeasonKind::from_day(150), SeasonKind::Summer));
+    }
+
+    #[test]
+    fn season_label_includes_emoji() {
+        assert!(SeasonKind::Spring.label().contains("Spring"));
+        assert!(SeasonKind::Summer.label().contains("Summer"));
+        assert!(SeasonKind::Autumn.label().contains("Autumn"));
+        assert!(SeasonKind::Winter.label().contains("Winter"));
+    }
+
+    #[test]
+    fn season_modifiers_only_affect_their_own_season() {
+        // social_mult: only Spring gets a bonus.
+        assert!((SeasonKind::Spring.social_mult() - 1.25).abs() < 0.001);
+        for s in [SeasonKind::Summer, SeasonKind::Autumn, SeasonKind::Winter] {
+            assert!((s.social_mult() - 1.0).abs() < f32::EPSILON);
+        }
+        // outdoor_bonus: only Summer.
+        assert!((SeasonKind::Summer.outdoor_bonus() - 8.0).abs() < f32::EPSILON);
+        for s in [SeasonKind::Spring, SeasonKind::Autumn, SeasonKind::Winter] {
+            assert!((s.outdoor_bonus() - 0.0).abs() < f32::EPSILON);
+        }
+        // passive_mult: only Autumn.
+        assert!((SeasonKind::Autumn.passive_mult() - 1.25).abs() < 0.001);
+        for s in [SeasonKind::Spring, SeasonKind::Summer, SeasonKind::Winter] {
+            assert!((s.passive_mult() - 1.0).abs() < f32::EPSILON);
+        }
+        // indoor_bonus: only Winter.
+        assert!((SeasonKind::Winter.indoor_bonus() - 5.0).abs() < f32::EPSILON);
+        for s in [SeasonKind::Spring, SeasonKind::Summer, SeasonKind::Autumn] {
+            assert!((s.indoor_bonus() - 0.0).abs() < f32::EPSILON);
+        }
+    }
+
+    #[test]
+    fn season_seasonal_goal_targets_match_descriptions() {
+        // Each season has a distinct goal description and a positive target.
+        let mut descs = Vec::new();
+        for s in [
+            SeasonKind::Spring,
+            SeasonKind::Summer,
+            SeasonKind::Autumn,
+            SeasonKind::Winter,
+        ] {
+            let (desc, target) = s.seasonal_goal_desc();
+            assert!(!desc.is_empty(), "{} missing desc", s.label());
+            assert!(target > 0.0, "{} target should be positive", s.label());
+            descs.push(desc);
+        }
+        // No two seasons should share the same description.
+        for i in 0..descs.len() {
+            for j in (i + 1)..descs.len() {
+                assert_ne!(descs[i], descs[j]);
+            }
+        }
+    }
+
+    // ── PlayerStats bounded mutators ──────────────────────────────────────────
+
+    #[test]
+    fn modify_health_clamps_to_0_100() {
+        let mut s = PlayerStats::default();
+        s.health = 50.;
+        s.modify_health(200.);
+        assert!((s.health - 100.).abs() < f32::EPSILON);
+        s.modify_health(-500.);
+        assert!((s.health - 0.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn modify_energy_clamps_to_max_energy() {
+        let mut s = PlayerStats::default();
+        s.energy = 0.;
+        s.sleep_debt = 0.; // max_energy = 100
+        s.modify_energy(500.);
+        assert!((s.energy - 100.).abs() < f32::EPSILON);
+        // Severe sleep debt lowers the cap.
+        s.sleep_debt = 20.; // max_energy = 60
+        s.modify_energy(500.);
+        assert!((s.energy - 60.).abs() < f32::EPSILON);
+        s.modify_energy(-1000.);
+        assert!((s.energy - 0.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn modify_happiness_stress_hunger_clamp_to_0_100() {
+        let mut s = PlayerStats::default();
+        s.happiness = 50.;
+        s.modify_happiness(75.);
+        assert!((s.happiness - 100.).abs() < f32::EPSILON);
+        s.modify_happiness(-500.);
+        assert!((s.happiness - 0.).abs() < f32::EPSILON);
+
+        s.stress = 50.;
+        s.modify_stress(75.);
+        assert!((s.stress - 100.).abs() < f32::EPSILON);
+        s.modify_stress(-500.);
+        assert!((s.stress - 0.).abs() < f32::EPSILON);
+
+        s.hunger = 50.;
+        s.modify_hunger(75.);
+        assert!((s.hunger - 100.).abs() < f32::EPSILON);
+        s.modify_hunger(-500.);
+        assert!((s.hunger - 0.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn can_afford_uses_debt_limit_credit() {
+        let mut s = PlayerStats::default();
+        s.money = 10.;
+        // money + DEBT_LIMIT must cover cost.
+        assert!(s.can_afford(10. + DEBT_LIMIT));
+        assert!(!s.can_afford(10. + DEBT_LIMIT + 0.01));
+    }
+
+    // ── GameTime helpers ──────────────────────────────────────────────────────
+
+    #[test]
+    fn game_time_day_name_cycles_through_week() {
+        let mut gt = GameTime::default();
+        let names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        for (i, expected) in names.iter().enumerate() {
+            gt.day = i as u32;
+            assert_eq!(gt.day_name(), *expected);
+        }
+        // Wraps after 7 days.
+        gt.day = 7;
+        assert_eq!(gt.day_name(), "Mon");
+    }
+
+    // ── Mood::label ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn mood_label_for_all_variants() {
+        assert_eq!(Mood::Elated.label(), "Elated");
+        assert_eq!(Mood::Happy.label(), "Happy");
+        assert_eq!(Mood::Okay.label(), "Okay");
+        assert_eq!(Mood::Sad.label(), "Sad");
+        assert_eq!(Mood::Depressed.label(), "Depressed");
+    }
+
+    #[test]
+    fn mood_from_happiness_buckets() {
+        assert!(matches!(Mood::from_happiness(95.), Mood::Elated));
+        assert!(matches!(Mood::from_happiness(80.), Mood::Elated));
+        assert!(matches!(Mood::from_happiness(79.), Mood::Happy));
+        assert!(matches!(Mood::from_happiness(60.), Mood::Happy));
+        assert!(matches!(Mood::from_happiness(59.), Mood::Okay));
+        assert!(matches!(Mood::from_happiness(40.), Mood::Okay));
+        assert!(matches!(Mood::from_happiness(39.), Mood::Sad));
+        assert!(matches!(Mood::from_happiness(20.), Mood::Sad));
+        assert!(matches!(Mood::from_happiness(19.), Mood::Depressed));
+    }
 }
