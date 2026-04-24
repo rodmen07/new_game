@@ -261,11 +261,7 @@ mod tests {
 
     #[test]
     fn fetch_item_progress_tracks_inventory_count() {
-        let mut app = build_app(vec![quest(
-            0,
-            QuestKind::FetchItem(ItemKind::Coffee, 3),
-            3,
-        )]);
+        let mut app = build_app(vec![quest(0, QuestKind::FetchItem(ItemKind::Coffee, 3), 3)]);
         let mut inv = Inventory::default();
         inv.coffee = 1;
         spawn_player(&mut app, inv);
@@ -325,7 +321,9 @@ mod tests {
         let mut app = build_app(vec![quest(2, QuestKind::EarnMoney(125.), 1)]);
         spawn_player(&mut app, Inventory::default());
         // Above the old hard-coded 60 but below the quest's real threshold → no progress.
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 100.;
+        app.world_mut()
+            .resource_mut::<GameState>()
+            .money_earned_today = 100.;
         app.update();
         {
             let board = app.world().resource::<QuestBoard>();
@@ -333,7 +331,9 @@ mod tests {
             assert!(!board.quests[0].completed);
         }
         // At threshold → completes.
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 125.;
+        app.world_mut()
+            .resource_mut::<GameState>()
+            .money_earned_today = 125.;
         app.update();
         let board = app.world().resource::<QuestBoard>();
         assert!(board.quests.is_empty());
@@ -346,7 +346,9 @@ mod tests {
         // the payload is read (not the old hard-coded 60).
         let mut app = build_app(vec![quest(0, QuestKind::EarnMoney(5.), 1)]);
         spawn_player(&mut app, Inventory::default());
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 10.;
+        app.world_mut()
+            .resource_mut::<GameState>()
+            .money_earned_today = 10.;
         app.update();
         let board = app.world().resource::<QuestBoard>();
         assert!(board.quests.is_empty());
@@ -360,7 +362,11 @@ mod tests {
             quest(1, QuestKind::DoActivity(ActionKind::Exercise, 1), 1),
             quest(2, QuestKind::DoActivity(ActionKind::Chat, 3), 3),
             quest(3, QuestKind::DoActivity(ActionKind::Eat, 1), 1),
-            quest(4, QuestKind::DoActivity(ActionKind::Hobby(HobbyKind::Painting), 1), 1),
+            quest(
+                4,
+                QuestKind::DoActivity(ActionKind::Hobby(HobbyKind::Painting), 1),
+                1,
+            ),
             quest(5, QuestKind::DoActivity(ActionKind::Meditate, 2), 2),
         ]);
         spawn_player(&mut app, Inventory::default());
@@ -418,7 +424,9 @@ mod tests {
     fn no_player_entity_is_a_noop() {
         let mut app = build_app(vec![quest(0, QuestKind::EarnMoney(60.), 1)]);
         // No LocalPlayer spawned.
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 100.;
+        app.world_mut()
+            .resource_mut::<GameState>()
+            .money_earned_today = 100.;
         app.update();
         let board = app.world().resource::<QuestBoard>();
         assert_eq!(board.quests.len(), 1, "should not progress without player");
@@ -447,7 +455,9 @@ mod tests {
     fn friendship_reward_is_applied_to_matching_npc_entity() {
         let mut app = build_app(vec![quest(0, QuestKind::EarnMoney(60.), 1)]);
         spawn_player(&mut app, Inventory::default());
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 100.;
+        app.world_mut()
+            .resource_mut::<GameState>()
+            .money_earned_today = 100.;
         // Spawn an NPC with the matching NpcId, register baseline friendship.
         let npc_entity = app.world_mut().spawn(NpcId(0)).id();
         app.world_mut()
@@ -464,7 +474,9 @@ mod tests {
     fn friendship_clamped_to_5() {
         let mut app = build_app(vec![quest(0, QuestKind::EarnMoney(60.), 1)]);
         spawn_player(&mut app, Inventory::default());
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 100.;
+        app.world_mut()
+            .resource_mut::<GameState>()
+            .money_earned_today = 100.;
         let npc_entity = app.world_mut().spawn(NpcId(0)).id();
         app.world_mut()
             .resource_mut::<NpcFriendship>()

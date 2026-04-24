@@ -54,7 +54,11 @@ pub fn festival_trigger_system(
 mod tests {
     use super::*;
 
-    fn run_with(day: u32, season: SeasonKind, mut state: FestivalState) -> (FestivalState, Notification) {
+    fn run_with(
+        day: u32,
+        season: SeasonKind,
+        mut state: FestivalState,
+    ) -> (FestivalState, Notification) {
         let mut app = App::new();
         let mut gt = GameTime::default();
         gt.day = day;
@@ -96,7 +100,11 @@ mod tests {
         let cases = [
             (SeasonKind::Spring, FestivalKind::SpringFair, "Spring Fair"),
             (SeasonKind::Summer, FestivalKind::SummerBBQ, "Summer BBQ"),
-            (SeasonKind::Autumn, FestivalKind::AutumnHarvest, "Autumn Harvest"),
+            (
+                SeasonKind::Autumn,
+                FestivalKind::AutumnHarvest,
+                "Autumn Harvest",
+            ),
             (SeasonKind::Winter, FestivalKind::WinterGala, "Winter Gala"),
         ];
         for (season, expected_kind, label) in cases {
@@ -119,7 +127,11 @@ mod tests {
         state.last_check_day = 25;
         let (f, n) = run_with(26, SeasonKind::Spring, state);
         assert!(f.is_active());
-        assert!(n.message.is_empty(), "no duplicate announcement, got: {}", n.message);
+        assert!(
+            n.message.is_empty(),
+            "no duplicate announcement, got: {}",
+            n.message
+        );
     }
 
     #[test]
