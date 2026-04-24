@@ -14,10 +14,275 @@ use crate::resources::{
     VehicleState, WorkStreak,
 };
 use bevy::prelude::*;
+use bevy::render::{
+    render_asset::RenderAssetUsages,
+    render_resource::{Extent3d, TextureDimension, TextureFormat},
+};
+use bevy_ecs_tilemap::prelude::*;
 
 /// World-space scale multiplier applied inside all layout helpers.
 /// All design coordinates are written in pre-scale units; S is applied internally.
 const S: f32 = 4.0;
+
+// ── Tilemap constants ─────────────────────────────────────────────────────────
+/// Side length of each tile in the texture atlas (pixels) and in world units
+/// (Bevy world pixels).  Because S=4, one tile covers 16 pre-scale units.
+const TILE_PX: u32 = 64;
+/// Total number of distinct tile types (= columns in the atlas row).
+const TILE_COUNT: u32 = 16;
+/// Tilemap dimensions in tiles.
+const MAP_COLS: u32 = 90;
+const MAP_ROWS: u32 = 62;
+/// World-space position of the bottom-left corner of tile (0, 0).
+/// Chosen so that the main road (pre-scale y=0) is centred at row 25.
+const TILEMAP_ORIGIN_X: f32 = -2848.0;
+const TILEMAP_ORIGIN_Y: f32 = -1632.0;
+
+// Tile type indices — correspond to columns in the generated atlas texture.
+const T_GROUND: u32 = 0;
+const T_ROAD: u32 = 1;
+const T_SIDEWALK: u32 = 2;
+const T_ALLEY: u32 = 3;
+const T_HOME: u32 = 4;
+const T_WELLNESS: u32 = 5;
+const T_LIBRARY: u32 = 6;
+const T_PARK: u32 = 7;
+const T_OFFICE: u32 = 8;
+const T_BANK: u32 = 9;
+const T_CLINIC: u32 = 10;
+const T_STORE: u32 = 11;
+const T_CAFE: u32 = 12;
+const T_ADOPTION: u32 = 13;
+const T_GARAGE: u32 = 14;
+const T_APARTMENTS: u32 = 15;
+
+/// sRGB u8 colour for each tile type (matches the original Bevy Color::srgb values).
+const TILE_COLORS: [[u8; 3]; 16] = [
+    [71, 66, 59],    // 0  Ground
+    [92, 87, 77],    // 1  Road
+    [107, 102, 92],  // 2  Sidewalk
+    [87, 82, 71],    // 3  Alley
+    [184, 148, 107], // 4  HOME
+    [89, 158, 140],  // 5  WELLNESS
+    [77, 107, 148],  // 6  LIBRARY
+    [71, 148, 71],   // 7  PARK
+    [107, 133, 173], // 8  OFFICE
+    [140, 122, 82],  // 9  BANK
+    [217, 230, 224], // 10 CLINIC
+    [82, 133, 148],  // 11 STORE
+    [209, 173, 115], // 12 CAFÉ
+    [158, 128, 199], // 13 ADOPTION
+    [102, 97, 115],  // 14 GARAGE
+    [158, 140, 199], // 15 APARTMENTS
+];
+
+/// Convert a pre-scale x coordinate to the nearest tilemap column index.
+/// Coordinates west of TILEMAP_ORIGIN_X are clamped to column 0.
+fn pre_to_col(pre_x: f32) -> u32 {
+    (((pre_x * S) - TILEMAP_ORIGIN_X) / TILE_PX as f32)
+        .max(0.0) as u32
+}
+
+/// Convert a pre-scale y coordinate to the nearest tilemap row index.
+/// Coordinates south of TILEMAP_ORIGIN_Y are clamped to row 0.
+fn pre_to_row(pre_y: f32) -> u32 {
+    (((pre_y * S) - TILEMAP_ORIGIN_Y) / TILE_PX as f32)
+        .max(0.0) as u32
+}
+
+/// Fill a rectangular region of the flat tile grid (row-major, row 0 = bottom).
+fn fill_tiles(
+    grid: &mut Vec<u32>,
+    x_min: f32,
+    x_max: f32,
+    y_min: f32,
+    y_max: f32,
+    tile: u32,
+) {
+    let c0 = pre_to_col(x_min).min(MAP_COLS.saturating_sub(1));
+    let c1 = (pre_to_col(x_max) + 1).min(MAP_COLS);
+    let r0 = pre_to_row(y_min).min(MAP_ROWS.saturating_sub(1));
+    let r1 = (pre_to_row(y_max) + 1).min(MAP_ROWS);
+    for r in r0..r1 {
+        for c in c0..c1 {
+            grid[(r * MAP_COLS + c) as usize] = tile;
+        }
+    }
+}
+
+/// Build the flat tile grid that describes every terrain and zone surface.
+/// Fills happen lowest-priority first; later fills override earlier ones.
+fn build_tile_grid() -> Vec<u32> {
+    let mut g = vec![T_GROUND; (MAP_COLS * MAP_ROWS) as usize];
+
+    // Side alleys (east and west of the main grid)
+    fill_tiles(&mut g, -692., -508., -200., 380., T_ALLEY);
+    fill_tiles(&mut g, 508., 692., -200., 380., T_ALLEY);
+
+    // Main horizontal road + flanking sidewalks
+    fill_tiles(&mut g, -720., 720., 65., 78., T_SIDEWALK);
+    fill_tiles(&mut g, -720., 720., -78., -65., T_SIDEWALK);
+    fill_tiles(&mut g, -720., 720., -55., 55., T_ROAD);
+
+    // Back road (north of buildings) + flanking sidewalks
+    fill_tiles(&mut g, -720., 720., 290., 303., T_SIDEWALK);
+    fill_tiles(&mut g, -720., 720., 357., 370., T_SIDEWALK);
+    fill_tiles(&mut g, -720., 720., 303., 357., T_ROAD);
+
+    // North-row building zone floors
+    fill_tiles(&mut g, -515., -335., 70., 290., T_HOME);
+    fill_tiles(&mut g, -330., -180., 80., 280., T_WELLNESS);
+    fill_tiles(&mut g, -175., 5., 70., 290., T_LIBRARY);
+    fill_tiles(&mut g, 10., 160., 100., 260., T_PARK);
+    fill_tiles(&mut g, 335., 515., 70., 290., T_OFFICE);
+
+    // South-row building zone floors
+    fill_tiles(&mut g, -500., -350., -280., -80., T_BANK);
+    fill_tiles(&mut g, -330., -180., -280., -80., T_CLINIC);
+    fill_tiles(&mut g, -160., -10., -280., -80., T_STORE);
+    fill_tiles(&mut g, 10., 160., -280., -80., T_CAFE);
+    fill_tiles(&mut g, 180., 330., -280., -80., T_ADOPTION);
+    fill_tiles(&mut g, 350., 500., -280., -80., T_GARAGE);
+
+    // Apartments complex (north of back road)
+    fill_tiles(&mut g, -250., 250., 380., 540., T_APARTMENTS);
+
+    g
+}
+
+/// Create the tileset atlas programmatically: a 1024×64 RGBA image whose
+/// 16 columns are 64×64-pixel solid-colour tiles, one per tile type.
+fn create_tileset_image(images: &mut Assets<Image>) -> Handle<Image> {
+    let width = (TILE_PX * TILE_COUNT) as usize;
+    let height = TILE_PX as usize;
+    let mut data = vec![0u8; width * height * 4];
+    for (i, [r, g, b]) in TILE_COLORS.iter().enumerate() {
+        let x0 = i * TILE_PX as usize;
+        for py in 0..height {
+            for px in x0..x0 + TILE_PX as usize {
+                let off = (py * width + px) * 4;
+                data[off] = *r;
+                data[off + 1] = *g;
+                data[off + 2] = *b;
+                data[off + 3] = 255;
+            }
+        }
+    }
+    images.add(Image::new(
+        Extent3d {
+            width: width as u32,
+            height: height as u32,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    ))
+}
+
+/// Spawn the ECS tilemap entity that renders all terrain, roads, and building floors.
+/// This replaces the old approach of spawning hundreds of individual `rect()` sprites.
+fn spawn_tilemap(commands: &mut Commands, images: &mut Assets<Image>) {
+    let tileset = create_tileset_image(images);
+    let grid = build_tile_grid();
+
+    let map_size = TilemapSize {
+        x: MAP_COLS,
+        y: MAP_ROWS,
+    };
+    let tile_size = TilemapTileSize {
+        x: TILE_PX as f32,
+        y: TILE_PX as f32,
+    };
+    let grid_size = TilemapGridSize {
+        x: TILE_PX as f32,
+        y: TILE_PX as f32,
+    };
+    let map_type = TilemapType::Square;
+
+    let mut tile_storage = TileStorage::empty(map_size);
+    let tilemap_entity = commands.spawn_empty().id();
+
+    for row in 0..MAP_ROWS {
+        for col in 0..MAP_COLS {
+            let tile_type = grid[(row * MAP_COLS + col) as usize];
+            let tile_pos = TilePos { x: col, y: row };
+            let tile_entity = commands
+                .spawn(TileBundle {
+                    position: tile_pos,
+                    tilemap_id: TilemapId(tilemap_entity),
+                    texture_index: TileTextureIndex(tile_type),
+                    ..Default::default()
+                })
+                .id();
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
+
+    commands.entity(tilemap_entity).insert(TilemapBundle {
+        grid_size,
+        map_type,
+        size: map_size,
+        storage: tile_storage,
+        texture: TilemapTexture::Single(tileset),
+        tile_size,
+        transform: Transform::from_xyz(TILEMAP_ORIGIN_X, TILEMAP_ORIGIN_Y, 0.0),
+        ..Default::default()
+    });
+}
+
+/// Spawn visual details that sit on top of the tilemap:
+/// road markings (edge lines, centre dashes) and lamp posts.
+fn spawn_road_details(commands: &mut Commands) {
+    // Main road edge lines
+    rect(
+        commands,
+        0.,
+        55.,
+        3000.,
+        2.,
+        Color::srgba(1., 1., 0.8, 0.10),
+        0.6,
+    );
+    rect(
+        commands,
+        0.,
+        -55.,
+        3000.,
+        2.,
+        Color::srgba(1., 1., 0.8, 0.10),
+        0.6,
+    );
+    // Main road centre dashes
+    for i in -17i32..=17 {
+        let x = i as f32 * 40.;
+        rect(
+            commands,
+            x,
+            0.,
+            18.,
+            3.,
+            Color::srgba(1., 1., 0.75, 0.20),
+            0.7,
+        );
+    }
+    // Lamp posts on main-road sidewalks
+    for &(lx, ly) in &[
+        (-340., 76.),
+        (-170., 76.),
+        (0., 76.),
+        (170., 76.),
+        (340., 76.),
+        (-340., -76.),
+        (-170., -76.),
+        (0., -76.),
+        (170., -76.),
+        (340., -76.),
+    ] {
+        lamp_post(commands, lx, ly);
+    }
+}
 
 /// Builds a composite human figure as child entities of the calling spawn.
 /// The root entity should have Transform + Visibility but no Sprite.
@@ -124,9 +389,10 @@ fn spawn_human(p: &mut ChildBuilder, outfit: Color, pants: Color, skin: Color, h
     ));
 }
 
-pub fn setup(mut commands: Commands) {
+pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     commands.spawn((Camera2d, MainCamera));
-    spawn_terrain_and_roads(&mut commands);
+    spawn_tilemap(&mut commands, &mut images);
+    spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
     spawn_vehicle(&mut commands);
     spawn_owned_pet(&mut commands);
@@ -140,215 +406,21 @@ pub fn setup(mut commands: Commands) {
     spawn_tutorial_overlay(&mut commands);
 }
 
-fn spawn_terrain_and_roads(commands: &mut Commands) {
-    // ── Ground ────────────────────────────────────────────────────────────────
-    rect(
-        commands,
-        0.,
-        0.,
-        3000.,
-        3000.,
-        Color::srgb(0.28, 0.26, 0.23),
-        0.,
-    );
-
-    // ── Ground scatter patches (texture variation) ─────────────────────────
-    for (px, py, pw, ph) in [
-        (-300., 220., 55., 36.),
-        (-180., -260., 48., 30.),
-        (310., -185., 42., 28.),
-        (-360., 310., 36., 24.),
-        (240., 310., 52., 34.),
-        (-240., -360., 38., 26.),
-        (360., 370., 44., 30.),
-        (-140., 360., 40., 26.),
-        (145., -305., 50., 32.),
-        (-410., -190., 34., 22.),
-        (415., 195., 38., 24.),
-        (355., -330., 30., 20.),
-        (-320., -130., 46., 30.),
-        (280., -320., 44., 28.),
-        (-260., 170., 38., 24.),
-    ] {
-        rect(
-            commands,
-            px,
-            py,
-            pw,
-            ph,
-            Color::srgb(0.26, 0.24, 0.21),
-            0.15,
-        );
-    }
-
-    // -- Sidewalks along horizontal road ----------------------------------------
-    let sw = Color::srgb(0.42, 0.40, 0.36);
-    rect(commands, 0., 72., 3000., 14., sw, 0.62);
-    rect(commands, 0., -72., 3000., 14., sw, 0.62);
-
-    // -- Horizontal road --------------------------------------------------------
-    rect(
-        commands,
-        0.,
-        0.,
-        3000.,
-        110.,
-        Color::srgb(0.36, 0.34, 0.30),
-        0.5,
-    );
-    // Road edge lines
-    rect(
-        commands,
-        0.,
-        55.,
-        3000.,
-        2.,
-        Color::srgba(1., 1., 0.8, 0.10),
-        0.6,
-    );
-    rect(
-        commands,
-        0.,
-        -55.,
-        3000.,
-        2.,
-        Color::srgba(1., 1., 0.8, 0.10),
-        0.6,
-    );
-    // Dashed center line
-    for i in -17i32..=17 {
-        let x = i as f32 * 40.;
-        rect(
-            commands,
-            x,
-            0.,
-            18.,
-            3.,
-            Color::srgba(1., 1., 0.75, 0.20),
-            0.7,
-        );
-    }
-
-    // -- Lamp posts (on sidewalks between buildings) ----------------------------
-    for &(lx, ly) in &[
-        (-340., 76.),
-        (-170., 76.),
-        (0., 76.),
-        (170., 76.),
-        (340., 76.),
-        (-340., -76.),
-        (-170., -76.),
-        (0., -76.),
-        (170., -76.),
-        (340., -76.),
-    ] {
-        lamp_post(commands, lx, ly);
-    }
-}
-
 fn spawn_buildings_and_zones(commands: &mut Commands) {
-    // -- Zones ------------------------------------------------------------------
-    // North row (center_y=180, mixed footprints, doors face south)
-    zone(
-        commands,
-        -425.,
-        180.,
-        180.,
-        220.,
-        Color::srgb(0.72, 0.58, 0.42),
-        "HOME",
-    );
-    zone(
-        commands,
-        -255.,
-        180.,
-        150.,
-        200.,
-        Color::srgb(0.35, 0.62, 0.55),
-        "WELLNESS",
-    );
-    zone(
-        commands,
-        -85.,
-        180.,
-        180.,
-        220.,
-        Color::srgb(0.30, 0.42, 0.58),
-        "LIBRARY",
-    );
-    zone(
-        commands,
-        85.,
-        180.,
-        150.,
-        200.,
-        Color::srgb(0.28, 0.58, 0.28),
-        "PARK",
-    );
-    zone(
-        commands,
-        425.,
-        180.,
-        180.,
-        220.,
-        Color::srgb(0.42, 0.52, 0.68),
-        "OFFICE",
-    );
-    // South row (center_y=-180, 150x200, doors face north at y=-80)
-    zone(
-        commands,
-        -425.,
-        -180.,
-        150.,
-        200.,
-        Color::srgb(0.55, 0.48, 0.32),
-        "BANK",
-    );
-    zone(
-        commands,
-        -255.,
-        -180.,
-        150.,
-        200.,
-        Color::srgb(0.85, 0.90, 0.88),
-        "CLINIC",
-    );
-    zone(
-        commands,
-        -85.,
-        -180.,
-        150.,
-        200.,
-        Color::srgb(0.32, 0.52, 0.58),
-        "STORE",
-    );
-    zone(
-        commands,
-        85.,
-        -180.,
-        150.,
-        200.,
-        Color::srgb(0.82, 0.68, 0.45),
-        "CAFÉ",
-    );
-    zone(
-        commands,
-        255.,
-        -180.,
-        150.,
-        200.,
-        Color::srgb(0.62, 0.50, 0.78),
-        "ADOPTION",
-    );
-    zone(
-        commands,
-        425.,
-        -180.,
-        150.,
-        200.,
-        Color::srgb(0.40, 0.38, 0.45),
-        "GARAGE",
-    );
+    // -- Zone labels (tilemap provides the floor colour) ------------------------
+    // North row
+    zone_label(commands, -425., 180., 220., "HOME");
+    zone_label(commands, -255., 180., 200., "WELLNESS");
+    zone_label(commands, -85., 180., 220., "LIBRARY");
+    zone_label(commands, 85., 180., 200., "PARK");
+    zone_label(commands, 425., 180., 220., "OFFICE");
+    // South row
+    zone_label(commands, -425., -180., 200., "BANK");
+    zone_label(commands, -255., -180., 200., "CLINIC");
+    zone_label(commands, -85., -180., 200., "STORE");
+    zone_label(commands, 85., -180., 200., "CAFÉ");
+    zone_label(commands, 255., -180., 200., "ADOPTION");
+    zone_label(commands, 425., -180., 200., "GARAGE");
 
     // -- Building facade details ------------------------------------------------
     let wc = Color::srgb(0.82, 0.92, 0.98); // window glass
@@ -3270,19 +3342,8 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
         wall(commands, tx, ty, ts * 0.75, ts * 0.75);
     }
 
-    // -- Back road (north, y=290) + APARTMENTS --------------------------------
-    let bsw = Color::srgb(0.42, 0.40, 0.36); // sidewalk
-    rect(commands, 0., 290., 3000., 14., bsw, 0.62); // south sidewalk
-    rect(commands, 0., 370., 3000., 14., bsw, 0.62); // north sidewalk
-    rect(
-        commands,
-        0.,
-        330.,
-        3000.,
-        55.,
-        Color::srgb(0.36, 0.34, 0.30),
-        0.5,
-    );
+    // -- Back road (north, y=290) road markings and lamp posts ------------------
+    // (Road surface and sidewalk colours are handled by the tilemap)
     // Back road edge lines
     rect(
         commands,
@@ -3302,7 +3363,7 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
         Color::srgba(1., 1., 0.8, 0.10),
         0.6,
     );
-    // Back road center dashes
+    // Back road centre dashes
     for i in -17i32..=17 {
         let x = i as f32 * 40.;
         rect(
@@ -3326,34 +3387,17 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
         lamp_post(commands, lx, ly);
     }
 
-    // -- Side alleys (connecting main road to back road on east and west) -------
-    let ap = Color::srgb(0.34, 0.32, 0.28); // alley pavement
-    let asw = Color::srgb(0.42, 0.40, 0.36); // alley sidewalk
-    // West alley: x=-600, from south buildings (y=-280) to APARTMENTS south face (y=380)
-    rect(commands, -600., 50., 178., 660., ap, 0.51);
-    rect(commands, -508., 50., 12., 660., asw, 0.53);
-    rect(commands, -692., 50., 12., 660., asw, 0.53);
+    // -- Side alley lamp posts --------------------------------------------------
+    // (Alley pavement colours are handled by the tilemap)
     for &ly in &[-200., -80., 80., 200., 320.] {
         lamp_post(commands, -610., ly);
     }
-    // East alley: x=600, from south buildings (y=-280) to APARTMENTS south face (y=380)
-    rect(commands, 600., 50., 178., 660., ap, 0.51);
-    rect(commands, 508., 50., 12., 660., asw, 0.53);
-    rect(commands, 692., 50., 12., 660., asw, 0.53);
     for &ly in &[-200., -80., 80., 200., 320.] {
         lamp_post(commands, 610., ly);
     }
 
-    // APARTMENTS zone at (0, 460)
-    zone(
-        commands,
-        0.,
-        460.,
-        500.,
-        160.,
-        Color::srgb(0.62, 0.55, 0.78),
-        "APARTMENTS",
-    );
+    // APARTMENTS zone label (floor colour handled by tilemap)
+    zone_label(commands, 0., 460., 160., "APARTMENTS");
     commands.spawn(Building {
         name: "APARTMENTS",
         kind: BuildingKind::Collective,
@@ -3609,17 +3653,8 @@ fn vis_wall(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color) {
     ));
 }
 
-fn zone(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color, label: &str) {
-    rect(
-        cmd,
-        x,
-        y,
-        w + 6.,
-        h + 6.,
-        Color::srgba(0., 0., 0., 0.50),
-        0.85,
-    );
-    rect(cmd, x, y, w, h, color, 1.);
+fn zone_label(cmd: &mut Commands, x: f32, y: f32, height: f32, label: &str) {
+    // The floor colour is provided by the tilemap; this spawns only the text label.
     cmd.spawn((
         Text2d::new(label),
         TextFont {
@@ -3627,7 +3662,7 @@ fn zone(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color, label:
             ..default()
         },
         TextColor(Color::srgba(1., 1., 1., 0.50)),
-        Transform::from_xyz(x * S, (y + h / 2. - 16.) * S, 5.),
+        Transform::from_xyz(x * S, (y + height / 2. - 16.) * S, 5.),
     ));
 }
 
