@@ -15,6 +15,7 @@ Time scale: 60x (1 real second = 1 in-game minute)
 The current playable build focuses on daily survival and long-term stability. You start with very little, work toward housing access, manage core needs, build friendships, survive bad luck, and slowly unlock stronger routines and milestone goals.
 
 Current implemented highlights include:
+- map redesign (April 2026): added SCHOOL (study, computer lab, art class) and TRANSIT (transit pass, waiting bench, vending coffee) zones on the back-street row; renamed WELLNESS -> GYM, CLINIC -> HOSPITAL, STORE -> MARKET, CAFÉ -> RESTAURANT for clearer terminology; centralised player-home and office bounds in `constants.rs`
 - home interior alignment updated: nudged bed placement to better fit the expanded room bounds
 - wasm startup guard added to CI: wasm-target compile check plus a startup smoke test that catches Bevy query-parameter conflicts before deploy
 - web startup stability improvements: resolved wasm query conflict in vehicle/pet visibility updates and added user-gesture audio context resume for browser autoplay policies
@@ -31,7 +32,7 @@ Current implemented highlights include:
 - typed action prompts for skill-progression and multi-option menu confirmations, with seniority-based retries
 - immediate apartment unlock when a bank deposit crosses the first housing threshold
 
-The current baseline is verified with a successful build, a clean strict clippy run, and 173 passing tests.
+The current baseline is verified with a successful build, a clean strict clippy run, and 236 passing tests.
 
 ---
 

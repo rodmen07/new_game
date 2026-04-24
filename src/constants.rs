@@ -1,4 +1,6 @@
-#[allow(dead_code)]
+// MAP_SCALE multiplies design (pre-scale) coordinates to produce world-space
+// coordinates. The bevy_ecs_tilemap atlas is tuned around MAP_SCALE = 4.0;
+// changing it requires retuning TILE_PX/TILEMAP_ORIGIN_* in setup.rs.
 pub const MAP_SCALE: f32 = 4.0;
 pub const PLAYER_SPEED: f32 = 800.0;
 pub const PLAYER_ACCEL: f32 = 5600.0;
@@ -10,11 +12,26 @@ pub const INTERACT_RADIUS: f32 = 232.0;
 pub const TIME_SCALE: f32 = 60.0;
 pub const NPC_SPEED: f32 = 220.0;
 
-// Office zone - center (1700, 720), size 720x880 (scaled 4x)
-pub const OFFICE_LEFT: f32 = 1340.;
-pub const OFFICE_RIGHT: f32 = 2060.;
-pub const OFFICE_BOTTOM: f32 = 280.;
-pub const OFFICE_TOP: f32 = 1160.;
+// Office zone (design center 425, 180; size 180x220) in world space.
+const OFFICE_DESIGN_CX: f32 = 425.;
+const OFFICE_DESIGN_CY: f32 = 180.;
+const OFFICE_DESIGN_HW: f32 = 90.; // 180 / 2
+const OFFICE_DESIGN_HH: f32 = 110.; // 220 / 2
+pub const OFFICE_LEFT: f32 = (OFFICE_DESIGN_CX - OFFICE_DESIGN_HW) * MAP_SCALE;
+pub const OFFICE_RIGHT: f32 = (OFFICE_DESIGN_CX + OFFICE_DESIGN_HW) * MAP_SCALE;
+pub const OFFICE_BOTTOM: f32 = (OFFICE_DESIGN_CY - OFFICE_DESIGN_HH) * MAP_SCALE;
+pub const OFFICE_TOP: f32 = (OFFICE_DESIGN_CY + OFFICE_DESIGN_HH) * MAP_SCALE;
+
+// Player home zone (design center -425, 180; size 180x220) in world space.
+// Used by NPC pathing to keep wandering NPCs out of the player's house.
+const PLAYER_HOME_DESIGN_CX: f32 = -425.;
+const PLAYER_HOME_DESIGN_CY: f32 = 180.;
+const PLAYER_HOME_DESIGN_HW: f32 = 90.;
+const PLAYER_HOME_DESIGN_HH: f32 = 110.;
+pub const PLAYER_HOME_LEFT: f32 = (PLAYER_HOME_DESIGN_CX - PLAYER_HOME_DESIGN_HW) * MAP_SCALE;
+pub const PLAYER_HOME_RIGHT: f32 = (PLAYER_HOME_DESIGN_CX + PLAYER_HOME_DESIGN_HW) * MAP_SCALE;
+pub const PLAYER_HOME_BOTTOM: f32 = (PLAYER_HOME_DESIGN_CY - PLAYER_HOME_DESIGN_HH) * MAP_SCALE;
+pub const PLAYER_HOME_TOP: f32 = (PLAYER_HOME_DESIGN_CY + PLAYER_HOME_DESIGN_HH) * MAP_SCALE;
 
 // Crisis system tuning
 pub const CRISIS_MIN_DAY: u32 = 10;

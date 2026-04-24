@@ -1,14 +1,13 @@
 use crate::components::{
     BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality,
 };
-use crate::constants::{INTERACT_RADIUS, MAP_SCALE, NPC_SPEED};
+use crate::constants::{
+    INTERACT_RADIUS, MAP_SCALE, NPC_SPEED, PLAYER_HOME_BOTTOM, PLAYER_HOME_LEFT, PLAYER_HOME_RIGHT,
+    PLAYER_HOME_TOP,
+};
 use crate::resources::{GameTime, NearbyInteractable, NpcFriendship, QuestBoard};
 use bevy::prelude::*;
 
-const PLAYER_HOME_LEFT: f32 = -500.;
-const PLAYER_HOME_RIGHT: f32 = -350.;
-const PLAYER_HOME_BOTTOM: f32 = 100.;
-const PLAYER_HOME_TOP: f32 = 260.;
 const HOME_BUFFER: f32 = 12.;
 
 fn keep_npc_out_of_player_house(npc: &mut Npc, tf: &mut Transform) {
