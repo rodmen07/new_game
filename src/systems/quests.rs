@@ -68,10 +68,16 @@ pub fn quest_offer_system(
     nearby: Res<NearbyInteractable>,
     inter_q: Query<&Interactable>,
     mut notif: ResMut<Notification>,
-    keys: Res<ButtonInput<KeyCode>>,
+    mut actions: EventReader<PlayerAction>,
     mut commands: Commands,
 ) {
-    if !keys.just_pressed(KeyCode::KeyQ) {
+    let mut requested = false;
+    for action in actions.read() {
+        if matches!(action, PlayerAction::RequestQuest) {
+            requested = true;
+        }
+    }
+    if !requested {
         return;
     }
 
