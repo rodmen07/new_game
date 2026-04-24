@@ -39,12 +39,6 @@ pub fn car_movement(
     if keys.any_pressed([KeyCode::ArrowDown, KeyCode::KeyS]) {
         wish.y -= 1.0;
     }
-    if keys.any_pressed([KeyCode::ArrowLeft, KeyCode::KeyA]) {
-        wish.x -= 1.0;
-    }
-    if keys.any_pressed([KeyCode::ArrowRight, KeyCode::KeyD]) {
-        wish.x += 1.0;
-    }
 
     if wish != Vec2::ZERO {
         pm.velocity += wish.normalize() * CAR_ACCEL * dt;
@@ -60,8 +54,8 @@ pub fn car_movement(
         }
     }
 
+    pm.velocity.x = 0.0; // vertical-only travel
     if pm.velocity.length() > 0.5 {
-        ptf.translation.x = (ptf.translation.x + pm.velocity.x * dt).clamp(-1600.0, 1600.0);
         ptf.translation.y = (ptf.translation.y + pm.velocity.y * dt).clamp(-1600.0, 1600.0);
     } else {
         pm.velocity = Vec2::ZERO;

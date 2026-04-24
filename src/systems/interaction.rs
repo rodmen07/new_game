@@ -194,11 +194,58 @@ const WORK_WORDS: &[&str] = &[
     "deploy",
     "dashboard",
     "offsite",
+    "scaffold",
+    "stakeholder",
+    "iterate",
+    "launch",
+    "brief",
+    "escalate",
+    "retrospective",
+    "velocity",
+    "deliverable",
+    "kickoff",
+    "roadmap",
+    "increment",
+    "bottleneck",
+    "alignment",
+    "bandwidth",
 ];
 const FREELANCE_WORDS: &[&str] = &[
-    "invoice", "client", "remote", "contract", "revise", "proposal", "deadline", "pitch",
-    "project", "retainer", "markup", "estimate", "draft", "scope", "deliver", "iterate",
-    "approval", "mockup", "handoff", "billing",
+    "invoice",
+    "client",
+    "remote",
+    "contract",
+    "revise",
+    "proposal",
+    "deadline",
+    "pitch",
+    "project",
+    "retainer",
+    "markup",
+    "estimate",
+    "draft",
+    "scope",
+    "deliver",
+    "iterate",
+    "approval",
+    "mockup",
+    "handoff",
+    "billing",
+    "niche",
+    "portfolio",
+    "discovery",
+    "testimonial",
+    "async",
+    "turnaround",
+    "subcontract",
+    "upsell",
+    "onboard",
+    "calendar",
+    "launch",
+    "outreach",
+    "followup",
+    "milestone",
+    "brief",
 ];
 const EAT_WORDS: &[&str] = &[
     "bowl", "sandwich", "noodles", "salad", "stew", "toast", "wrap", "burrito", "ramen", "curry",
@@ -260,8 +307,41 @@ const SHOWER_WORDS: &[&str] = &[
     "squeaky",
 ];
 const EXERCISE_WORDS: &[&str] = &[
-    "sprint", "squat", "burpee", "pushup", "plank", "lunge", "crunch", "pullup", "deadlift", "jog",
-    "interval", "tempo", "stride", "circuit", "rally",
+    "sprint",
+    "squat",
+    "burpee",
+    "pushup",
+    "plank",
+    "lunge",
+    "crunch",
+    "pullup",
+    "deadlift",
+    "jog",
+    "interval",
+    "tempo",
+    "stride",
+    "circuit",
+    "rally",
+    "warmup",
+    "stretch",
+    "cooldown",
+    "endurance",
+    "aerobic",
+    "anaerobic",
+    "recovery",
+    "pulse",
+    "flexibility",
+    "agility",
+    "balance",
+    "footwork",
+    "conditioning",
+    "stamina",
+    "power",
+    "dynamic",
+    "static",
+    "rep",
+    "set",
+    "resistance",
 ];
 const MEDITATE_WORDS: &[&str] = &[
     "breathe",
@@ -296,10 +376,58 @@ const STUDY_WORDS: &[&str] = &[
     "memorize",
     "syllabus",
     "focus",
+    "practice",
+    "comprehend",
+    "seminar",
+    "diagram",
+    "apply",
+    "recall",
+    "interpret",
+    "analyze",
+    "deduce",
+    "pattern",
+    "principle",
+    "experiment",
+    "solve",
+    "textbook",
+    "hypothesis",
 ];
 const GYM_WORDS: &[&str] = &[
-    "bench", "barbell", "squat", "deadlift", "cable", "dumbbell", "rack", "spotter", "shrug",
-    "curl", "incline", "crunch", "lateral", "cardio", "reps",
+    "bench",
+    "barbell",
+    "squat",
+    "deadlift",
+    "cable",
+    "dumbbell",
+    "rack",
+    "spotter",
+    "shrug",
+    "curl",
+    "incline",
+    "crunch",
+    "lateral",
+    "cardio",
+    "reps",
+    "flexion",
+    "rotation",
+    "isolation",
+    "compound",
+    "hypertrophy",
+    "progressive",
+    "overload",
+    "superset",
+    "plateau",
+    "warmup",
+    "cooldown",
+    "resistance",
+    "eccentric",
+    "concentric",
+    "volume",
+    "grip",
+    "tempo",
+    "form",
+    "sets",
+    "dropset",
 ];
 const CAFE_WORDS: &[&str] = &[
     "latte",
@@ -584,14 +712,95 @@ const PAINTING_WORDS: &[&str] = &[
     "chiaroscuro",
     "impasto",
     "glaze",
+    "contour",
+    "shadow",
+    "highlight",
+    "perspective",
+    "composition",
+    "foreground",
+    "depth",
+    "watercolor",
+    "tonal",
+    "brushwork",
+    "abstract",
+    "contrast",
+    "saturation",
+    "shading",
+    "crosshatch",
 ];
 const GAMING_WORDS: &[&str] = &[
-    "respawn", "loot", "quest", "dungeon", "boss", "combo", "stealth", "level", "vault", "dodge",
-    "craft", "rally", "trigger", "snipe", "grind",
+    "respawn",
+    "loot",
+    "quest",
+    "dungeon",
+    "boss",
+    "combo",
+    "stealth",
+    "level",
+    "vault",
+    "dodge",
+    "craft",
+    "rally",
+    "trigger",
+    "snipe",
+    "grind",
+    "checkpoint",
+    "loadout",
+    "cutscene",
+    "stamina",
+    "speedrun",
+    "ranked",
+    "arena",
+    "build",
+    "roster",
+    "meta",
+    "patch",
+    "mechanic",
+    "sandbox",
+    "roguelike",
+    "strategy",
+    "critical",
+    "passive",
+    "aggro",
+    "respawn",
+    "siege",
 ];
 const MUSIC_WORDS: &[&str] = &[
-    "chord", "rhythm", "melody", "tempo", "harmony", "riff", "verse", "bridge", "scale", "groove",
-    "strum", "pitch", "dynamics", "accent", "cadence",
+    "chord",
+    "rhythm",
+    "melody",
+    "tempo",
+    "harmony",
+    "riff",
+    "verse",
+    "bridge",
+    "scale",
+    "groove",
+    "strum",
+    "pitch",
+    "dynamics",
+    "accent",
+    "cadence",
+    "notation",
+    "resonance",
+    "vibrato",
+    "staccato",
+    "legato",
+    "syncopation",
+    "modulation",
+    "arpeggio",
+    "crescendo",
+    "tremolo",
+    "interval",
+    "timbre",
+    "sustain",
+    "reverb",
+    "overdrive",
+    "measure",
+    "downbeat",
+    "upbeat",
+    "phrase",
+    "improvise",
 ];
 const BANK_DEPOSIT_WORDS: &[&str] = &[
     "deposit",
@@ -936,6 +1145,22 @@ fn collect_prompt_text(actions: &[PlayerAction], buffer: &mut String) {
         {
             buffer.push(*ch);
         }
+    }
+}
+
+fn needs_typing_challenge(pending: &PendingAction) -> bool {
+    match pending {
+        PendingAction::Action(action) => matches!(
+            action,
+            ActionKind::Work
+                | ActionKind::Freelance
+                | ActionKind::StudyCourse
+                | ActionKind::GymSession
+                | ActionKind::Exercise
+                | ActionKind::Hobby(_)
+        ),
+        // Bank/Transport/Craft/Festival slots gate multi-option menus - keep typing
+        _ => true,
     }
 }
 
@@ -2347,29 +2572,36 @@ pub fn handle_interaction(
             p9,
         )
     {
-        let prompt_subject = if matches!(
-            &pending,
-            PendingAction::Action(ActionKind::Chat)
-                | PendingAction::Action(ActionKind::Hangout)
-                | PendingAction::Gift
-        ) {
-            npc_q
-                .get(entity)
-                .map(|(npc, _)| npc.name.as_str())
-                .unwrap_or("friend")
-        } else {
-            extras.pet.name.as_str()
-        };
-        begin_action_prompt(
-            &mut action_prompt,
-            pending,
-            entity,
-            &gt,
-            &skills,
-            prompt_subject,
-            &mut notif,
-        );
-        return;
+        if needs_typing_challenge(&pending) {
+            let prompt_subject = if matches!(
+                &pending,
+                PendingAction::Action(ActionKind::Chat)
+                    | PendingAction::Action(ActionKind::Hangout)
+                    | PendingAction::Gift
+            ) {
+                npc_q
+                    .get(entity)
+                    .map(|(npc, _)| npc.name.as_str())
+                    .unwrap_or("friend")
+            } else {
+                extras.pet.name.as_str()
+            };
+            begin_action_prompt(
+                &mut action_prompt,
+                pending,
+                entity,
+                &gt,
+                &skills,
+                prompt_subject,
+                &mut notif,
+            );
+            return;
+        }
+        // No typing needed - execute immediately
+        if let PendingAction::Action(action) = pending {
+            pe = true;
+            forced_action = Some(action);
+        }
     }
 
     let mut sfx_kind = SfxKind::Interact;
@@ -2478,18 +2710,16 @@ pub fn handle_interaction(
     match forced_action.unwrap_or_else(|| inter.action.clone()) {
         ActionKind::Sleep => {
             sfx_kind = SfxKind::Sleep;
-            let base_gain = housing.sleep_energy(gt.is_night());
-            let (stress_mult, stress_tag) = if stats.stress > 75. {
-                (0.70_f32, " [Troubled -30%]")
+            let stress_tag = if stats.stress > 75. {
+                " [Troubled]"
             } else if stats.stress > 50. {
-                (0.85_f32, " [Restless -15%]")
+                " [Restless]"
             } else {
-                (1.0_f32, "")
+                ""
             };
-            let gain = base_gain * stress_mult;
             let sleep_bonus = furnishings.sleep_bonus();
             let health_gain = housing.night_health();
-            stats.modify_energy(gain + sleep_bonus);
+            stats.energy = 100.0; // Always fully restores energy
             stats.modify_health(health_gain + 3.);
             stats.modify_stress(-15.);
             stats.sleep_debt = (stats.sleep_debt - 8.).max(0.);
@@ -2499,18 +2729,11 @@ pub fn handle_interaction(
             } else {
                 "Daytime nap"
             };
-            let bonus_tag = if sleep_bonus > 0. {
-                " [Comfy Bed +10]"
-            } else {
-                ""
-            };
+            let bonus_tag = if sleep_bonus > 0. { " [Comfy Bed]" } else { "" };
             notif.push(
                 format!(
-                    "{} — +{:.0} Energy, -SleepDebt, -Stress{}{}",
-                    tag,
-                    gain + sleep_bonus,
-                    stress_tag,
-                    bonus_tag
+                    "{} — Full Energy restored, -SleepDebt, -Stress{}{}",
+                    tag, stress_tag, bonus_tag
                 ),
                 2.,
             );
