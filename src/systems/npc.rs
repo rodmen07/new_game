@@ -2,8 +2,8 @@ use crate::components::{
     BodyPart, Collider, Interactable, LocalPlayer, Npc, NpcId, NpcLabel, NpcPersonality,
 };
 use crate::constants::{
-    INTERACT_RADIUS, MAP_SCALE, NPC_SPEED, PLAYER_HOME_BOTTOM, PLAYER_HOME_LEFT,
-    PLAYER_HOME_RIGHT, PLAYER_HOME_TOP,
+    INTERACT_RADIUS, MAP_SCALE, NPC_SPEED, PLAYER_HOME_BOTTOM, PLAYER_HOME_LEFT, PLAYER_HOME_RIGHT,
+    PLAYER_HOME_TOP,
 };
 use crate::resources::{GameTime, NearbyInteractable, NpcFriendship, QuestBoard};
 use bevy::prelude::*;

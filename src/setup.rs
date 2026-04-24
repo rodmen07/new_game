@@ -3453,14 +3453,62 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     vis_wall(commands, -405., 380., 60., 10., sc); // south-right (-435..-375)
     // doorway gap is at x=-450 ± 15 (30px wide)
     // Decorative: white classroom windows
-    rect(commands, -490., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
-    rect(commands, -450., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
-    rect(commands, -410., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
+    rect(
+        commands,
+        -490.,
+        500.,
+        18.,
+        18.,
+        Color::srgb(0.86, 0.94, 0.98),
+        1.5,
+    );
+    rect(
+        commands,
+        -450.,
+        500.,
+        18.,
+        18.,
+        Color::srgb(0.86, 0.94, 0.98),
+        1.5,
+    );
+    rect(
+        commands,
+        -410.,
+        500.,
+        18.,
+        18.,
+        Color::srgb(0.86, 0.94, 0.98),
+        1.5,
+    );
     // Flagpole + flag
-    rect(commands, -380., 555., 2., 50., Color::srgb(0.20, 0.20, 0.20), 1.55);
-    rect(commands, -370., 590., 18., 12., Color::srgb(0.85, 0.20, 0.18), 1.6);
+    rect(
+        commands,
+        -380.,
+        555.,
+        2.,
+        50.,
+        Color::srgb(0.20, 0.20, 0.20),
+        1.55,
+    );
+    rect(
+        commands,
+        -370.,
+        590.,
+        18.,
+        12.,
+        Color::srgb(0.85, 0.20, 0.18),
+        1.6,
+    );
     // "Blackboard" interior strip
-    rect(commands, -450., 470., 90., 6., Color::srgb(0.10, 0.16, 0.10), 1.7);
+    rect(
+        commands,
+        -450.,
+        470.,
+        90.,
+        6.,
+        Color::srgb(0.10, 0.16, 0.10),
+        1.7,
+    );
     // SCHOOL interactables (interior, accessible via south door at x=-450)
     obj(
         commands,
@@ -3502,16 +3550,72 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     vis_wall(commands, 495., 380., 60., 10., tc); // south-right (465..525)
     // doorway gap is at x=450 ± 15 (30px wide)
     // Concrete platform inset
-    rect(commands, 450., 460., 130., 130., Color::srgb(0.62, 0.62, 0.64), 1.4);
+    rect(
+        commands,
+        450.,
+        460.,
+        130.,
+        130.,
+        Color::srgb(0.62, 0.62, 0.64),
+        1.4,
+    );
     // Yellow safety stripe along the south edge of the platform
-    rect(commands, 450., 400., 130., 4., Color::srgb(0.95, 0.78, 0.18), 1.55);
+    rect(
+        commands,
+        450.,
+        400.,
+        130.,
+        4.,
+        Color::srgb(0.95, 0.78, 0.18),
+        1.55,
+    );
     // Stylised bus parked along the back wall
-    rect(commands, 450., 510., 100., 26., Color::srgb(0.85, 0.78, 0.30), 1.5);
-    rect(commands, 420., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
-    rect(commands, 450., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
-    rect(commands, 480., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
+    rect(
+        commands,
+        450.,
+        510.,
+        100.,
+        26.,
+        Color::srgb(0.85, 0.78, 0.30),
+        1.5,
+    );
+    rect(
+        commands,
+        420.,
+        514.,
+        14.,
+        12.,
+        Color::srgb(0.32, 0.42, 0.58),
+        1.6,
+    );
+    rect(
+        commands,
+        450.,
+        514.,
+        14.,
+        12.,
+        Color::srgb(0.32, 0.42, 0.58),
+        1.6,
+    );
+    rect(
+        commands,
+        480.,
+        514.,
+        14.,
+        12.,
+        Color::srgb(0.32, 0.42, 0.58),
+        1.6,
+    );
     // Departures sign
-    rect(commands, 450., 478., 70., 10., Color::srgb(0.10, 0.12, 0.18), 1.6);
+    rect(
+        commands,
+        450.,
+        478.,
+        70.,
+        10.,
+        Color::srgb(0.10, 0.12, 0.18),
+        1.6,
+    );
     // TRANSIT interactables
     obj(
         commands,
