@@ -532,3 +532,118 @@ pub fn apply_y_sort(mut q: Query<(&YSort, &mut Transform)>) {
         tf.translation.z = ys.base_z - clamped_y * Y_SORT_SLOPE;
     }
 }
+
+// ── Facing + walk-cycle scaffolding ──────────────────────────────────────────
+
+/// Velocity threshold (world units / sec) below which an entity is considered
+/// idle. Below this, `Facing` is preserved (so the character keeps looking
+/// the way they were going) and `AnimFrame.idx` resets to 0.
+const FACING_MOVE_EPSILON: f32 = 8.0;
+/// Seconds per walk-cycle frame (4 frames per cycle).
+const ANIM_FRAME_DURATION: f32 = 0.15;
+
+/// Update `Facing` from `PlayerMovement.velocity` for the local player.
+/// East/West dominates only when |vx| > |vy|, so diagonal-up still reads as
+/// "up" - matches Stardew/Pokemon conventions.
+pub fn update_player_facing(mut q: Query<(&PlayerMovement, &mut Facing), With<LocalPlayer>>) {
+    for (pm, mut facing) in &mut q {
+        let v = pm.velocity;
+        if v.length_squared() < FACING_MOVE_EPSILON * FACING_MOVE_EPSILON {
+            continue;
+        }
+        let new_facing = if v.x.abs() > v.y.abs() {
+            if v.x > 0.0 {
+                Facing::East
+            } else {
+                Facing::West
+            }
+        } else if v.y > 0.0 {
+            Facing::North
+        } else {
+            Facing::South
+        };
+        if *facing != new_facing {
+            *facing = new_facing;
+        }
+    }
+}
+
+/// Update `Facing` from `Npc.velocity`. Same rules as the player.
+pub fn update_npc_facing(mut q: Query<(&Npc, &mut Facing)>) {
+    for (npc, mut facing) in &mut q {
+        let v = npc.velocity;
+        if v.length_squared() < FACING_MOVE_EPSILON * FACING_MOVE_EPSILON {
+            continue;
+        }
+        let new_facing = if v.x.abs() > v.y.abs() {
+            if v.x > 0.0 {
+                Facing::East
+            } else {
+                Facing::West
+            }
+        } else if v.y > 0.0 {
+            Facing::North
+        } else {
+            Facing::South
+        };
+        if *facing != new_facing {
+            *facing = new_facing;
+        }
+    }
+}
+
+/// Advance 4-frame walk cycles. Idle entities snap back to frame 0.
+/// Today this drives no visuals (procedural humans have no spritesheet),
+/// but the data is wired so dropping in pixel-art sheets later is mechanical.
+#[allow(clippy::type_complexity)]
+pub fn update_anim_frames(
+    time: Res<Time>,
+    mut q: Query<(&mut AnimFrame, Option<&PlayerMovement>, Option<&Npc>)>,
+) {
+    let dt = time.delta_secs();
+    for (mut anim, pm, npc) in &mut q {
+        let speed_sq = pm
+            .map(|p| p.velocity.length_squared())
+            .or_else(|| npc.map(|n| n.velocity.length_squared()))
+            .unwrap_or(0.0);
+        if speed_sq < FACING_MOVE_EPSILON * FACING_MOVE_EPSILON {
+            anim.idx = 0;
+            anim.timer = 0.0;
+            continue;
+        }
+        anim.timer += dt;
+        while anim.timer >= ANIM_FRAME_DURATION {
+            anim.timer -= ANIM_FRAME_DURATION;
+            anim.idx = (anim.idx + 1) % 4;
+        }
+    }
+}
+
+// ── Streetlamp glow ──────────────────────────────────────────────────────────
+
+/// Marks an additive glow sprite that brightens at night. The base alpha is
+/// driven by hour-of-day in `update_streetlamp_glow`.
+#[derive(Component)]
+pub struct StreetlampGlow;
+
+/// Update the alpha of all `StreetlampGlow` sprites based on the current hour.
+/// Glows are bright (alpha ~0.55) between 19:00 and 06:00, off in daylight.
+pub fn update_streetlamp_glow(gt: Res<GameTime>, mut q: Query<&mut Sprite, With<StreetlampGlow>>) {
+    let h = gt.hours % 24.0;
+    let target_alpha = if !(6.0..19.0).contains(&h) {
+        0.55
+    } else if (18.0..19.0).contains(&h) {
+        // 18:00-19:00 ramp up
+        (h - 18.0) * 0.55
+    } else if (5.0..6.0).contains(&h) {
+        // 05:00-06:00 ramp down
+        (6.0 - h) * 0.55
+    } else {
+        0.0
+    };
+    for mut sprite in &mut q {
+        let mut c = sprite.color.to_srgba();
+        c.alpha = target_alpha;
+        sprite.color = Color::Srgba(c);
+    }
+}

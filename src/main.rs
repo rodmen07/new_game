@@ -102,6 +102,7 @@ fn main() {
         .init_resource::<FestivalState>()
         .init_resource::<LightningTimer>()
         .init_resource::<TutorialState>()
+        .init_resource::<ArtAssets>()
         // ── Save / load ───────────────────────────────────────────────────────
         .init_resource::<PendingLoad>()
         .add_event::<SaveRequest>()
@@ -185,6 +186,10 @@ fn main() {
                 update_skill_panel,
                 update_day_night,
                 apply_y_sort,
+                update_player_facing,
+                update_npc_facing,
+                update_anim_frames,
+                update_streetlamp_glow,
             )
                 .chain()
                 .after(player_visuals)

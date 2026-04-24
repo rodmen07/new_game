@@ -1,13 +1,13 @@
 use crate::components::Furnishings;
 use crate::components::{
-    ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
-    DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
-    LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
-    OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar,
-    SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText,
-    TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
-    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
-    TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
+    ActionKind, AnimFrame, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
+    DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable,
+    ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality,
+    ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar,
+    SkillCookingBar, SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText,
+    TutorialHintText, TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay,
+    TypingOverlayFade, TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining,
+    TypingWordRow, TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -19,6 +19,8 @@ use bevy::render::{
     render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use bevy_ecs_tilemap::prelude::*;
+
+use crate::systems::visual::StreetlampGlow;
 
 /// World-space scale multiplier applied inside all layout helpers.
 /// All design coordinates are written in pre-scale units; S is applied internally.
@@ -405,6 +407,33 @@ fn spawn_road_details(commands: &mut Commands) {
     }
 }
 
+/// Spawn additive warm-light glow sprites near each main-road lamp post.
+/// Alpha is animated by `update_streetlamp_glow` so they brighten at night.
+fn spawn_streetlamps(commands: &mut Commands) {
+    for &(lx, ly) in &[
+        (-340., 76.),
+        (-170., 76.),
+        (0., 76.),
+        (170., 76.),
+        (340., 76.),
+        (-340., -76.),
+        (-170., -76.),
+        (0., -76.),
+        (170., -76.),
+        (340., -76.),
+    ] {
+        commands.spawn((
+            Sprite {
+                color: Color::srgba(1.0, 0.92, 0.65, 0.0),
+                custom_size: Some(Vec2::splat(120.0 * S)),
+                ..default()
+            },
+            Transform::from_xyz(lx * S, ly * S, 49.0),
+            StreetlampGlow,
+        ));
+    }
+}
+
 /// Builds a composite human figure as child entities of the calling spawn.
 /// The root entity should have Transform + Visibility but no Sprite.
 ///
@@ -515,6 +544,7 @@ pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     spawn_tilemap(&mut commands, &mut images);
     spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
+    spawn_streetlamps(&mut commands);
     spawn_vehicle(&mut commands);
     spawn_owned_pet(&mut commands);
     spawn_world_objects(&mut commands);
@@ -3400,7 +3430,12 @@ fn spawn_player_entity(commands: &mut Commands) {
             Skills::default(),
             WorkStreak::default(),
             HousingTier::default(),
-            (Furnishings::default(), YSort { base_z: 10.0 }),
+            (
+                Furnishings::default(),
+                YSort { base_z: 10.0 },
+                Facing::default(),
+                AnimFrame::default(),
+            ),
         ))
         .with_children(|p| {
             spawn_human(
@@ -4075,6 +4110,8 @@ fn spawn_npc(
             ObjectSize(Vec2::splat(18.)),
             NpcId(npc_id),
             YSort { base_z: 9.5 },
+            Facing::default(),
+            AnimFrame::default(),
         ))
         .with_children(|p| {
             spawn_human(p, outfit, pants, skin, hair);

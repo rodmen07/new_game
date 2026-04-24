@@ -281,6 +281,29 @@ impl Default for YSort {
         Self { base_z: 10.0 }
     }
 }
+
+/// Cardinal facing for top-down 2D characters. Used by future spritesheet
+/// art swaps to pick the correct walk-cycle row. Updated each frame by
+/// `update_facing_from_velocity` based on the entity's movement.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Facing {
+    North,
+    #[default]
+    South,
+    East,
+    West,
+}
+
+/// Frame index + timer for a 4-frame walk cycle. The current frame is
+/// advanced by `update_anim_frames` whenever the entity is moving.
+/// Idle entities snap back to frame 0. Today this drives no visuals
+/// (the procedural human has no spritesheet) but is wired up so that
+/// dropping in pixel-art spritesheets later is mechanical.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct AnimFrame {
+    pub idx: u8,
+    pub timer: f32,
+}
 /// Smoothed display value for a stat bar (0–100). Lerps toward `target`
 /// each frame so bars drain/fill visibly instead of jumping instantly.
 #[derive(Component, Default)]

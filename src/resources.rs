@@ -7,6 +7,24 @@ use crate::{
 use bevy::{ecs::system::SystemParam, prelude::*, utils::HashMap};
 use std::collections::VecDeque;
 
+/// Optional handles to art assets that override the procedurally generated
+/// look. None means "use built-in procedural art" (current default). When
+/// pixel-art tilesets and character spritesheets are added under
+/// `assets/art/`, populate these handles in `setup()` to swap them in
+/// without touching gameplay code.
+///
+/// Naming convention for future assets:
+/// - `art/tiles/terrain.png` (18-column tilesheet matching TILE_COLORS)
+/// - `art/characters/player.png` (4 rows: south/north/east/west, 4 cols)
+/// - `art/characters/npc_<name>.png` (same layout per NPC)
+#[derive(Resource, Default, Clone)]
+#[allow(dead_code)]
+pub struct ArtAssets {
+    pub tile_atlas: Option<Handle<Image>>,
+    pub player_sheet: Option<Handle<Image>>,
+    pub npc_sheets: HashMap<String, Handle<Image>>,
+}
+
 #[derive(Resource, Default)]
 pub struct NearbyInteractable {
     pub entity: Option<Entity>,
