@@ -151,20 +151,140 @@ fn build_tile_grid() -> Vec<u32> {
     g
 }
 
-/// Create the tileset atlas programmatically: a 1024×64 RGBA image whose
-/// 16 columns are 64×64-pixel solid-colour tiles, one per tile type.
+/// Cheap deterministic pseudo-random in 0..=255 from three integer inputs.
+/// Used to seed per-tile pixel noise so the texture is reproducible across runs.
+fn pixel_hash(tile_idx: u32, px: u32, py: u32) -> i32 {
+    let mut x = px
+        .wrapping_mul(374_761_393)
+        .wrapping_add(py.wrapping_mul(668_265_263))
+        .wrapping_add(tile_idx.wrapping_mul(2_147_483_647));
+    x = (x ^ (x >> 13)).wrapping_mul(1_274_126_177);
+    ((x ^ (x >> 16)) & 0xFF) as i32
+}
+
+/// Add or subtract `d` from `c`, clamped to 0..=255.
+fn adjust(c: u8, d: i32) -> u8 {
+    (c as i32 + d).clamp(0, 255) as u8
+}
+
+/// Per-pixel colour for a tile, applying tile-type-specific patterns over
+/// the base zone colour. Patterns stay within the 64x64 tile so seams
+/// between adjacent tiles remain clean.
+fn tile_pixel_color(tile_idx: u32, px: u32, py: u32, base: [u8; 3]) -> [u8; 3] {
+    let h = pixel_hash(tile_idx, px, py);
+    // Low-amplitude luminance noise, ~ -8..+7.
+    let noise = (h - 128) / 16;
+    let mut out = [
+        adjust(base[0], noise),
+        adjust(base[1], noise),
+        adjust(base[2], noise),
+    ];
+
+    match tile_idx {
+        T_ROAD => {
+            // Asphalt speckle: occasional darker grit.
+            if h < 24 {
+                out = [
+                    adjust(base[0], -18),
+                    adjust(base[1], -18),
+                    adjust(base[2], -18),
+                ];
+            }
+        }
+        T_SIDEWALK => {
+            // Concrete panel seams every 16 px along x, plus a faint horizontal mid-line.
+            if px.is_multiple_of(16) {
+                out = [
+                    adjust(out[0], -22),
+                    adjust(out[1], -22),
+                    adjust(out[2], -22),
+                ];
+            }
+            if py == 0 || py == 32 || py == TILE_PX - 1 {
+                out = [
+                    adjust(out[0], -12),
+                    adjust(out[1], -12),
+                    adjust(out[2], -12),
+                ];
+            }
+        }
+        T_ALLEY | T_GROUND => {
+            // Gravel/dirt: darker pebbles + occasional lighter flecks.
+            if h < 28 {
+                out = [
+                    adjust(base[0], -22),
+                    adjust(base[1], -22),
+                    adjust(base[2], -22),
+                ];
+            } else if h > 232 {
+                out = [
+                    adjust(base[0], 18),
+                    adjust(base[1], 14),
+                    adjust(base[2], 10),
+                ];
+            }
+        }
+        T_PARK => {
+            // Grass tufts: bright green speckle on top of the base green.
+            if h > 210 {
+                out = [
+                    adjust(base[0], -12),
+                    adjust(base[1], 28),
+                    adjust(base[2], -12),
+                ];
+            } else if h < 30 {
+                out = [
+                    adjust(base[0], -8),
+                    adjust(base[1], -16),
+                    adjust(base[2], -8),
+                ];
+            }
+        }
+        T_HOME | T_OFFICE | T_BANK | T_LIBRARY | T_APARTMENTS | T_SCHOOL => {
+            // Faint 32x32 floor-panel grid for indoor zone floors.
+            if px.is_multiple_of(32) || py.is_multiple_of(32) {
+                out = [
+                    adjust(out[0], -10),
+                    adjust(out[1], -10),
+                    adjust(out[2], -10),
+                ];
+            }
+        }
+        T_TRANSIT | T_GARAGE => {
+            // Concrete platform with a faint diagonal scuff pattern.
+            if (px + py).is_multiple_of(16) {
+                out = [
+                    adjust(out[0], -14),
+                    adjust(out[1], -14),
+                    adjust(out[2], -14),
+                ];
+            }
+        }
+        _ => {
+            // Generic shop/zone floor: very subtle 16x16 tile lines.
+            if px.is_multiple_of(16) || py.is_multiple_of(16) {
+                out = [adjust(out[0], -6), adjust(out[1], -6), adjust(out[2], -6)];
+            }
+        }
+    }
+    out
+}
+
+/// Create the tileset atlas programmatically: an RGBA image whose
+/// `TILE_COUNT` columns are 64x64-pixel textured tiles, one per tile type.
 fn create_tileset_image(images: &mut Assets<Image>) -> Handle<Image> {
     let width = (TILE_PX * TILE_COUNT) as usize;
     let height = TILE_PX as usize;
     let mut data = vec![0u8; width * height * 4];
-    for (i, [r, g, b]) in TILE_COLORS.iter().enumerate() {
+    for (i, base) in TILE_COLORS.iter().enumerate() {
         let x0 = i * TILE_PX as usize;
         for py in 0..height {
-            for px in x0..x0 + TILE_PX as usize {
-                let off = (py * width + px) * 4;
-                data[off] = *r;
-                data[off + 1] = *g;
-                data[off + 2] = *b;
+            for px in 0..TILE_PX as usize {
+                let [r, g, b] = tile_pixel_color(i as u32, px as u32, py as u32, *base);
+                let off = (py * width + x0 + px) * 4;
+                data[off] = r;
+                data[off + 1] = g;
+                data[off + 2] = b;
                 data[off + 3] = 255;
             }
         }
@@ -3453,14 +3573,62 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     vis_wall(commands, -405., 380., 60., 10., sc); // south-right (-435..-375)
     // doorway gap is at x=-450 ± 15 (30px wide)
     // Decorative: white classroom windows
-    rect(commands, -490., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
-    rect(commands, -450., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
-    rect(commands, -410., 500., 18., 18., Color::srgb(0.86, 0.94, 0.98), 1.5);
+    rect(
+        commands,
+        -490.,
+        500.,
+        18.,
+        18.,
+        Color::srgb(0.86, 0.94, 0.98),
+        1.5,
+    );
+    rect(
+        commands,
+        -450.,
+        500.,
+        18.,
+        18.,
+        Color::srgb(0.86, 0.94, 0.98),
+        1.5,
+    );
+    rect(
+        commands,
+        -410.,
+        500.,
+        18.,
+        18.,
+        Color::srgb(0.86, 0.94, 0.98),
+        1.5,
+    );
     // Flagpole + flag
-    rect(commands, -380., 555., 2., 50., Color::srgb(0.20, 0.20, 0.20), 1.55);
-    rect(commands, -370., 590., 18., 12., Color::srgb(0.85, 0.20, 0.18), 1.6);
+    rect(
+        commands,
+        -380.,
+        555.,
+        2.,
+        50.,
+        Color::srgb(0.20, 0.20, 0.20),
+        1.55,
+    );
+    rect(
+        commands,
+        -370.,
+        590.,
+        18.,
+        12.,
+        Color::srgb(0.85, 0.20, 0.18),
+        1.6,
+    );
     // "Blackboard" interior strip
-    rect(commands, -450., 470., 90., 6., Color::srgb(0.10, 0.16, 0.10), 1.7);
+    rect(
+        commands,
+        -450.,
+        470.,
+        90.,
+        6.,
+        Color::srgb(0.10, 0.16, 0.10),
+        1.7,
+    );
     // SCHOOL interactables (interior, accessible via south door at x=-450)
     obj(
         commands,
@@ -3502,16 +3670,72 @@ fn spawn_collision_walls_and_roads(commands: &mut Commands) {
     vis_wall(commands, 495., 380., 60., 10., tc); // south-right (465..525)
     // doorway gap is at x=450 ± 15 (30px wide)
     // Concrete platform inset
-    rect(commands, 450., 460., 130., 130., Color::srgb(0.62, 0.62, 0.64), 1.4);
+    rect(
+        commands,
+        450.,
+        460.,
+        130.,
+        130.,
+        Color::srgb(0.62, 0.62, 0.64),
+        1.4,
+    );
     // Yellow safety stripe along the south edge of the platform
-    rect(commands, 450., 400., 130., 4., Color::srgb(0.95, 0.78, 0.18), 1.55);
+    rect(
+        commands,
+        450.,
+        400.,
+        130.,
+        4.,
+        Color::srgb(0.95, 0.78, 0.18),
+        1.55,
+    );
     // Stylised bus parked along the back wall
-    rect(commands, 450., 510., 100., 26., Color::srgb(0.85, 0.78, 0.30), 1.5);
-    rect(commands, 420., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
-    rect(commands, 450., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
-    rect(commands, 480., 514., 14., 12., Color::srgb(0.32, 0.42, 0.58), 1.6);
+    rect(
+        commands,
+        450.,
+        510.,
+        100.,
+        26.,
+        Color::srgb(0.85, 0.78, 0.30),
+        1.5,
+    );
+    rect(
+        commands,
+        420.,
+        514.,
+        14.,
+        12.,
+        Color::srgb(0.32, 0.42, 0.58),
+        1.6,
+    );
+    rect(
+        commands,
+        450.,
+        514.,
+        14.,
+        12.,
+        Color::srgb(0.32, 0.42, 0.58),
+        1.6,
+    );
+    rect(
+        commands,
+        480.,
+        514.,
+        14.,
+        12.,
+        Color::srgb(0.32, 0.42, 0.58),
+        1.6,
+    );
     // Departures sign
-    rect(commands, 450., 478., 70., 10., Color::srgb(0.10, 0.12, 0.18), 1.6);
+    rect(
+        commands,
+        450.,
+        478.,
+        70.,
+        10.,
+        Color::srgb(0.10, 0.12, 0.18),
+        1.6,
+    );
     // TRANSIT interactables
     obj(
         commands,
