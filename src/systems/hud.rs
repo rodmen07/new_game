@@ -656,10 +656,13 @@ pub fn toggle_skill_panel(
     mut actions: EventReader<PlayerAction>,
     mut panel_q: Query<&mut Visibility, With<SkillPanel>>,
 ) {
-    if !actions
-        .read()
-        .any(|a| matches!(a, PlayerAction::ToggleSkillPanel))
-    {
+    let mut toggle = false;
+    for action in actions.read() {
+        if matches!(action, PlayerAction::ToggleSkillPanel) {
+            toggle = true;
+        }
+    }
+    if !toggle {
         return;
     }
     for mut vis in &mut panel_q {
