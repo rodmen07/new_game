@@ -155,13 +155,18 @@ mod tests {
             Skills::default(),
             HousingTier::Apartment,
         );
-        // The unlock chain is short-circuiting so we tick a few times to let
-        // multiple beats unlock.
+        // The unlock chain short-circuits at one beat per frame. On day 2
+        // we need at least two ticks (routine, then home) before `home`
+        // appears in the unlocked list.
         for _ in 0..6 {
             app.update();
         }
         let story = app.world().resource::<NarrativeState>();
-        assert!(story.unlocked.iter().any(|k| k == "home" || k == "routine"));
+        assert!(
+            story.unlocked.iter().any(|k| k == "home"),
+            "expected home beat in {:?}",
+            story.unlocked
+        );
     }
 
     #[test]

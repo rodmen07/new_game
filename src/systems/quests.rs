@@ -169,8 +169,8 @@ pub fn quest_progress_system(
                     _ => 0,
                 }
             }
-            QuestKind::EarnMoney(_) => {
-                if gs.money_earned_today >= 60. {
+            QuestKind::EarnMoney(amount) => {
+                if gs.money_earned_today >= *amount {
                     1
                 } else {
                     0
@@ -320,10 +320,12 @@ mod tests {
 
     #[test]
     fn earn_money_quest_only_completes_when_threshold_met() {
-        let mut app = build_app(vec![quest(2, QuestKind::EarnMoney(60.), 1)]);
+        // Use a non-60 amount so the `EarnMoney(f32)` payload is actually
+        // exercised (guards against regressions where the value is ignored).
+        let mut app = build_app(vec![quest(2, QuestKind::EarnMoney(125.), 1)]);
         spawn_player(&mut app, Inventory::default());
-        // Below threshold → no progress.
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 30.;
+        // Above the old hard-coded 60 but below the quest's real threshold → no progress.
+        app.world_mut().resource_mut::<GameState>().money_earned_today = 100.;
         app.update();
         {
             let board = app.world().resource::<QuestBoard>();
@@ -331,7 +333,20 @@ mod tests {
             assert!(!board.quests[0].completed);
         }
         // At threshold → completes.
-        app.world_mut().resource_mut::<GameState>().money_earned_today = 60.;
+        app.world_mut().resource_mut::<GameState>().money_earned_today = 125.;
+        app.update();
+        let board = app.world().resource::<QuestBoard>();
+        assert!(board.quests.is_empty());
+        assert_eq!(board.completed_total, 1);
+    }
+
+    #[test]
+    fn earn_money_quest_honors_amount_in_payload() {
+        // A very small target should complete with a very small income, proving
+        // the payload is read (not the old hard-coded 60).
+        let mut app = build_app(vec![quest(0, QuestKind::EarnMoney(5.), 1)]);
+        spawn_player(&mut app, Inventory::default());
+        app.world_mut().resource_mut::<GameState>().money_earned_today = 10.;
         app.update();
         let board = app.world().resource::<QuestBoard>();
         assert!(board.quests.is_empty());

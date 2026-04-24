@@ -1957,11 +1957,12 @@ mod tests {
     }
 
     #[test]
-    fn season_label_includes_emoji() {
-        assert!(SeasonKind::Spring.label().contains("Spring"));
-        assert!(SeasonKind::Summer.label().contains("Summer"));
-        assert!(SeasonKind::Autumn.label().contains("Autumn"));
-        assert!(SeasonKind::Winter.label().contains("Winter"));
+    fn season_label_includes_emoji_and_name() {
+        // The label is the exact emoji-prefixed string shown in HUD.
+        assert_eq!(SeasonKind::Spring.label(), "🌸 Spring");
+        assert_eq!(SeasonKind::Summer.label(), "☀ Summer");
+        assert_eq!(SeasonKind::Autumn.label(), "🍂 Autumn");
+        assert_eq!(SeasonKind::Winter.label(), "❄ Winter");
     }
 
     #[test]
