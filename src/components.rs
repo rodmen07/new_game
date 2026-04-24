@@ -465,3 +465,177 @@ impl Furnishings {
         if self.kitchen { 10.0 } else { 0.0 }
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::field_reassign_with_default)]
+mod tests {
+    use super::*;
+
+    // ── PetKind ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn pet_kind_to_u8_round_trip() {
+        for k in [PetKind::Dog, PetKind::Cat, PetKind::Fish] {
+            let n: u8 = k.into();
+            let back: PetKind = n.into();
+            assert!(back == k, "round trip failed for {:?}", k.label());
+        }
+    }
+
+    #[test]
+    fn pet_kind_u8_values_are_stable() {
+        // Save format depends on these stable byte values.
+        assert_eq!(u8::from(PetKind::Dog), 0);
+        assert_eq!(u8::from(PetKind::Cat), 1);
+        assert_eq!(u8::from(PetKind::Fish), 2);
+        // Reference conversion matches by-value conversion.
+        assert_eq!(u8::from(&PetKind::Dog), 0);
+        assert_eq!(u8::from(&PetKind::Cat), 1);
+        assert_eq!(u8::from(&PetKind::Fish), 2);
+    }
+
+    #[test]
+    fn pet_kind_from_unknown_u8_defaults_to_dog() {
+        // Anything not 1 or 2 maps to Dog so old/corrupt save data stays loadable.
+        let k: PetKind = 0u8.into();
+        assert!(matches!(k, PetKind::Dog));
+        let k: PetKind = 99u8.into();
+        assert!(matches!(k, PetKind::Dog));
+    }
+
+    #[test]
+    fn pet_kind_name_and_label() {
+        assert_eq!(PetKind::Dog.name(), "Buddy");
+        assert_eq!(PetKind::Cat.name(), "Whiskers");
+        assert_eq!(PetKind::Fish.name(), "Finn");
+        assert_eq!(PetKind::Dog.label(), "Dog");
+        assert_eq!(PetKind::Cat.label(), "Cat");
+        assert_eq!(PetKind::Fish.label(), "Fish");
+    }
+
+    // ── QuestKind::description ────────────────────────────────────────────────
+
+    #[test]
+    fn quest_description_fetch_item_uses_item_name() {
+        // These tests pin the *current* production behavior. The format string
+        // always uses the plural noun even when N == 1 (e.g. "1 vitamins"),
+        // which is intentional in the production code today; if that grammar
+        // is ever fixed these expectations should be updated in lockstep.
+        assert_eq!(
+            QuestKind::FetchItem(ItemKind::Coffee, 2).description(),
+            "Bring me 2 coffee"
+        );
+        assert_eq!(
+            QuestKind::FetchItem(ItemKind::Vitamins, 1).description(),
+            "Bring me 1 vitamins"
+        );
+        assert_eq!(
+            QuestKind::FetchItem(ItemKind::Books, 3).description(),
+            "Bring me 3 books"
+        );
+        assert_eq!(
+            QuestKind::FetchItem(ItemKind::Ingredient, 4).description(),
+            "Bring me 4 ingredients"
+        );
+        assert_eq!(
+            QuestKind::FetchItem(ItemKind::GiftBox, 5).description(),
+            "Bring me 5 gift boxes"
+        );
+        assert_eq!(
+            QuestKind::FetchItem(ItemKind::Smoothie, 1).description(),
+            "Bring me 1 smoothies"
+        );
+    }
+
+    #[test]
+    fn quest_description_do_activity_pluralizes() {
+        // Note: pluralization here is naive ("shifts", "sessions"), and the
+        // catch-all branch yields "activitys" (see the next test). These
+        // assertions document existing behavior, not ideal grammar.
+        // Singular form ("Do a X") uses the action label.
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Work, 1).description(),
+            "Do a work shift"
+        );
+        // Plural form pluralizes by appending "s".
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Work, 2).description(),
+            "Do 2 work shifts"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Exercise, 3).description(),
+            "Do 3 exercise sessions"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Chat, 1).description(),
+            "Do a chat"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Meditate, 1).description(),
+            "Do a meditation"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Eat, 1).description(),
+            "Do a meal"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Hobby(HobbyKind::Painting), 1).description(),
+            "Do a hobby session"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::GymSession, 1).description(),
+            "Do a gym session"
+        );
+    }
+
+    #[test]
+    fn quest_description_do_activity_unknown_action_falls_back_to_activity() {
+        // Any ActionKind not in the explicit match arm uses the generic label.
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Sleep, 1).description(),
+            "Do a activity"
+        );
+        assert_eq!(
+            QuestKind::DoActivity(ActionKind::Bank, 2).description(),
+            "Do 2 activitys"
+        );
+    }
+
+    #[test]
+    fn quest_description_earn_money_rounds_to_dollars() {
+        assert_eq!(QuestKind::EarnMoney(60.0).description(), "Earn $60 today");
+        // Rounds via `:.0` formatting.
+        assert_eq!(
+            QuestKind::EarnMoney(123.45).description(),
+            "Earn $123 today"
+        );
+    }
+
+    #[test]
+    fn quest_description_craft_item_pluralizes() {
+        assert_eq!(QuestKind::CraftItem(1).description(), "Craft an item");
+        assert_eq!(QuestKind::CraftItem(2).description(), "Craft 2 items");
+        assert_eq!(QuestKind::CraftItem(10).description(), "Craft 10 items");
+    }
+
+    // ── Furnishings ───────────────────────────────────────────────────────────
+
+    #[test]
+    fn furnishings_default_has_no_bonuses() {
+        let f = Furnishings::default();
+        assert!((f.skill_mult() - 1.0).abs() < f32::EPSILON);
+        assert!((f.sleep_bonus() - 0.0).abs() < f32::EPSILON);
+        assert!((f.meal_bonus() - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn furnishings_each_upgrade_grants_its_bonus() {
+        let mut f = Furnishings::default();
+        f.desk = true;
+        assert!((f.skill_mult() - 1.15).abs() < 0.0001);
+        f.bed = true;
+        assert!((f.sleep_bonus() - 10.0).abs() < f32::EPSILON);
+        f.kitchen = true;
+        assert!((f.meal_bonus() - 10.0).abs() < f32::EPSILON);
+    }
+}
