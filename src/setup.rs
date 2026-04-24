@@ -20,16 +20,18 @@ use bevy::render::{
 };
 use bevy_ecs_tilemap::prelude::*;
 
+use crate::constants::MAP_SCALE;
+
 /// World-space scale multiplier applied inside all layout helpers.
 /// All design coordinates are written in pre-scale units; S is applied internally.
-const S: f32 = 4.0;
+const S: f32 = MAP_SCALE;
 
 // ── Tilemap constants ─────────────────────────────────────────────────────────
 /// Side length of each tile in the texture atlas (pixels) and in world units
 /// (Bevy world pixels).  Because S=4, one tile covers 16 pre-scale units.
 const TILE_PX: u32 = 64;
 /// Total number of distinct tile types (= columns in the atlas row).
-const TILE_COUNT: u32 = 18;
+const TILE_COUNT: u32 = TILE_COLORS.len() as u32;
 /// Tilemap dimensions in tiles.
 const MAP_COLS: u32 = 90;
 const MAP_ROWS: u32 = 62;
@@ -44,14 +46,14 @@ const T_ROAD: u32 = 1;
 const T_SIDEWALK: u32 = 2;
 const T_ALLEY: u32 = 3;
 const T_HOME: u32 = 4;
-const T_WELLNESS: u32 = 5;
+const T_GYM: u32 = 5;       // formerly T_WELLNESS
 const T_LIBRARY: u32 = 6;
 const T_PARK: u32 = 7;
 const T_OFFICE: u32 = 8;
 const T_BANK: u32 = 9;
-const T_CLINIC: u32 = 10;
-const T_STORE: u32 = 11;
-const T_CAFE: u32 = 12;
+const T_HOSPITAL: u32 = 10; // formerly T_CLINIC
+const T_MARKET: u32 = 11;   // formerly T_STORE
+const T_RESTAURANT: u32 = 12; // formerly T_CAFE
 const T_ADOPTION: u32 = 13;
 const T_GARAGE: u32 = 14;
 const T_APARTMENTS: u32 = 15;
@@ -127,16 +129,16 @@ fn build_tile_grid() -> Vec<u32> {
 
     // North-row building zone floors
     fill_tiles(&mut g, -515., -335., 70., 290., T_HOME);
-    fill_tiles(&mut g, -330., -180., 80., 280., T_WELLNESS);
+    fill_tiles(&mut g, -330., -180., 80., 280., T_GYM);
     fill_tiles(&mut g, -175., 5., 70., 290., T_LIBRARY);
     fill_tiles(&mut g, 10., 160., 100., 260., T_PARK);
     fill_tiles(&mut g, 335., 515., 70., 290., T_OFFICE);
 
     // South-row building zone floors
     fill_tiles(&mut g, -500., -350., -280., -80., T_BANK);
-    fill_tiles(&mut g, -330., -180., -280., -80., T_CLINIC);
-    fill_tiles(&mut g, -160., -10., -280., -80., T_STORE);
-    fill_tiles(&mut g, 10., 160., -280., -80., T_CAFE);
+    fill_tiles(&mut g, -330., -180., -280., -80., T_HOSPITAL);
+    fill_tiles(&mut g, -160., -10., -280., -80., T_MARKET);
+    fill_tiles(&mut g, 10., 160., -280., -80., T_RESTAURANT);
     fill_tiles(&mut g, 180., 330., -280., -80., T_ADOPTION);
     fill_tiles(&mut g, 350., 500., -280., -80., T_GARAGE);
 
@@ -185,9 +187,9 @@ fn tile_pixel_color(tile_idx: u32, px: u32, py: u32, base: [u8; 3]) -> [u8; 3] {
             // Asphalt speckle: occasional darker grit.
             if h < 24 {
                 out = [
-                    adjust(base[0], -18),
-                    adjust(base[1], -18),
-                    adjust(base[2], -18),
+                    adjust(out[0], -18),
+                    adjust(out[1], -18),
+                    adjust(out[2], -18),
                 ];
             }
         }
@@ -209,34 +211,34 @@ fn tile_pixel_color(tile_idx: u32, px: u32, py: u32, base: [u8; 3]) -> [u8; 3] {
             }
         }
         T_ALLEY | T_GROUND => {
-            // Gravel/dirt: darker pebbles + occasional lighter flecks.
+            // Apply these relative to `out` so earlier per-pixel noise is preserved.
             if h < 28 {
                 out = [
-                    adjust(base[0], -22),
-                    adjust(base[1], -22),
-                    adjust(base[2], -22),
+                    adjust(out[0], -22),
+                    adjust(out[1], -22),
+                    adjust(out[2], -22),
                 ];
             } else if h > 232 {
                 out = [
-                    adjust(base[0], 18),
-                    adjust(base[1], 14),
-                    adjust(base[2], 10),
+                    adjust(out[0], 18),
+                    adjust(out[1], 14),
+                    adjust(out[2], 10),
                 ];
             }
         }
         T_PARK => {
-            // Grass tufts: bright green speckle on top of the base green.
+            // Grass tufts: bright green speckle on top of the current grass color.
             if h > 210 {
                 out = [
-                    adjust(base[0], -12),
-                    adjust(base[1], 28),
-                    adjust(base[2], -12),
+                    adjust(out[0], -12),
+                    adjust(out[1], 28),
+                    adjust(out[2], -12),
                 ];
             } else if h < 30 {
                 out = [
-                    adjust(base[0], -8),
-                    adjust(base[1], -16),
-                    adjust(base[2], -8),
+                    adjust(out[0], -8),
+                    adjust(out[1], -16),
+                    adjust(out[2], -8),
                 ];
             }
         }
