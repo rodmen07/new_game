@@ -42,6 +42,12 @@ pub enum PlayerAction {
     Confirm,
     /// Escape key
     Cancel,
+    /// Space key - advance non-modal overlays (e.g. the tutorial)
+    Advance,
+    /// Tab key - toggle the skill panel
+    ToggleSkillPanel,
+    /// Q key - request a quest from the nearby NPC
+    RequestQuest,
 }
 
 #[derive(Component)]
