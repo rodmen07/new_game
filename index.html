@@ -8,13 +8,20 @@
       and where the WASM module is allowed to talk to. Only this origin
       may serve scripts/styles/assets, and the WebSocket relay defined in
       src/network.rs is the only allowed outbound connection.
-      `wasm-unsafe-eval` is required to instantiate the Bevy/Rust WASM
-      module; `'unsafe-inline'` covers the small bootstrap script and
-      <style> block in this file.
+      `'unsafe-inline'` covers the small bootstrap script and <style>
+      block in this file. `'unsafe-eval'` is required because cpal's
+      webaudio backend (used by bevy_audio) probes for AudioContext
+      support via `eval("typeof AudioContext !== 'undefined'")`; without
+      it the probe throws and bevy_audio reports "No audio device found",
+      silencing all in-game audio. `'unsafe-eval'` also implicitly
+      permits WebAssembly compilation, so a separate `'wasm-unsafe-eval'`
+      token is not needed; if cpal/bevy_audio is upgraded to a version
+      that no longer uses `eval`, drop `'unsafe-eval'` and add
+      `'wasm-unsafe-eval'` back to keep WASM instantiation working.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://multiplayer-relay-rodmen07.fly.dev; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://multiplayer-relay-rodmen07.fly.dev; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
     />
     <meta name="referrer" content="no-referrer" />
     <title>Everyday Life Simulator</title>
