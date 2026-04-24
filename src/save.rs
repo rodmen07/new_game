@@ -538,6 +538,10 @@ impl Default for SaveData {
 
 impl SaveData {
     /// Convenience accessor for the local player save slot.
+    ///
+    /// `load_save_data` guarantees `players` is non-empty after sanitization,
+    /// so this should not panic for data produced by `load_save_data`. The
+    /// `expect` is retained as a sanity check for hand-built `SaveData`.
     pub fn local_player(&self) -> &PlayerSave {
         self.players
             .first()
@@ -550,6 +554,62 @@ impl SaveData {
         self.players
             .first_mut()
             .expect("SaveData must have at least one player")
+    }
+
+    /// Make untrusted save data safe to apply.
+    ///
+    /// External save files (on-disk JSON or browser localStorage) can be
+    /// edited by the user or corrupted. This:
+    /// * guarantees at least one player slot exists,
+    /// * replaces non-finite floats (NaN/Inf) with `0.0` so they don't
+    ///   silently propagate through every gameplay calculation.
+    fn sanitize(&mut self) {
+        if self.players.is_empty() {
+            self.players.push(PlayerSave::default());
+        }
+        for p in &mut self.players {
+            p.sanitize_floats();
+        }
+    }
+}
+
+impl PlayerSave {
+    /// Replace any non-finite f32 fields with `0.0`. NaN/Inf in inputs would
+    /// otherwise contaminate stats (`hunger`, `money`, …) for the rest of the
+    /// session, since most gameplay math doesn't re-validate.
+    fn sanitize_floats(&mut self) {
+        fn fix(v: &mut f32) {
+            if !v.is_finite() {
+                *v = 0.0;
+            }
+        }
+        fix(&mut self.energy);
+        fix(&mut self.hunger);
+        fix(&mut self.happiness);
+        fix(&mut self.health);
+        fix(&mut self.stress);
+        fix(&mut self.sleep_debt);
+        fix(&mut self.money);
+        fix(&mut self.savings);
+        fix(&mut self.loan);
+        fix(&mut self.meditation_buff);
+        fix(&mut self.skill_cooking);
+        fix(&mut self.skill_career);
+        fix(&mut self.skill_fitness);
+        fix(&mut self.skill_social);
+        fix(&mut self.rating_score);
+        fix(&mut self.hobby_painting);
+        fix(&mut self.hobby_gaming);
+        fix(&mut self.hobby_music);
+        fix(&mut self.hospital_timer);
+        fix(&mut self.invest_amount);
+        fix(&mut self.invest_rate);
+        fix(&mut self.invest_total_return);
+        fix(&mut self.rep_score);
+        fix(&mut self.pet_hunger);
+        for v in &mut self.npc_friendship {
+            fix(v);
+        }
     }
 }
 
@@ -635,16 +695,35 @@ pub fn save_exists() -> bool {
 
 /// Load save data from storage, migrating from legacy format if needed.
 /// Returns `None` if no save exists or data is completely unparseable.
+///
+/// Save text exceeding `MAX_SAVE_BYTES` is rejected before parsing to prevent
+/// a hand-edited or corrupted save from triggering an unbounded allocation.
+/// All loaded data is run through `SaveData::sanitize` so non-finite floats
+/// and an empty `players` array can't reach gameplay code.
 pub fn load_save_data() -> Option<SaveData> {
+    /// Hard cap on accepted save text. A normal save is well under 64 KiB.
+    const MAX_SAVE_BYTES: usize = 1024 * 1024;
+
     let contents = read_save_text()?;
-    // Try current v2 format first.
-    if let Ok(data) = serde_json::from_str::<SaveData>(&contents) {
-        return Some(data);
+    if contents.len() > MAX_SAVE_BYTES {
+        eprintln!(
+            "[save] Refusing to load: save text is {} bytes (limit {})",
+            contents.len(),
+            MAX_SAVE_BYTES
+        );
+        return None;
     }
-    // Fall back to legacy v1 flat format and migrate.
-    serde_json::from_str::<SaveDataLegacy>(&contents)
-        .ok()
-        .map(SaveDataLegacy::into_v2)
+    // Try current v2 format first.
+    let mut data = if let Ok(data) = serde_json::from_str::<SaveData>(&contents) {
+        data
+    } else {
+        // Fall back to legacy v1 flat format and migrate.
+        serde_json::from_str::<SaveDataLegacy>(&contents)
+            .ok()
+            .map(SaveDataLegacy::into_v2)?
+    };
+    data.sanitize();
+    Some(data)
 }
 
 // ── Systems ───────────────────────────────────────────────────────────────────
@@ -1326,5 +1405,33 @@ mod tests {
         assert!((migrated.local_player().energy - 80.0).abs() < f32::EPSILON);
         assert!(migrated.local_player().ms_exec);
         assert!((migrated.local_player().npc_friendship[4] - 5.).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn sanitize_replaces_non_finite_floats_with_zero() {
+        let mut data = SaveData::default();
+        {
+            let p = data.local_player_mut();
+            p.money = f32::NAN;
+            p.hunger = f32::INFINITY;
+            p.savings = f32::NEG_INFINITY;
+            p.npc_friendship[0] = f32::NAN;
+        }
+        data.sanitize();
+        let p = data.local_player();
+        assert_eq!(p.money, 0.0);
+        assert_eq!(p.hunger, 0.0);
+        assert_eq!(p.savings, 0.0);
+        assert_eq!(p.npc_friendship[0], 0.0);
+    }
+
+    #[test]
+    fn sanitize_inserts_default_player_when_players_empty() {
+        let mut data = SaveData::default();
+        data.players.clear();
+        data.sanitize();
+        assert_eq!(data.players.len(), 1);
+        // local_player() must no longer panic.
+        let _ = data.local_player();
     }
 }
