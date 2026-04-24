@@ -89,7 +89,7 @@ fn pre_to_row(pre_y: f32) -> u32 {
 }
 
 /// Fill a rectangular region of the flat tile grid (row-major, row 0 = bottom).
-fn fill_tiles(grid: &mut Vec<u32>, x_min: f32, x_max: f32, y_min: f32, y_max: f32, tile: u32) {
+fn fill_tiles(grid: &mut [u32], x_min: f32, x_max: f32, y_min: f32, y_max: f32, tile: u32) {
     let c0 = pre_to_col(x_min).min(MAP_COLS.saturating_sub(1));
     let c1 = (pre_to_col(x_max) + 1).min(MAP_COLS);
     let r0 = pre_to_row(y_min).min(MAP_ROWS.saturating_sub(1));
