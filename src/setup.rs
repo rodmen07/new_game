@@ -79,26 +79,17 @@ const TILE_COLORS: [[u8; 3]; 16] = [
 /// Convert a pre-scale x coordinate to the nearest tilemap column index.
 /// Coordinates west of TILEMAP_ORIGIN_X are clamped to column 0.
 fn pre_to_col(pre_x: f32) -> u32 {
-    (((pre_x * S) - TILEMAP_ORIGIN_X) / TILE_PX as f32)
-        .max(0.0) as u32
+    (((pre_x * S) - TILEMAP_ORIGIN_X) / TILE_PX as f32).max(0.0) as u32
 }
 
 /// Convert a pre-scale y coordinate to the nearest tilemap row index.
 /// Coordinates south of TILEMAP_ORIGIN_Y are clamped to row 0.
 fn pre_to_row(pre_y: f32) -> u32 {
-    (((pre_y * S) - TILEMAP_ORIGIN_Y) / TILE_PX as f32)
-        .max(0.0) as u32
+    (((pre_y * S) - TILEMAP_ORIGIN_Y) / TILE_PX as f32).max(0.0) as u32
 }
 
 /// Fill a rectangular region of the flat tile grid (row-major, row 0 = bottom).
-fn fill_tiles(
-    grid: &mut Vec<u32>,
-    x_min: f32,
-    x_max: f32,
-    y_min: f32,
-    y_max: f32,
-    tile: u32,
-) {
+fn fill_tiles(grid: &mut Vec<u32>, x_min: f32, x_max: f32, y_min: f32, y_max: f32, tile: u32) {
     let c0 = pre_to_col(x_min).min(MAP_COLS.saturating_sub(1));
     let c1 = (pre_to_col(x_max) + 1).min(MAP_COLS);
     let r0 = pre_to_row(y_min).min(MAP_ROWS.saturating_sub(1));
