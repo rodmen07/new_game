@@ -350,7 +350,7 @@ These require significant architecture work and are not blocked by any of the ab
 | Item | Description |
 |---|---|
 | Wasm deployment issue | Pre-existing "Startup error: Uncaught RuntimeError: unreachable" on deployed site. Not caused by P2-B, M-02, or any local changes (171 local tests pass, clean clippy). Deploy infrastructure issue - needs browser console diagnostics. |
-| M-03 | Introduce a `PlayerAction` event abstraction to decouple raw keyboard input from game logic |
+| M-03 | `PlayerAction` event abstraction in place; remaining gameplay key polls (Tab skill panel, Q quest offer, Space tutorial advance) migrated off raw `ButtonInput<KeyCode>`. Movement keys (WASD/Arrows/Shift) intentionally remain raw for per-frame physics, and `handle_escape` in `menu.rs` keeps raw polling because it must run across all `AppState`s while `read_player_actions` only runs in `Playing`. Variants added: `Advance`, `ToggleSkillPanel`, `RequestQuest`. |
 | M-04 | Restructure `SaveData` to support a `Vec<PlayerSave>` for per-player persistence |
 | Art pass | Replace colored rectangles with sprite sheets for characters, buildings, and props |
 
