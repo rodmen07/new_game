@@ -265,6 +265,22 @@ pub struct InteractHighlight;
 pub struct ObjectSize(pub Vec2);
 #[derive(Component)]
 pub struct PlayerIndicator;
+/// Marks an entity that should be y-sorted: its `Transform.z` is recomputed
+/// each frame from `Transform.y` so entities further south render in front
+/// of those further north (top-down 2D, Stardew-style).
+///
+/// `base_z` is the centre z value used when y == 0; the `apply_y_sort`
+/// system biases it slightly per pixel of y so all y-sorted entities share
+/// the same depth band but stay correctly layered relative to each other.
+#[derive(Component, Clone, Copy)]
+pub struct YSort {
+    pub base_z: f32,
+}
+impl Default for YSort {
+    fn default() -> Self {
+        Self { base_z: 10.0 }
+    }
+}
 /// Smoothed display value for a stat bar (0–100). Lerps toward `target`
 /// each frame so bars drain/fill visibly instead of jumping instantly.
 #[derive(Component, Default)]

@@ -7,7 +7,7 @@ use crate::components::{
     SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText,
     TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
     TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
-    TypingWordRowScale, TypingWordTyped, Vehicle,
+    TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -3400,7 +3400,7 @@ fn spawn_player_entity(commands: &mut Commands) {
             Skills::default(),
             WorkStreak::default(),
             HousingTier::default(),
-            Furnishings::default(),
+            (Furnishings::default(), YSort { base_z: 10.0 }),
         ))
         .with_children(|p| {
             spawn_human(
@@ -4074,6 +4074,7 @@ fn spawn_npc(
             },
             ObjectSize(Vec2::splat(18.)),
             NpcId(npc_id),
+            YSort { base_z: 9.5 },
         ))
         .with_children(|p| {
             spawn_human(p, outfit, pants, skin, hair);

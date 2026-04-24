@@ -509,3 +509,26 @@ pub fn update_lightning(
         );
     }
 }
+
+// ── Y-sort ────────────────────────────────────────────────────────────────────
+
+/// Top-down 2D depth sorting: each frame, recompute the z component of every
+/// `YSort`-tagged entity so entities further south render in front. Uses a
+/// small per-pixel slope (Y_SORT_SLOPE) around `base_z` so all characters
+/// stay in the same depth band but layer correctly relative to each other.
+///
+/// Conventions:
+/// - Higher world `y` (further north) -> lower z (drawn behind).
+/// - Lower world `y` (further south)  -> higher z (drawn in front).
+/// - Width of the sort band stays inside +/- (Y_SORT_RANGE * Y_SORT_SLOPE)
+///   so y-sorted things never punch through tilemap (z=0) or the day/night
+///   overlay (z=50).
+const Y_SORT_SLOPE: f32 = 0.001;
+const Y_SORT_RANGE: f32 = 4000.0;
+
+pub fn apply_y_sort(mut q: Query<(&YSort, &mut Transform)>) {
+    for (ys, mut tf) in &mut q {
+        let clamped_y = tf.translation.y.clamp(-Y_SORT_RANGE, Y_SORT_RANGE);
+        tf.translation.z = ys.base_z - clamped_y * Y_SORT_SLOPE;
+    }
+}

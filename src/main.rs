@@ -55,6 +55,9 @@ fn main() {
                     file_path: asset_root(),
                     ..default()
                 })
+                // Nearest-neighbour sampling keeps pixel-art / procedural tile
+                // textures crisp at any zoom (Stardew-style top-down look).
+                .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Everyday Life Simulator".to_string(),
@@ -181,6 +184,7 @@ fn main() {
                 update_typing_word_row_scale,
                 update_skill_panel,
                 update_day_night,
+                apply_y_sort,
             )
                 .chain()
                 .after(player_visuals)
