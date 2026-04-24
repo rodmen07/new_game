@@ -11,6 +11,7 @@ mod systems;
 
 use audio::GameAudioPlugin;
 use bevy::{asset::AssetPlugin, prelude::*};
+use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_tweening::TweeningPlugin;
 use components::PlayerAction;
 use menu::{AppState, MenuPlugin, reset_start_kind};
@@ -72,6 +73,7 @@ fn main() {
         .add_plugins(MenuPlugin)
         .add_plugins(GameAudioPlugin)
         .add_plugins(TweeningPlugin)
+        .add_plugins(TilemapPlugin)
         .add_plugins(MultiplayerPlugin)
         // ── Game resources ────────────────────────────────────────────────────
         .init_resource::<GameTime>()
