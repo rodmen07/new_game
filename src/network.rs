@@ -41,6 +41,19 @@ pub mod wasm_net {
     /// If no updates are received for this long, despawn the remote player.
     const REMOTE_STALE_SECS: f32 = 12.0;
 
+    /// Hard cap on concurrent remote players. The relay is untrusted; a
+    /// malicious or buggy server could otherwise stream unique ids forever
+    /// and exhaust the WASM heap. New ids beyond this are dropped.
+    const MAX_REMOTE_PLAYERS: usize = 64;
+
+    /// Maximum accepted length (bytes) for a player id from the server.
+    /// Real ids are short uuids/nanoids; anything larger is treated as abuse.
+    const MAX_NET_ID_LEN: usize = 64;
+
+    /// Maximum messages drained from the inbox per frame, to bound per-frame
+    /// work even if a misbehaving server bursts traffic.
+    const MAX_INBOX_DRAIN_PER_FRAME: usize = 256;
+
     // ── Incoming message types ────────────────────────────────────────────────
 
     #[derive(Deserialize, Debug)]
@@ -114,8 +127,26 @@ pub mod wasm_net {
             let onmessage = Closure::<dyn FnMut(MessageEvent)>::new(move |e: MessageEvent| {
                 if let Ok(txt) = e.data().dyn_into::<JsString>() {
                     let s = String::from(txt);
+                    // Cap parsed payload size; the relay protocol is tiny json.
+                    if s.len() > 4096 {
+                        bevy::log::warn!("net: dropping oversized message ({} bytes)", s.len());
+                        return;
+                    }
                     match serde_json::from_str::<ServerMsg>(&s) {
-                        Ok(msg) => inbox_clone.borrow_mut().push_back(msg),
+                        Ok(msg) => {
+                            // Reject ids that are absurdly large up front so we
+                            // don't keep multi-MB strings alive in the inbox.
+                            let id_ok = match &msg {
+                                ServerMsg::Welcome { id }
+                                | ServerMsg::Pos { id, .. }
+                                | ServerMsg::Leave { id } => id.len() <= MAX_NET_ID_LEN,
+                            };
+                            if id_ok {
+                                inbox_clone.borrow_mut().push_back(msg);
+                            } else {
+                                bevy::log::warn!("net: dropping message with oversized id");
+                            }
+                        }
                         Err(err) => bevy::log::warn!("net: parse error: {err} raw={s}"),
                     }
                 }
@@ -199,11 +230,25 @@ pub mod wasm_net {
             return;
         };
 
-        let messages: Vec<ServerMsg> = net.inbox.borrow_mut().drain(..).collect();
+        // Drain at most a bounded number of messages per frame; leave the
+        // rest in the inbox so a flood from a misbehaving relay can't stall
+        // the main thread.
+        let messages: Vec<ServerMsg> = {
+            let mut inbox = net.inbox.borrow_mut();
+            let take = inbox.len().min(MAX_INBOX_DRAIN_PER_FRAME);
+            inbox.drain(..take).collect()
+        };
 
         for msg in messages {
             match msg {
                 ServerMsg::Welcome { id } => {
+                    // Only honor the first Welcome. A malicious relay must
+                    // not be able to rename us mid-session, which would
+                    // bypass the self-position filter below.
+                    if net.local_id.is_some() {
+                        bevy::log::warn!("net: ignoring duplicate Welcome");
+                        continue;
+                    }
                     bevy::log::info!("net: connected as {id}");
                     net.local_id = Some(id);
                 }
@@ -211,9 +256,15 @@ pub mod wasm_net {
                     if net.local_id.as_deref() == Some(&id) {
                         continue;
                     }
+                    // Reject NaN/Inf positions outright.
+                    if !x.is_finite() || !y.is_finite() {
+                        continue;
+                    }
 
                     let mut found_existing = false;
+                    let mut remote_count: usize = 0;
                     for (_, rp, mut tf, mut smoothing) in &mut remote_q {
+                        remote_count += 1;
                         if rp.net_id != id {
                             continue;
                         }
@@ -233,6 +284,11 @@ pub mod wasm_net {
                     }
 
                     if !found_existing {
+                        if remote_count >= MAX_REMOTE_PLAYERS {
+                            // Don't let an attacker exhaust the heap by
+                            // streaming unique ids forever.
+                            continue;
+                        }
                         spawn_remote(&mut commands, id, x, y);
                     }
                 }

@@ -3,6 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      Content Security Policy: lock down what the deployed page can load
+      and where the WASM module is allowed to talk to. Only this origin
+      may serve scripts/styles/assets, and the WebSocket relay defined in
+      src/network.rs is the only allowed outbound connection.
+      `wasm-unsafe-eval` is required to instantiate the Bevy/Rust WASM
+      module; `'unsafe-inline'` covers the small bootstrap script and
+      <style> block in this file.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://multiplayer-relay-rodmen07.fly.dev; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
     <title>Everyday Life Simulator</title>
     <link data-trunk rel="copy-dir" href="assets" />
     <link data-trunk rel="rust" />
