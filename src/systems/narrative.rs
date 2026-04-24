@@ -110,12 +110,7 @@ mod tests {
         app
     }
 
-    fn spawn_player(
-        app: &mut App,
-        stats: PlayerStats,
-        skills: Skills,
-        housing: HousingTier,
-    ) {
+    fn spawn_player(app: &mut App, stats: PlayerStats, skills: Skills, housing: HousingTier) {
         app.world_mut().spawn((LocalPlayer, stats, skills, housing));
     }
 
