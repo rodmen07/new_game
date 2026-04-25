@@ -46,13 +46,13 @@ const T_ROAD: u32 = 1;
 const T_SIDEWALK: u32 = 2;
 const T_ALLEY: u32 = 3;
 const T_HOME: u32 = 4;
-const T_GYM: u32 = 5;       // formerly T_WELLNESS
+const T_GYM: u32 = 5; // formerly T_WELLNESS
 const T_LIBRARY: u32 = 6;
 const T_PARK: u32 = 7;
 const T_OFFICE: u32 = 8;
 const T_BANK: u32 = 9;
 const T_HOSPITAL: u32 = 10; // formerly T_CLINIC
-const T_MARKET: u32 = 11;   // formerly T_STORE
+const T_MARKET: u32 = 11; // formerly T_STORE
 const T_RESTAURANT: u32 = 12; // formerly T_CAFE
 const T_ADOPTION: u32 = 13;
 const T_GARAGE: u32 = 14;
@@ -219,27 +219,15 @@ fn tile_pixel_color(tile_idx: u32, px: u32, py: u32, base: [u8; 3]) -> [u8; 3] {
                     adjust(out[2], -22),
                 ];
             } else if h > 232 {
-                out = [
-                    adjust(out[0], 18),
-                    adjust(out[1], 14),
-                    adjust(out[2], 10),
-                ];
+                out = [adjust(out[0], 18), adjust(out[1], 14), adjust(out[2], 10)];
             }
         }
         T_PARK => {
             // Grass tufts: bright green speckle on top of the current grass color.
             if h > 210 {
-                out = [
-                    adjust(out[0], -12),
-                    adjust(out[1], 28),
-                    adjust(out[2], -12),
-                ];
+                out = [adjust(out[0], -12), adjust(out[1], 28), adjust(out[2], -12)];
             } else if h < 30 {
-                out = [
-                    adjust(out[0], -8),
-                    adjust(out[1], -16),
-                    adjust(out[2], -8),
-                ];
+                out = [adjust(out[0], -8), adjust(out[1], -16), adjust(out[2], -8)];
             }
         }
         T_HOME | T_OFFICE | T_BANK | T_LIBRARY | T_APARTMENTS | T_SCHOOL => {
