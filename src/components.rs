@@ -323,6 +323,12 @@ pub struct PlayerSheetSprite;
 /// a doorway rather than a hard cut.
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct IndoorTint;
+
+/// Marker for the soft drop shadow ellipse parented to the player. Static
+/// (no per-frame system needed); it inherits the player's transform so it
+/// always sits under the feet and grounds the sprite in the world.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct PlayerShadow;
 /// Smoothed display value for a stat bar (0–100). Lerps toward `target`
 /// each frame so bars drain/fill visibly instead of jumping instantly.
 #[derive(Component, Default)]
