@@ -1,0 +1,225 @@
+name: Gamedev Agent
+
+# Manually-triggered autonomous agent that improves new_game across six
+# dimensions (graphics, ui-ux, content, gameplay-depth, code-quality,
+# security). Uses GitHub Models for inference (default: Anthropic Claude
+# Sonnet 4.5) and opens one PR per completed task.
+#
+# Pick a duration when triggering: 15, 30, 45, or 60 minutes. The loop
+# stops gracefully when the deadline is reached, when all 24 tasks are
+# complete, or when open agent PRs hit the safety cap.
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_minutes:
+        description: "How long to run (minutes)"
+        required: false
+        default: "15"
+        type: choice
+        options:
+          - "15"
+          - "30"
+          - "45"
+          - "60"
+      model:
+        description: "GitHub Models id (override default)"
+        required: false
+        default: "anthropic/claude-sonnet-4-5"
+        type: string
+      force_dimension:
+        description: "Force a dimension (graphics | ui-ux | content | gameplay-depth | code-quality | security). Leave blank for auto."
+        required: false
+        default: ""
+        type: string
+      force_focus:
+        description: "Force a focus id (must pair with force_dimension). Leave blank for auto."
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: gamedev-agent
+  cancel-in-progress: false
+
+jobs:
+  gamedev:
+    name: Run gamedev agent until deadline
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: write
+      pull-requests: write
+      models: read
+
+    steps:
+      - name: Checkout new_game
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name  "gamedev-agent[bot]"
+          git config --global user.email "gamedev-agent@users.noreply.github.com"
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install Bevy system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libudev-dev \
+            libasound2-dev \
+            libxkbcommon-dev \
+            libwayland-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-x11-dev \
+            libgl1-mesa-dev
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-agent-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install agent Python dependencies
+        run: pip install -r agents/gamedev/requirements.txt
+
+      # ── Main loop ─────────────────────────────────────────────────────────
+      # Python exit codes:
+      #   0 = task committed; output file written; push + PR needed
+      #   1 = unrecoverable error; stop
+      #   2 = task skipped (no changes needed); continue
+      #   3 = all tasks complete; stop
+
+      - name: Run gamedev agent loop
+        env:
+          GITHUB_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
+          GAMEDEV_AGENT_MODEL: ${{ inputs.model }}
+          FORCE_DIMENSION:     ${{ inputs.force_dimension }}
+          FORCE_FOCUS:         ${{ inputs.force_focus }}
+          DURATION_MINS:       ${{ inputs.duration_minutes }}
+        run: |
+          set +e
+          OUTPUT="agents/gamedev/.gamedev-output.json"
+          MAX_OPEN_AGENT_PRS=10
+
+          DEADLINE=$(( $(date +%s) + ${DURATION_MINS:-15} * 60 ))
+          echo "Time window: ${DURATION_MINS} minutes. Deadline: $(date -d @$DEADLINE)"
+
+          while true; do
+            NOW=$(date +%s)
+            if [ "$NOW" -ge "$DEADLINE" ]; then
+              echo "Time window (${DURATION_MINS} min) exhausted. Stopping."
+              break
+            fi
+            REMAINING=$(( ($DEADLINE - $NOW) / 60 ))
+            echo "Time remaining: ${REMAINING} min"
+
+            # Open agent PR guard - count PRs whose branch starts with agent/gamedev/
+            OPEN_AGENT_PRS=$(gh pr list \
+              --repo "${GITHUB_REPOSITORY}" \
+              --state open \
+              --search "head:agent/gamedev/" \
+              --json number --jq 'length')
+            if [ "${OPEN_AGENT_PRS}" -ge "${MAX_OPEN_AGENT_PRS}" ]; then
+              echo "Open agent PRs (${OPEN_AGENT_PRS}) >= cap (${MAX_OPEN_AGENT_PRS}). Stopping."
+              break
+            fi
+            echo "Open agent PRs: ${OPEN_AGENT_PRS} / ${MAX_OPEN_AGENT_PRS}"
+
+            cd "$GITHUB_WORKSPACE/agents/gamedev"
+            python main.py
+            EXIT_CODE=$?
+            cd "$GITHUB_WORKSPACE"
+
+            case "$EXIT_CODE" in
+              1)
+                echo "Agent reported error. Stopping."
+                exit 1
+                ;;
+              3)
+                echo "All tasks complete."
+                break
+                ;;
+              2)
+                echo "Task skipped; continuing."
+                rm -f "$OUTPUT"
+                continue
+                ;;
+              0)
+                ;;
+              *)
+                echo "Unexpected exit code ${EXIT_CODE}. Stopping."
+                exit 1
+                ;;
+            esac
+
+            if [ ! -f "$OUTPUT" ]; then
+              echo "WARNING: exit 0 but no output file. Continuing."
+              continue
+            fi
+
+            BRANCH=$(jq -r '.branch'    "$OUTPUT")
+            TITLE=$(jq  -r '.pr_title'  "$OUTPUT")
+            BODY=$(jq   -r '.pr_body'   "$OUTPUT")
+
+            echo "Pushing branch: $BRANCH"
+            git push origin "$BRANCH" \
+              || echo "WARNING: branch push failed for $BRANCH"
+
+            echo "Opening PR..."
+            gh pr create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base main \
+              --head "$BRANCH" \
+              --title "$TITLE" \
+              --body  "$BODY" \
+              || echo "WARNING: PR creation failed for $BRANCH"
+
+            rm -f "$OUTPUT"
+
+            # Reset working tree to main before the next task so the agent
+            # starts from a clean slate.
+            git checkout main
+            git reset --hard origin/main
+
+            # Single forced task = single iteration
+            if [ -n "${FORCE_DIMENSION}" ] && [ -n "${FORCE_FOCUS}" ]; then
+              echo "Forced task complete; exiting loop."
+              break
+            fi
+          done
+
+      - name: Commit updated agent state
+        if: always()
+        run: |
+          set -e
+          git checkout main
+          git pull --rebase origin main || true
+          if ! git diff --quiet agents/gamedev/state.json; then
+            git add agents/gamedev/state.json
+            git commit -m "chore(gamedev-agent): update agent state [skip ci]"
+            git push origin main || {
+              echo "state push rejected, rebasing and retrying once..."
+              git pull --rebase origin main
+              git push origin main
+            }
+          else
+            echo "state.json unchanged."
+          fi
