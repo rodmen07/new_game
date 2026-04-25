@@ -565,7 +565,17 @@ fn spawn_human(p: &mut ChildBuilder, outfit: Color, pants: Color, skin: Color, h
 }
 
 pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    commands.spawn((Camera2d, MainCamera));
+    // Stardew-style closer camera: zoom in so the player and tile detail read
+    // clearly. 1.0 = default (1 world unit per pixel); 0.5 doubles the apparent
+    // size of everything on screen.
+    commands.spawn((
+        Camera2d,
+        OrthographicProjection {
+            scale: 0.5,
+            ..OrthographicProjection::default_2d()
+        },
+        MainCamera,
+    ));
     spawn_tilemap(&mut commands, &mut images);
     spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
