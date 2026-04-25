@@ -593,6 +593,11 @@ pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 }
 
 fn spawn_buildings_and_zones(commands: &mut Commands) {
+    // -- Soft drop shadows under each building footprint ------------------------
+    // Sits just south of the south wall to imply elevation under the
+    // top-down lighting. Skips PARK (85,180) since it has no building.
+    spawn_building_shadows(commands);
+
     // -- Zone labels (tilemap provides the floor colour) ------------------------
     // North row
     zone_label(commands, -425., 180., 220., "HOME");
@@ -4043,6 +4048,47 @@ fn rect(cmd: &mut Commands, x: f32, y: f32, w: f32, h: f32, color: Color, z: f32
         },
         Transform::from_xyz(x * S, y * S, z),
     ));
+}
+
+/// Building footprints used to spawn south-edge ground shadows.
+/// Tuples are `(centre_x, centre_y, width, height)` in pre-scale units;
+/// the shadow renderer offsets south by half the height plus a small
+/// margin and stretches slightly wider so it reads as cast ground shadow
+/// rather than a wall edge.
+const BUILDING_SHADOW_FOOTPRINTS: &[(f32, f32, f32, f32)] = &[
+    // North row (PARK at (85,180) is intentionally skipped)
+    (-425., 180., 150., 160.), // HOME
+    (-255., 180., 150., 160.), // GYM
+    (-85., 180., 150., 160.),  // LIBRARY
+    (425., 180., 150., 160.),  // OFFICE
+    // South row
+    (-425., -180., 150., 160.), // BANK
+    (-255., -180., 150., 160.), // HOSPITAL
+    (-85., -180., 150., 160.),  // MARKET
+    (85., -180., 150., 160.),   // RESTAURANT
+    (255., -180., 150., 160.),  // ADOPTION
+    (425., -180., 150., 160.),  // GARAGE
+    // Back-street row
+    (-450., 460., 160., 130.), // SCHOOL
+    (450., 460., 160., 130.),  // TRANSIT
+    (0., 460., 480., 130.),    // APARTMENTS
+];
+
+/// Spawns a soft dark ground-shadow strip just south of every building
+/// footprint. Z is held above the tilemap floor (0.0) but below building
+/// accent rects (>= 1.05), so accents still render on top.
+fn spawn_building_shadows(cmd: &mut Commands) {
+    for &(cx, cy, w, h) in BUILDING_SHADOW_FOOTPRINTS {
+        let shadow_y = cy - h / 2.0 - 6.0;
+        cmd.spawn((
+            Sprite {
+                color: Color::srgba(0.0, 0.0, 0.0, 0.28),
+                custom_size: Some(Vec2::new(w * S * 1.02, 14. * S)),
+                ..default()
+            },
+            Transform::from_xyz(cx * S, shadow_y * S, 0.5),
+        ));
+    }
 }
 
 fn lamp_post(cmd: &mut Commands, x: f32, y: f32) {
