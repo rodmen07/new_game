@@ -166,6 +166,70 @@ pub fn update_particles(
     }
 }
 
+// ── Footstep dust ────────────────────────────────────────────────────────────
+
+/// Minimum speed (px/s) before footstep dust starts emitting. Below this we
+/// treat the player as effectively idle.
+const FOOTSTEP_MIN_SPEED: f32 = 16.0;
+
+/// Seconds between dust puffs while walking. Sprinting halves this so the
+/// trail visibly thickens at higher speeds.
+const FOOTSTEP_INTERVAL_WALK: f32 = 0.30;
+const FOOTSTEP_INTERVAL_SPRINT: f32 = 0.14;
+
+/// Emits a faint puff of dust under the player's feet on a fixed cadence
+/// while they are moving. Independent of `spawn_sprint_particles` so it
+/// runs at all walking speeds and grounds the walk cycle.
+pub fn spawn_footstep_dust(
+    mut commands: Commands,
+    player_q: Query<(&Transform, &PlayerMovement), With<LocalPlayer>>,
+    time: Res<Time>,
+    mut accum: Local<f32>,
+) {
+    let Some((ptf, pm)) = player_q.iter().next() else {
+        return;
+    };
+    let speed = pm.velocity.length();
+    if speed < FOOTSTEP_MIN_SPEED {
+        // Idle: keep the timer hot so the next step puffs immediately on
+        // movement instead of waiting a full interval.
+        *accum = FOOTSTEP_INTERVAL_WALK;
+        return;
+    }
+    let interval = if pm.sprinting {
+        FOOTSTEP_INTERVAL_SPRINT
+    } else {
+        FOOTSTEP_INTERVAL_WALK
+    };
+    *accum += time.delta_secs();
+    if *accum < interval {
+        return;
+    }
+    *accum = 0.0;
+
+    // Small left/right alternation so successive puffs land on either foot
+    // instead of stacking under the centre.
+    let t = time.elapsed_secs();
+    let side = if (t * 6.0).sin() >= 0.0 { 1.0 } else { -1.0 };
+    let pos = Vec3::new(
+        ptf.translation.x + side * 6.0,
+        ptf.translation.y - 14.0,
+        ptf.translation.z - 1.0,
+    );
+    commands.spawn((
+        Sprite {
+            color: Color::srgba(0.85, 0.78, 0.62, 0.32),
+            custom_size: Some(Vec2::splat(4.0)),
+            ..default()
+        },
+        Transform::from_translation(pos),
+        Particle {
+            lifetime: 0.30,
+            max_lifetime: 0.30,
+        },
+    ));
+}
+
 // ── Weather particles ─────────────────────────────────────────────────────────
 
 /// Spawns weather-appropriate particles around the camera viewport.

@@ -4,10 +4,10 @@ use crate::components::{
     DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, IndoorTint, InteractHighlight,
     Interactable, ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel,
     NpcPersonality, ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator,
-    PlayerSheetSprite, ProceduralBody, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
-    SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
-    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
-    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
+    PlayerShadow, PlayerSheetSprite, ProceduralBody, SkillCareerBar, SkillCookingBar,
+    SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText,
+    TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
+    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
     TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
@@ -3464,6 +3464,19 @@ fn spawn_player_entity(commands: &mut Commands) {
             ),
         ))
         .with_children(|p| {
+            // Soft drop shadow under the player. Sits just above the
+            // tilemap (z=0) but below the body, so it always reads as a
+            // ground contact and grounds the sprite at our zoomed-in
+            // camera scale. Inherits the player Transform.
+            p.spawn((
+                Sprite {
+                    color: Color::srgba(0.0, 0.0, 0.0, 0.30),
+                    custom_size: Some(Vec2::new(20. * S, 7. * S)),
+                    ..default()
+                },
+                Transform::from_xyz(0., -12. * S, 0.05),
+                PlayerShadow,
+            ));
             // Procedural human body wrapped so it can be hidden as a group
             // when a real `PlayerSheetSprite` becomes available.
             p.spawn((Transform::default(), Visibility::default(), ProceduralBody))
