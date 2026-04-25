@@ -818,7 +818,9 @@ pub fn is_indoors(x: f32, y: f32) -> bool {
 }
 
 /// Maximum indoor-tint alpha when the player is fully inside a building.
-const INDOOR_TINT_MAX: f32 = 0.18;
+/// Tuned low because the overlay colour is already dim: we want a subtle
+/// warm wash, not a bright glare.
+const INDOOR_TINT_MAX: f32 = 0.10;
 /// How fast the overlay alpha eases toward its target each second.
 const INDOOR_TINT_LERP: f32 = 4.0;
 

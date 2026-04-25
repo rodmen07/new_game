@@ -245,11 +245,21 @@
 
         window.addEventListener("error", function (event) {
           const detail = event && event.message ? event.message : "Unknown runtime error";
+          // Bevy/winit on web throws a benign "control flow" exception during
+          // its event-loop bootstrap. The message is self-documenting and the
+          // app keeps running, so we suppress it from the on-page banner to
+          // avoid scaring players. Real errors still surface normally.
+          if (detail.indexOf("Using exceptions for control flow") !== -1) {
+            return;
+          }
           showDiagnostic("Startup error: " + detail);
         });
 
         window.addEventListener("unhandledrejection", function (event) {
           const reason = event && event.reason ? String(event.reason) : "Unknown promise rejection";
+          if (reason.indexOf("Using exceptions for control flow") !== -1) {
+            return;
+          }
           showDiagnostic("Startup rejected: " + reason);
         });
 

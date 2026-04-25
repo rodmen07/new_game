@@ -565,7 +565,16 @@ fn spawn_human(p: &mut ChildBuilder, outfit: Color, pants: Color, skin: Color, h
 }
 
 pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    commands.spawn((Camera2d, MainCamera));
+    // Match the spawned camera zoom to the gameplay zoom target so the camera
+    // does not immediately ease away from its initial scale on startup.
+    commands.spawn((
+        Camera2d,
+        OrthographicProjection {
+            scale: 4.0,
+            ..OrthographicProjection::default_2d()
+        },
+        MainCamera,
+    ));
     spawn_tilemap(&mut commands, &mut images);
     spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
@@ -3509,10 +3518,12 @@ fn spawn_player_entity(commands: &mut Commands) {
         Transform::from_xyz(0., 0., 50.),
         DayNightOverlay,
     ));
-    // Indoor warm tint overlay (alpha animated by update_indoor_tint)
+    // Indoor warm tint overlay (alpha animated by update_indoor_tint).
+    // Colour is a dim amber so it warms the scene without bleaching it; the
+    // base sprite stays at alpha 0 and is animated up to INDOOR_TINT_MAX.
     commands.spawn((
         Sprite {
-            color: Color::srgba(1.0, 0.85, 0.55, 0.0),
+            color: Color::srgba(0.55, 0.38, 0.18, 0.0),
             custom_size: Some(Vec2::splat(24000.)),
             ..default()
         },
