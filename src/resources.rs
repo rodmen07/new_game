@@ -22,6 +22,7 @@ use std::collections::VecDeque;
 pub struct ArtAssets {
     pub tile_atlas: Option<Handle<Image>>,
     pub player_sheet: Option<Handle<Image>>,
+    pub player_atlas: Option<Handle<TextureAtlasLayout>>,
     pub npc_sheets: HashMap<String, Handle<Image>>,
 }
 

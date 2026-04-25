@@ -304,6 +304,18 @@ pub struct AnimFrame {
     pub idx: u8,
     pub timer: f32,
 }
+
+/// Wraps the procedurally-built human body so it can be toggled off as a
+/// group when a pixel-art `PlayerSheetSprite` becomes available.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct ProceduralBody;
+
+/// Marks the optional pixel-art sprite-sheet child of the player. Spawned
+/// hidden; `update_player_sheet` reveals it (and hides `ProceduralBody`)
+/// once `art/characters/player.png` has loaded, then drives the atlas
+/// index from `Facing` + `AnimFrame` each frame.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct PlayerSheetSprite;
 /// Smoothed display value for a stat bar (0–100). Lerps toward `target`
 /// each frame so bars drain/fill visibly instead of jumping instantly.
 #[derive(Component, Default)]

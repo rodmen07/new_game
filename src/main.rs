@@ -109,6 +109,7 @@ fn main() {
         .add_event::<PlayerAction>()
         // ── Systems ───────────────────────────────────────────────────────────
         .add_systems(Startup, (apply_settings, setup).chain())
+        .add_systems(Startup, init_art_assets)
         // Reset + apply save data every time we enter Playing (skipped on Resume).
         .add_systems(
             OnEnter(AppState::Playing),
@@ -191,6 +192,7 @@ fn main() {
                 update_anim_frames,
                 update_streetlamp_glow,
                 update_neon_signs,
+                update_player_sheet,
             )
                 .chain()
                 .after(player_visuals)

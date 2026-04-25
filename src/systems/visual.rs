@@ -689,3 +689,99 @@ pub fn update_neon_signs(
         sprite.color = Color::Srgba(c);
     }
 }
+
+// ── Player pixel-art sheet hooks ─────────────────────────────────────────────
+
+/// Width / height of a single sprite cell on the player sheet (pixels).
+/// Stardew Valley uses 16x32; we pick 32x32 for now to match the procedural
+/// player's relative footprint. Tune when real art is dropped in.
+pub const PLAYER_SHEET_CELL: u32 = 32;
+/// Number of walk-cycle frames per row. Row order: South, North, East, West.
+pub const PLAYER_SHEET_FRAMES: u32 = 4;
+/// Number of facing rows on the sheet.
+pub const PLAYER_SHEET_ROWS: u32 = 4;
+
+/// Maps a `Facing` enum to the row index on `art/characters/player.png`.
+/// Row layout: 0 = South (default), 1 = North, 2 = East, 3 = West.
+pub fn facing_row(f: Facing) -> u32 {
+    match f {
+        Facing::South => 0,
+        Facing::North => 1,
+        Facing::East => 2,
+        Facing::West => 3,
+    }
+}
+
+/// Computes the atlas index for a given facing + walk frame.
+pub fn player_atlas_index(facing: Facing, frame: u8) -> usize {
+    (facing_row(facing) * PLAYER_SHEET_FRAMES + frame as u32 % PLAYER_SHEET_FRAMES) as usize
+}
+
+/// Startup system: kicks off async load of `art/characters/player.png` and
+/// builds the matching `TextureAtlasLayout`. Both handles live in `ArtAssets`.
+/// Missing-asset is non-fatal: Bevy logs a warning and the procedural body
+/// stays visible.
+pub fn init_art_assets(
+    asset_server: Res<AssetServer>,
+    mut layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut art: ResMut<ArtAssets>,
+) {
+    art.player_sheet = Some(asset_server.load("art/characters/player.png"));
+    let layout = TextureAtlasLayout::from_grid(
+        UVec2::splat(PLAYER_SHEET_CELL),
+        PLAYER_SHEET_FRAMES,
+        PLAYER_SHEET_ROWS,
+        None,
+        None,
+    );
+    art.player_atlas = Some(layouts.add(layout));
+}
+
+/// When `art/characters/player.png` finishes loading, swap the procedural
+/// body off and reveal the sprite-sheet child. Until then (or if the file
+/// is missing), the procedural body stays visible and this system is a
+/// no-op aside from updating the atlas index.
+pub fn update_player_sheet(
+    art: Res<ArtAssets>,
+    asset_server: Res<AssetServer>,
+    mut sheet_q: Query<
+        (&mut Sprite, &mut Visibility),
+        (With<PlayerSheetSprite>, Without<ProceduralBody>),
+    >,
+    mut body_q: Query<&mut Visibility, (With<ProceduralBody>, Without<PlayerSheetSprite>)>,
+    player_q: Query<(&Facing, &AnimFrame), With<LocalPlayer>>,
+) {
+    let Some(sheet_handle) = art.player_sheet.as_ref() else {
+        return;
+    };
+    let Some(layout_handle) = art.player_atlas.as_ref() else {
+        return;
+    };
+    let loaded = matches!(
+        asset_server.get_load_state(sheet_handle),
+        Some(bevy::asset::LoadState::Loaded)
+    );
+    let Ok((facing, anim)) = player_q.get_single() else {
+        return;
+    };
+    let index = player_atlas_index(*facing, anim.idx);
+    for (mut sprite, mut vis) in &mut sheet_q {
+        if loaded {
+            sprite.image = sheet_handle.clone();
+            sprite.texture_atlas = Some(TextureAtlas {
+                layout: layout_handle.clone(),
+                index,
+            });
+            *vis = Visibility::Inherited;
+        } else {
+            *vis = Visibility::Hidden;
+        }
+    }
+    for mut vis in &mut body_q {
+        *vis = if loaded {
+            Visibility::Hidden
+        } else {
+            Visibility::Inherited
+        };
+    }
+}

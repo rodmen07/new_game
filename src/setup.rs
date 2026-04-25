@@ -3,11 +3,11 @@ use crate::components::{
     ActionKind, AnimFrame, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
     DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable,
     ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality,
-    ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar,
-    SkillCookingBar, SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText,
-    TutorialHintText, TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay,
-    TypingOverlayFade, TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining,
-    TypingWordRow, TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
+    ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, PlayerSheetSprite,
+    ProceduralBody, SkillCareerBar, SkillCookingBar, SkillFitnessBar, SkillPanel, SkillSocialBar,
+    TutorialBodyText, TutorialHintText, TutorialOverlay, TypingInstruction, TypingLabel,
+    TypingOverlay, TypingOverlayFade, TypingRetries, TypingWordCurrent, TypingWordCurrentBox,
+    TypingWordRemaining, TypingWordRow, TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -3474,13 +3474,30 @@ fn spawn_player_entity(commands: &mut Commands) {
             ),
         ))
         .with_children(|p| {
-            spawn_human(
-                p,
-                Color::srgb(0.90, 0.52, 0.12),
-                Color::srgb(0.58, 0.28, 0.06),
-                Color::srgb(0.94, 0.80, 0.65),
-                Color::srgb(0.36, 0.22, 0.09),
-            );
+            // Procedural human body wrapped so it can be hidden as a group
+            // when a real `PlayerSheetSprite` becomes available.
+            p.spawn((Transform::default(), Visibility::default(), ProceduralBody))
+                .with_children(|body| {
+                    spawn_human(
+                        body,
+                        Color::srgb(0.90, 0.52, 0.12),
+                        Color::srgb(0.58, 0.28, 0.06),
+                        Color::srgb(0.94, 0.80, 0.65),
+                        Color::srgb(0.36, 0.22, 0.09),
+                    );
+                });
+            // Pixel-art sprite-sheet child. Hidden by default; the
+            // `update_player_sheet` system reveals it when the asset loads
+            // and animates the atlas index from Facing + AnimFrame.
+            p.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::splat(32. * S)),
+                    ..default()
+                },
+                Transform::from_xyz(0., 0., 1.5),
+                Visibility::Hidden,
+                PlayerSheetSprite,
+            ));
             p.spawn((
                 Sprite {
                     color: Color::srgb(1., 1., 0.55),
