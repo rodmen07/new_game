@@ -265,6 +265,64 @@ pub struct InteractHighlight;
 pub struct ObjectSize(pub Vec2);
 #[derive(Component)]
 pub struct PlayerIndicator;
+/// Marks an entity that should be y-sorted: its `Transform.z` is recomputed
+/// each frame from `Transform.y` so entities further south render in front
+/// of those further north (top-down 2D, Stardew-style).
+///
+/// `base_z` is the centre z value used when y == 0; the `apply_y_sort`
+/// system biases it slightly per pixel of y so all y-sorted entities share
+/// the same depth band but stay correctly layered relative to each other.
+#[derive(Component, Clone, Copy)]
+pub struct YSort {
+    pub base_z: f32,
+}
+impl Default for YSort {
+    fn default() -> Self {
+        Self { base_z: 10.0 }
+    }
+}
+
+/// Cardinal facing for top-down 2D characters. Used by future spritesheet
+/// art swaps to pick the correct walk-cycle row. Updated each frame by
+/// `update_facing_from_velocity` based on the entity's movement.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Facing {
+    North,
+    #[default]
+    South,
+    East,
+    West,
+}
+
+/// Frame index + timer for a 4-frame walk cycle. The current frame is
+/// advanced by `update_anim_frames` whenever the entity is moving.
+/// Idle entities snap back to frame 0. Today this drives no visuals
+/// (the procedural human has no spritesheet) but is wired up so that
+/// dropping in pixel-art spritesheets later is mechanical.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct AnimFrame {
+    pub idx: u8,
+    pub timer: f32,
+}
+
+/// Wraps the procedurally-built human body so it can be toggled off as a
+/// group when a pixel-art `PlayerSheetSprite` becomes available.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct ProceduralBody;
+
+/// Marks the optional pixel-art sprite-sheet child of the player. Spawned
+/// hidden; `update_player_sheet` reveals it (and hides `ProceduralBody`)
+/// once `art/characters/player.png` has loaded, then drives the atlas
+/// index from `Facing` + `AnimFrame` each frame.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct PlayerSheetSprite;
+
+/// Full-screen overlay sprite that fades to a soft warm tint when the
+/// player is inside a building footprint. Alpha is animated by
+/// `update_indoor_tint` each frame so transitions feel like crossing
+/// a doorway rather than a hard cut.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct IndoorTint;
 /// Smoothed display value for a stat bar (0–100). Lerps toward `target`
 /// each frame so bars drain/fill visibly instead of jumping instantly.
 #[derive(Component, Default)]
