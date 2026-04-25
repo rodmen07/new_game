@@ -190,6 +190,7 @@ fn main() {
                 update_npc_facing,
                 update_anim_frames,
                 update_streetlamp_glow,
+                update_neon_signs,
             )
                 .chain()
                 .after(player_visuals)

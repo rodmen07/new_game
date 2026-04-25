@@ -20,7 +20,7 @@ use bevy::render::{
 };
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::systems::visual::StreetlampGlow;
+use crate::systems::visual::{NeonSign, StreetlampGlow};
 
 /// World-space scale multiplier applied inside all layout helpers.
 /// All design coordinates are written in pre-scale units; S is applied internally.
@@ -434,6 +434,41 @@ fn spawn_streetlamps(commands: &mut Commands) {
     }
 }
 
+/// Spawn neon "shop sign" glow rectangles above commercial zones. Each sign is
+/// an additive sprite tinted with the zone's signature colour; alpha is driven
+/// by `update_neon_signs` so they only switch on at night.
+fn spawn_neon_signs(commands: &mut Commands) {
+    // (zone_x, zone_y, half_height_offset, color)
+    // Positions roughly track the zone_label calls in spawn_buildings_and_zones.
+    let signs: &[(f32, f32, f32, Color)] = &[
+        // North row (signs hang just below the label, above the facade)
+        (-255., 150., 0., Color::srgba(0.40, 1.00, 0.65, 1.0)), // GYM - mint
+        (-85., 150., 0., Color::srgba(0.55, 0.80, 1.00, 1.0)),  // LIBRARY - cool blue
+        (425., 150., 0., Color::srgba(1.00, 0.80, 0.30, 1.0)),  // OFFICE - amber
+        // South row
+        (-425., -150., 0., Color::srgba(0.60, 1.00, 0.95, 1.0)), // BANK - cyan
+        (-255., -150., 0., Color::srgba(1.00, 0.45, 0.55, 1.0)), // HOSPITAL - rose
+        (-85., -150., 0., Color::srgba(1.00, 0.95, 0.40, 1.0)),  // MARKET - yellow
+        (85., -150., 0., Color::srgba(1.00, 0.55, 0.85, 1.0)),   // RESTAURANT - magenta
+        (255., -150., 0., Color::srgba(0.85, 0.65, 1.00, 1.0)),  // ADOPTION - violet
+    ];
+    for &(zx, zy, dy, color) in signs {
+        commands.spawn((
+            Sprite {
+                color: {
+                    let mut c = color.to_srgba();
+                    c.alpha = 0.0;
+                    Color::Srgba(c)
+                },
+                custom_size: Some(Vec2::new(110.0 * S, 18.0 * S)),
+                ..default()
+            },
+            Transform::from_xyz(zx * S, (zy + dy) * S, 49.5),
+            NeonSign { base_color: color },
+        ));
+    }
+}
+
 /// Builds a composite human figure as child entities of the calling spawn.
 /// The root entity should have Transform + Visibility but no Sprite.
 ///
@@ -545,6 +580,7 @@ pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
     spawn_streetlamps(&mut commands);
+    spawn_neon_signs(&mut commands);
     spawn_vehicle(&mut commands);
     spawn_owned_pet(&mut commands);
     spawn_world_objects(&mut commands);

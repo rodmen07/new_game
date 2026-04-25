@@ -647,3 +647,45 @@ pub fn update_streetlamp_glow(gt: Res<GameTime>, mut q: Query<&mut Sprite, With<
         sprite.color = Color::Srgba(c);
     }
 }
+
+// ── Neon shop signs ──────────────────────────────────────────────────────────
+
+/// Marks a glowing sign sprite for a commercial zone. The hue is baked into
+/// `base_color`; the alpha is animated by `update_neon_signs` so the sign
+/// "switches on" at dusk with a subtle flicker.
+#[derive(Component, Clone, Copy)]
+pub struct NeonSign {
+    pub base_color: Color,
+}
+
+/// Pulse neon-sign alpha between dusk and dawn with a small flicker.
+/// Off (alpha 0) during daylight; ramps up 18:00-19:00, down 05:00-06:00.
+pub fn update_neon_signs(
+    gt: Res<GameTime>,
+    time: Res<Time>,
+    mut q: Query<(&NeonSign, &mut Sprite)>,
+) {
+    let h = gt.hours % 24.0;
+    let base = if !(6.0..19.0).contains(&h) {
+        0.85
+    } else if (18.0..19.0).contains(&h) {
+        (h - 18.0) * 0.85
+    } else if (5.0..6.0).contains(&h) {
+        (6.0 - h) * 0.85
+    } else {
+        0.0
+    };
+    // Subtle flicker (sin) so the signs feel alive.
+    let t = time.elapsed_secs();
+    let flicker = if base > 0.0 {
+        1.0 + 0.06 * (t * 4.7).sin() + 0.03 * (t * 11.3).sin()
+    } else {
+        1.0
+    };
+    let alpha = (base * flicker).clamp(0.0, 1.0);
+    for (sign, mut sprite) in &mut q {
+        let mut c = sign.base_color.to_srgba();
+        c.alpha = alpha;
+        sprite.color = Color::Srgba(c);
+    }
+}
