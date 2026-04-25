@@ -1,0 +1,3 @@
+.gamedev-output.json
+__pycache__/
+*.pyc
