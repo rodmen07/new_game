@@ -3519,10 +3519,12 @@ fn spawn_player_entity(commands: &mut Commands) {
         Transform::from_xyz(0., 0., 50.),
         DayNightOverlay,
     ));
-    // Indoor warm tint overlay (alpha animated by update_indoor_tint)
+    // Indoor warm tint overlay (alpha animated by update_indoor_tint).
+    // Colour is a dim amber so it warms the scene without bleaching it; the
+    // base sprite stays at alpha 0 and is animated up to INDOOR_TINT_MAX.
     commands.spawn((
         Sprite {
-            color: Color::srgba(1.0, 0.85, 0.55, 0.0),
+            color: Color::srgba(0.55, 0.38, 0.18, 0.0),
             custom_size: Some(Vec2::splat(24000.)),
             ..default()
         },
