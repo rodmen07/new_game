@@ -565,13 +565,12 @@ fn spawn_human(p: &mut ChildBuilder, outfit: Color, pants: Color, skin: Color, h
 }
 
 pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
-    // Stardew-style closer camera: zoom in so the player and tile detail read
-    // clearly. 1.0 = default (1 world unit per pixel); 0.5 doubles the apparent
-    // size of everything on screen.
+    // Match the spawned camera zoom to the gameplay zoom target so the camera
+    // does not immediately ease away from its initial scale on startup.
     commands.spawn((
         Camera2d,
         OrthographicProjection {
-            scale: 0.5,
+            scale: 4.0,
             ..OrthographicProjection::default_2d()
         },
         MainCamera,
