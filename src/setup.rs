@@ -1,13 +1,14 @@
 use crate::components::Furnishings;
 use crate::components::{
-    ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
-    DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
-    LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
-    OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar,
-    SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText,
-    TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
-    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
-    TypingWordRowScale, TypingWordTyped, Vehicle,
+    ActionKind, AnimFrame, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
+    DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, IndoorTint, InteractHighlight,
+    Interactable, ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel,
+    NpcPersonality, ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator,
+    PlayerSheetSprite, ProceduralBody, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
+    SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
+    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
+    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
+    TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -19,6 +20,8 @@ use bevy::render::{
     render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use bevy_ecs_tilemap::prelude::*;
+
+use crate::systems::visual::{NeonSign, StreetlampGlow};
 
 /// World-space scale multiplier applied inside all layout helpers.
 /// All design coordinates are written in pre-scale units; S is applied internally.
@@ -151,20 +154,140 @@ fn build_tile_grid() -> Vec<u32> {
     g
 }
 
-/// Create the tileset atlas programmatically: a 1024×64 RGBA image whose
-/// 16 columns are 64×64-pixel solid-colour tiles, one per tile type.
+/// Cheap deterministic pseudo-random in 0..=255 from three integer inputs.
+/// Used to seed per-tile pixel noise so the texture is reproducible across runs.
+fn pixel_hash(tile_idx: u32, px: u32, py: u32) -> i32 {
+    let mut x = px
+        .wrapping_mul(374_761_393)
+        .wrapping_add(py.wrapping_mul(668_265_263))
+        .wrapping_add(tile_idx.wrapping_mul(2_147_483_647));
+    x = (x ^ (x >> 13)).wrapping_mul(1_274_126_177);
+    ((x ^ (x >> 16)) & 0xFF) as i32
+}
+
+/// Add or subtract `d` from `c`, clamped to 0..=255.
+fn adjust(c: u8, d: i32) -> u8 {
+    (c as i32 + d).clamp(0, 255) as u8
+}
+
+/// Per-pixel colour for a tile, applying tile-type-specific patterns over
+/// the base zone colour. Patterns stay within the 64x64 tile so seams
+/// between adjacent tiles remain clean.
+fn tile_pixel_color(tile_idx: u32, px: u32, py: u32, base: [u8; 3]) -> [u8; 3] {
+    let h = pixel_hash(tile_idx, px, py);
+    // Low-amplitude luminance noise, ~ -8..+7.
+    let noise = (h - 128) / 16;
+    let mut out = [
+        adjust(base[0], noise),
+        adjust(base[1], noise),
+        adjust(base[2], noise),
+    ];
+
+    match tile_idx {
+        T_ROAD => {
+            // Asphalt speckle: occasional darker grit.
+            if h < 24 {
+                out = [
+                    adjust(base[0], -18),
+                    adjust(base[1], -18),
+                    adjust(base[2], -18),
+                ];
+            }
+        }
+        T_SIDEWALK => {
+            // Concrete panel seams every 16 px along x, plus a faint horizontal mid-line.
+            if px.is_multiple_of(16) {
+                out = [
+                    adjust(out[0], -22),
+                    adjust(out[1], -22),
+                    adjust(out[2], -22),
+                ];
+            }
+            if py == 0 || py == 32 || py == TILE_PX - 1 {
+                out = [
+                    adjust(out[0], -12),
+                    adjust(out[1], -12),
+                    adjust(out[2], -12),
+                ];
+            }
+        }
+        T_ALLEY | T_GROUND => {
+            // Gravel/dirt: darker pebbles + occasional lighter flecks.
+            if h < 28 {
+                out = [
+                    adjust(base[0], -22),
+                    adjust(base[1], -22),
+                    adjust(base[2], -22),
+                ];
+            } else if h > 232 {
+                out = [
+                    adjust(base[0], 18),
+                    adjust(base[1], 14),
+                    adjust(base[2], 10),
+                ];
+            }
+        }
+        T_PARK => {
+            // Grass tufts: bright green speckle on top of the base green.
+            if h > 210 {
+                out = [
+                    adjust(base[0], -12),
+                    adjust(base[1], 28),
+                    adjust(base[2], -12),
+                ];
+            } else if h < 30 {
+                out = [
+                    adjust(base[0], -8),
+                    adjust(base[1], -16),
+                    adjust(base[2], -8),
+                ];
+            }
+        }
+        T_HOME | T_OFFICE | T_BANK | T_LIBRARY | T_APARTMENTS | T_SCHOOL => {
+            // Faint 32x32 floor-panel grid for indoor zone floors.
+            if px.is_multiple_of(32) || py.is_multiple_of(32) {
+                out = [
+                    adjust(out[0], -10),
+                    adjust(out[1], -10),
+                    adjust(out[2], -10),
+                ];
+            }
+        }
+        T_TRANSIT | T_GARAGE => {
+            // Concrete platform with a faint diagonal scuff pattern.
+            if (px + py).is_multiple_of(16) {
+                out = [
+                    adjust(out[0], -14),
+                    adjust(out[1], -14),
+                    adjust(out[2], -14),
+                ];
+            }
+        }
+        _ => {
+            // Generic shop/zone floor: very subtle 16x16 tile lines.
+            if px.is_multiple_of(16) || py.is_multiple_of(16) {
+                out = [adjust(out[0], -6), adjust(out[1], -6), adjust(out[2], -6)];
+            }
+        }
+    }
+    out
+}
+
+/// Create the tileset atlas programmatically: an RGBA image whose
+/// `TILE_COUNT` columns are 64x64-pixel textured tiles, one per tile type.
 fn create_tileset_image(images: &mut Assets<Image>) -> Handle<Image> {
     let width = (TILE_PX * TILE_COUNT) as usize;
     let height = TILE_PX as usize;
     let mut data = vec![0u8; width * height * 4];
-    for (i, [r, g, b]) in TILE_COLORS.iter().enumerate() {
+    for (i, base) in TILE_COLORS.iter().enumerate() {
         let x0 = i * TILE_PX as usize;
         for py in 0..height {
-            for px in x0..x0 + TILE_PX as usize {
-                let off = (py * width + px) * 4;
-                data[off] = *r;
-                data[off + 1] = *g;
-                data[off + 2] = *b;
+            for px in 0..TILE_PX as usize {
+                let [r, g, b] = tile_pixel_color(i as u32, px as u32, py as u32, *base);
+                let off = (py * width + x0 + px) * 4;
+                data[off] = r;
+                data[off + 1] = g;
+                data[off + 2] = b;
                 data[off + 3] = 255;
             }
         }
@@ -285,6 +408,68 @@ fn spawn_road_details(commands: &mut Commands) {
     }
 }
 
+/// Spawn additive warm-light glow sprites near each main-road lamp post.
+/// Alpha is animated by `update_streetlamp_glow` so they brighten at night.
+fn spawn_streetlamps(commands: &mut Commands) {
+    for &(lx, ly) in &[
+        (-340., 76.),
+        (-170., 76.),
+        (0., 76.),
+        (170., 76.),
+        (340., 76.),
+        (-340., -76.),
+        (-170., -76.),
+        (0., -76.),
+        (170., -76.),
+        (340., -76.),
+    ] {
+        commands.spawn((
+            Sprite {
+                color: Color::srgba(1.0, 0.92, 0.65, 0.0),
+                custom_size: Some(Vec2::splat(120.0 * S)),
+                ..default()
+            },
+            Transform::from_xyz(lx * S, ly * S, 49.0),
+            StreetlampGlow,
+        ));
+    }
+}
+
+/// Spawn neon "shop sign" glow rectangles above commercial zones. Each sign is
+/// an additive sprite tinted with the zone's signature colour; alpha is driven
+/// by `update_neon_signs` so they only switch on at night.
+fn spawn_neon_signs(commands: &mut Commands) {
+    // (zone_x, zone_y, half_height_offset, color)
+    // Positions roughly track the zone_label calls in spawn_buildings_and_zones.
+    let signs: &[(f32, f32, f32, Color)] = &[
+        // North row (signs hang just below the label, above the facade)
+        (-255., 150., 0., Color::srgba(0.40, 1.00, 0.65, 1.0)), // GYM - mint
+        (-85., 150., 0., Color::srgba(0.55, 0.80, 1.00, 1.0)),  // LIBRARY - cool blue
+        (425., 150., 0., Color::srgba(1.00, 0.80, 0.30, 1.0)),  // OFFICE - amber
+        // South row
+        (-425., -150., 0., Color::srgba(0.60, 1.00, 0.95, 1.0)), // BANK - cyan
+        (-255., -150., 0., Color::srgba(1.00, 0.45, 0.55, 1.0)), // HOSPITAL - rose
+        (-85., -150., 0., Color::srgba(1.00, 0.95, 0.40, 1.0)),  // MARKET - yellow
+        (85., -150., 0., Color::srgba(1.00, 0.55, 0.85, 1.0)),   // RESTAURANT - magenta
+        (255., -150., 0., Color::srgba(0.85, 0.65, 1.00, 1.0)),  // ADOPTION - violet
+    ];
+    for &(zx, zy, dy, color) in signs {
+        commands.spawn((
+            Sprite {
+                color: {
+                    let mut c = color.to_srgba();
+                    c.alpha = 0.0;
+                    Color::Srgba(c)
+                },
+                custom_size: Some(Vec2::new(110.0 * S, 18.0 * S)),
+                ..default()
+            },
+            Transform::from_xyz(zx * S, (zy + dy) * S, 49.5),
+            NeonSign { base_color: color },
+        ));
+    }
+}
+
 /// Builds a composite human figure as child entities of the calling spawn.
 /// The root entity should have Transform + Visibility but no Sprite.
 ///
@@ -395,6 +580,8 @@ pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     spawn_tilemap(&mut commands, &mut images);
     spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
+    spawn_streetlamps(&mut commands);
+    spawn_neon_signs(&mut commands);
     spawn_vehicle(&mut commands);
     spawn_owned_pet(&mut commands);
     spawn_world_objects(&mut commands);
@@ -3280,16 +3467,38 @@ fn spawn_player_entity(commands: &mut Commands) {
             Skills::default(),
             WorkStreak::default(),
             HousingTier::default(),
-            Furnishings::default(),
+            (
+                Furnishings::default(),
+                YSort { base_z: 10.0 },
+                Facing::default(),
+                AnimFrame::default(),
+            ),
         ))
         .with_children(|p| {
-            spawn_human(
-                p,
-                Color::srgb(0.90, 0.52, 0.12),
-                Color::srgb(0.58, 0.28, 0.06),
-                Color::srgb(0.94, 0.80, 0.65),
-                Color::srgb(0.36, 0.22, 0.09),
-            );
+            // Procedural human body wrapped so it can be hidden as a group
+            // when a real `PlayerSheetSprite` becomes available.
+            p.spawn((Transform::default(), Visibility::default(), ProceduralBody))
+                .with_children(|body| {
+                    spawn_human(
+                        body,
+                        Color::srgb(0.90, 0.52, 0.12),
+                        Color::srgb(0.58, 0.28, 0.06),
+                        Color::srgb(0.94, 0.80, 0.65),
+                        Color::srgb(0.36, 0.22, 0.09),
+                    );
+                });
+            // Pixel-art sprite-sheet child. Hidden by default; the
+            // `update_player_sheet` system reveals it when the asset loads
+            // and animates the atlas index from Facing + AnimFrame.
+            p.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::splat(32. * S)),
+                    ..default()
+                },
+                Transform::from_xyz(0., 0., 1.5),
+                Visibility::Hidden,
+                PlayerSheetSprite,
+            ));
             p.spawn((
                 Sprite {
                     color: Color::srgb(1., 1., 0.55),
@@ -3310,6 +3519,16 @@ fn spawn_player_entity(commands: &mut Commands) {
         },
         Transform::from_xyz(0., 0., 50.),
         DayNightOverlay,
+    ));
+    // Indoor warm tint overlay (alpha animated by update_indoor_tint)
+    commands.spawn((
+        Sprite {
+            color: Color::srgba(1.0, 0.85, 0.55, 0.0),
+            custom_size: Some(Vec2::splat(24000.)),
+            ..default()
+        },
+        Transform::from_xyz(0., 0., 50.5),
+        IndoorTint,
     ));
     // Interactable proximity highlight
     commands.spawn((
@@ -3954,6 +4173,9 @@ fn spawn_npc(
             },
             ObjectSize(Vec2::splat(18.)),
             NpcId(npc_id),
+            YSort { base_z: 9.5 },
+            Facing::default(),
+            AnimFrame::default(),
         ))
         .with_children(|p| {
             spawn_human(p, outfit, pants, skin, hair);
