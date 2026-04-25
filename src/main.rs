@@ -174,7 +174,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                spawn_sprint_particles,
+                (spawn_sprint_particles, spawn_footstep_dust),
                 update_particles,
                 spawn_weather_particles,
                 update_weather_drops,
