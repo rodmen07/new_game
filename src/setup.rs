@@ -1,13 +1,14 @@
 use crate::components::Furnishings;
 use crate::components::{
-    ActionKind, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
-    DayNightOverlay, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable, ItemKind,
-    LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality, ObjectSize,
-    OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, SkillCareerBar, SkillCookingBar,
-    SkillFitnessBar, SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText,
-    TutorialOverlay, TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade,
-    TypingRetries, TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
-    TypingWordRowScale, TypingWordTyped, Vehicle,
+    ActionKind, AnimFrame, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
+    DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, IndoorTint, InteractHighlight,
+    Interactable, ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel,
+    NpcPersonality, ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator,
+    PlayerSheetSprite, ProceduralBody, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
+    SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
+    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
+    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
+    TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -21,6 +22,7 @@ use bevy::render::{
 use bevy_ecs_tilemap::prelude::*;
 
 use crate::constants::MAP_SCALE;
+use crate::systems::visual::{NeonSign, StreetlampGlow};
 
 /// World-space scale multiplier applied inside all layout helpers.
 /// All design coordinates are written in pre-scale units; S is applied internally.
@@ -395,6 +397,68 @@ fn spawn_road_details(commands: &mut Commands) {
     }
 }
 
+/// Spawn additive warm-light glow sprites near each main-road lamp post.
+/// Alpha is animated by `update_streetlamp_glow` so they brighten at night.
+fn spawn_streetlamps(commands: &mut Commands) {
+    for &(lx, ly) in &[
+        (-340., 76.),
+        (-170., 76.),
+        (0., 76.),
+        (170., 76.),
+        (340., 76.),
+        (-340., -76.),
+        (-170., -76.),
+        (0., -76.),
+        (170., -76.),
+        (340., -76.),
+    ] {
+        commands.spawn((
+            Sprite {
+                color: Color::srgba(1.0, 0.92, 0.65, 0.0),
+                custom_size: Some(Vec2::splat(120.0 * S)),
+                ..default()
+            },
+            Transform::from_xyz(lx * S, ly * S, 49.0),
+            StreetlampGlow,
+        ));
+    }
+}
+
+/// Spawn neon "shop sign" glow rectangles above commercial zones. Each sign is
+/// an additive sprite tinted with the zone's signature colour; alpha is driven
+/// by `update_neon_signs` so they only switch on at night.
+fn spawn_neon_signs(commands: &mut Commands) {
+    // (zone_x, zone_y, half_height_offset, color)
+    // Positions roughly track the zone_label calls in spawn_buildings_and_zones.
+    let signs: &[(f32, f32, f32, Color)] = &[
+        // North row (signs hang just below the label, above the facade)
+        (-255., 150., 0., Color::srgba(0.40, 1.00, 0.65, 1.0)), // GYM - mint
+        (-85., 150., 0., Color::srgba(0.55, 0.80, 1.00, 1.0)),  // LIBRARY - cool blue
+        (425., 150., 0., Color::srgba(1.00, 0.80, 0.30, 1.0)),  // OFFICE - amber
+        // South row
+        (-425., -150., 0., Color::srgba(0.60, 1.00, 0.95, 1.0)), // BANK - cyan
+        (-255., -150., 0., Color::srgba(1.00, 0.45, 0.55, 1.0)), // HOSPITAL - rose
+        (-85., -150., 0., Color::srgba(1.00, 0.95, 0.40, 1.0)),  // MARKET - yellow
+        (85., -150., 0., Color::srgba(1.00, 0.55, 0.85, 1.0)),   // RESTAURANT - magenta
+        (255., -150., 0., Color::srgba(0.85, 0.65, 1.00, 1.0)),  // ADOPTION - violet
+    ];
+    for &(zx, zy, dy, color) in signs {
+        commands.spawn((
+            Sprite {
+                color: {
+                    let mut c = color.to_srgba();
+                    c.alpha = 0.0;
+                    Color::Srgba(c)
+                },
+                custom_size: Some(Vec2::new(110.0 * S, 18.0 * S)),
+                ..default()
+            },
+            Transform::from_xyz(zx * S, (zy + dy) * S, 49.5),
+            NeonSign { base_color: color },
+        ));
+    }
+}
+
 /// Builds a composite human figure as child entities of the calling spawn.
 /// The root entity should have Transform + Visibility but no Sprite.
 ///
@@ -505,6 +569,8 @@ pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     spawn_tilemap(&mut commands, &mut images);
     spawn_road_details(&mut commands);
     spawn_buildings_and_zones(&mut commands);
+    spawn_streetlamps(&mut commands);
+    spawn_neon_signs(&mut commands);
     spawn_vehicle(&mut commands);
     spawn_owned_pet(&mut commands);
     spawn_world_objects(&mut commands);
@@ -3390,16 +3456,38 @@ fn spawn_player_entity(commands: &mut Commands) {
             Skills::default(),
             WorkStreak::default(),
             HousingTier::default(),
-            Furnishings::default(),
+            (
+                Furnishings::default(),
+                YSort { base_z: 10.0 },
+                Facing::default(),
+                AnimFrame::default(),
+            ),
         ))
         .with_children(|p| {
-            spawn_human(
-                p,
-                Color::srgb(0.90, 0.52, 0.12),
-                Color::srgb(0.58, 0.28, 0.06),
-                Color::srgb(0.94, 0.80, 0.65),
-                Color::srgb(0.36, 0.22, 0.09),
-            );
+            // Procedural human body wrapped so it can be hidden as a group
+            // when a real `PlayerSheetSprite` becomes available.
+            p.spawn((Transform::default(), Visibility::default(), ProceduralBody))
+                .with_children(|body| {
+                    spawn_human(
+                        body,
+                        Color::srgb(0.90, 0.52, 0.12),
+                        Color::srgb(0.58, 0.28, 0.06),
+                        Color::srgb(0.94, 0.80, 0.65),
+                        Color::srgb(0.36, 0.22, 0.09),
+                    );
+                });
+            // Pixel-art sprite-sheet child. Hidden by default; the
+            // `update_player_sheet` system reveals it when the asset loads
+            // and animates the atlas index from Facing + AnimFrame.
+            p.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::splat(32. * S)),
+                    ..default()
+                },
+                Transform::from_xyz(0., 0., 1.5),
+                Visibility::Hidden,
+                PlayerSheetSprite,
+            ));
             p.spawn((
                 Sprite {
                     color: Color::srgb(1., 1., 0.55),
@@ -3420,6 +3508,16 @@ fn spawn_player_entity(commands: &mut Commands) {
         },
         Transform::from_xyz(0., 0., 50.),
         DayNightOverlay,
+    ));
+    // Indoor warm tint overlay (alpha animated by update_indoor_tint)
+    commands.spawn((
+        Sprite {
+            color: Color::srgba(1.0, 0.85, 0.55, 0.0),
+            custom_size: Some(Vec2::splat(24000.)),
+            ..default()
+        },
+        Transform::from_xyz(0., 0., 50.5),
+        IndoorTint,
     ));
     // Interactable proximity highlight
     commands.spawn((
@@ -4064,6 +4162,9 @@ fn spawn_npc(
             },
             ObjectSize(Vec2::splat(18.)),
             NpcId(npc_id),
+            YSort { base_z: 9.5 },
+            Facing::default(),
+            AnimFrame::default(),
         ))
         .with_children(|p| {
             spawn_human(p, outfit, pants, skin, hair);

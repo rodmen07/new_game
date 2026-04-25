@@ -509,3 +509,340 @@ pub fn update_lightning(
         );
     }
 }
+
+// ── Y-sort ────────────────────────────────────────────────────────────────────
+
+/// Top-down 2D depth sorting: each frame, recompute the z component of every
+/// `YSort`-tagged entity so entities further south render in front. Uses a
+/// small per-pixel slope (Y_SORT_SLOPE) around `base_z` so all characters
+/// stay in the same depth band but layer correctly relative to each other.
+///
+/// Conventions:
+/// - Higher world `y` (further north) -> lower z (drawn behind).
+/// - Lower world `y` (further south)  -> higher z (drawn in front).
+/// - Width of the sort band stays inside +/- (Y_SORT_RANGE * Y_SORT_SLOPE)
+///   so y-sorted things never punch through tilemap (z=0) or the day/night
+///   overlay (z=50).
+const Y_SORT_SLOPE: f32 = 0.001;
+const Y_SORT_RANGE: f32 = 4000.0;
+
+pub fn apply_y_sort(mut q: Query<(&YSort, &mut Transform)>) {
+    for (ys, mut tf) in &mut q {
+        let clamped_y = tf.translation.y.clamp(-Y_SORT_RANGE, Y_SORT_RANGE);
+        tf.translation.z = ys.base_z - clamped_y * Y_SORT_SLOPE;
+    }
+}
+
+// ── Facing + walk-cycle scaffolding ──────────────────────────────────────────
+
+/// Velocity threshold (world units / sec) below which an entity is considered
+/// idle. Below this, `Facing` is preserved (so the character keeps looking
+/// the way they were going) and `AnimFrame.idx` resets to 0.
+const FACING_MOVE_EPSILON: f32 = 8.0;
+/// Seconds per walk-cycle frame (4 frames per cycle).
+const ANIM_FRAME_DURATION: f32 = 0.15;
+
+/// Update `Facing` from `PlayerMovement.velocity` for the local player.
+/// East/West dominates only when |vx| > |vy|, so diagonal-up still reads as
+/// "up" - matches Stardew/Pokemon conventions.
+pub fn update_player_facing(mut q: Query<(&PlayerMovement, &mut Facing), With<LocalPlayer>>) {
+    for (pm, mut facing) in &mut q {
+        let v = pm.velocity;
+        if v.length_squared() < FACING_MOVE_EPSILON * FACING_MOVE_EPSILON {
+            continue;
+        }
+        let new_facing = if v.x.abs() > v.y.abs() {
+            if v.x > 0.0 {
+                Facing::East
+            } else {
+                Facing::West
+            }
+        } else if v.y > 0.0 {
+            Facing::North
+        } else {
+            Facing::South
+        };
+        if *facing != new_facing {
+            *facing = new_facing;
+        }
+    }
+}
+
+/// Update `Facing` from `Npc.velocity`. Same rules as the player.
+pub fn update_npc_facing(mut q: Query<(&Npc, &mut Facing)>) {
+    for (npc, mut facing) in &mut q {
+        let v = npc.velocity;
+        if v.length_squared() < FACING_MOVE_EPSILON * FACING_MOVE_EPSILON {
+            continue;
+        }
+        let new_facing = if v.x.abs() > v.y.abs() {
+            if v.x > 0.0 {
+                Facing::East
+            } else {
+                Facing::West
+            }
+        } else if v.y > 0.0 {
+            Facing::North
+        } else {
+            Facing::South
+        };
+        if *facing != new_facing {
+            *facing = new_facing;
+        }
+    }
+}
+
+/// Advance 4-frame walk cycles. Idle entities snap back to frame 0.
+/// Today this drives no visuals (procedural humans have no spritesheet),
+/// but the data is wired so dropping in pixel-art sheets later is mechanical.
+#[allow(clippy::type_complexity)]
+pub fn update_anim_frames(
+    time: Res<Time>,
+    mut q: Query<(&mut AnimFrame, Option<&PlayerMovement>, Option<&Npc>)>,
+) {
+    let dt = time.delta_secs();
+    for (mut anim, pm, npc) in &mut q {
+        let speed_sq = pm
+            .map(|p| p.velocity.length_squared())
+            .or_else(|| npc.map(|n| n.velocity.length_squared()))
+            .unwrap_or(0.0);
+        if speed_sq < FACING_MOVE_EPSILON * FACING_MOVE_EPSILON {
+            anim.idx = 0;
+            anim.timer = 0.0;
+            continue;
+        }
+        anim.timer += dt;
+        while anim.timer >= ANIM_FRAME_DURATION {
+            anim.timer -= ANIM_FRAME_DURATION;
+            anim.idx = (anim.idx + 1) % 4;
+        }
+    }
+}
+
+// ── Streetlamp glow ──────────────────────────────────────────────────────────
+
+/// Marks an additive glow sprite that brightens at night. The base alpha is
+/// driven by hour-of-day in `update_streetlamp_glow`.
+#[derive(Component)]
+pub struct StreetlampGlow;
+
+/// Update the alpha of all `StreetlampGlow` sprites based on the current hour.
+/// Glows are bright (alpha ~0.55) between 19:00 and 06:00, off in daylight.
+pub fn update_streetlamp_glow(gt: Res<GameTime>, mut q: Query<&mut Sprite, With<StreetlampGlow>>) {
+    let h = gt.hours % 24.0;
+    let target_alpha = if !(6.0..19.0).contains(&h) {
+        0.55
+    } else if (18.0..19.0).contains(&h) {
+        // 18:00-19:00 ramp up
+        (h - 18.0) * 0.55
+    } else if (5.0..6.0).contains(&h) {
+        // 05:00-06:00 ramp down
+        (6.0 - h) * 0.55
+    } else {
+        0.0
+    };
+    for mut sprite in &mut q {
+        let mut c = sprite.color.to_srgba();
+        c.alpha = target_alpha;
+        sprite.color = Color::Srgba(c);
+    }
+}
+
+// ── Neon shop signs ──────────────────────────────────────────────────────────
+
+/// Marks a glowing sign sprite for a commercial zone. The hue is baked into
+/// `base_color`; the alpha is animated by `update_neon_signs` so the sign
+/// "switches on" at dusk with a subtle flicker.
+#[derive(Component, Clone, Copy)]
+pub struct NeonSign {
+    pub base_color: Color,
+}
+
+/// Pulse neon-sign alpha between dusk and dawn with a small flicker.
+/// Off (alpha 0) during daylight; ramps up 18:00-19:00, down 05:00-06:00.
+pub fn update_neon_signs(
+    gt: Res<GameTime>,
+    time: Res<Time>,
+    mut q: Query<(&NeonSign, &mut Sprite)>,
+) {
+    let h = gt.hours % 24.0;
+    let base = if !(6.0..19.0).contains(&h) {
+        0.85
+    } else if (18.0..19.0).contains(&h) {
+        (h - 18.0) * 0.85
+    } else if (5.0..6.0).contains(&h) {
+        (6.0 - h) * 0.85
+    } else {
+        0.0
+    };
+    // Subtle flicker (sin) so the signs feel alive.
+    let t = time.elapsed_secs();
+    let flicker = if base > 0.0 {
+        1.0 + 0.06 * (t * 4.7).sin() + 0.03 * (t * 11.3).sin()
+    } else {
+        1.0
+    };
+    let alpha = (base * flicker).clamp(0.0, 1.0);
+    for (sign, mut sprite) in &mut q {
+        let mut c = sign.base_color.to_srgba();
+        c.alpha = alpha;
+        sprite.color = Color::Srgba(c);
+    }
+}
+
+// ── Player pixel-art sheet hooks ─────────────────────────────────────────────
+
+/// Width / height of a single sprite cell on the player sheet (pixels).
+/// Stardew Valley uses 16x32; we pick 32x32 for now to match the procedural
+/// player's relative footprint. Tune when real art is dropped in.
+pub const PLAYER_SHEET_CELL: u32 = 32;
+/// Number of walk-cycle frames per row. Row order: South, North, East, West.
+pub const PLAYER_SHEET_FRAMES: u32 = 4;
+/// Number of facing rows on the sheet.
+pub const PLAYER_SHEET_ROWS: u32 = 4;
+
+/// Maps a `Facing` enum to the row index on `art/characters/player.png`.
+/// Row layout: 0 = South (default), 1 = North, 2 = East, 3 = West.
+pub fn facing_row(f: Facing) -> u32 {
+    match f {
+        Facing::South => 0,
+        Facing::North => 1,
+        Facing::East => 2,
+        Facing::West => 3,
+    }
+}
+
+/// Computes the atlas index for a given facing + walk frame.
+pub fn player_atlas_index(facing: Facing, frame: u8) -> usize {
+    (facing_row(facing) * PLAYER_SHEET_FRAMES + frame as u32 % PLAYER_SHEET_FRAMES) as usize
+}
+
+/// Startup system: kicks off async load of `art/characters/player.png` and
+/// builds the matching `TextureAtlasLayout`. Both handles live in `ArtAssets`.
+/// Missing-asset is non-fatal: Bevy logs a warning and the procedural body
+/// stays visible.
+pub fn init_art_assets(
+    asset_server: Res<AssetServer>,
+    mut layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut art: ResMut<ArtAssets>,
+) {
+    art.player_sheet = Some(asset_server.load("art/characters/player.png"));
+    let layout = TextureAtlasLayout::from_grid(
+        UVec2::splat(PLAYER_SHEET_CELL),
+        PLAYER_SHEET_FRAMES,
+        PLAYER_SHEET_ROWS,
+        None,
+        None,
+    );
+    art.player_atlas = Some(layouts.add(layout));
+}
+
+/// When `art/characters/player.png` finishes loading, swap the procedural
+/// body off and reveal the sprite-sheet child. Until then (or if the file
+/// is missing), the procedural body stays visible and this system is a
+/// no-op aside from updating the atlas index.
+pub fn update_player_sheet(
+    art: Res<ArtAssets>,
+    asset_server: Res<AssetServer>,
+    mut sheet_q: Query<
+        (&mut Sprite, &mut Visibility),
+        (With<PlayerSheetSprite>, Without<ProceduralBody>),
+    >,
+    mut body_q: Query<&mut Visibility, (With<ProceduralBody>, Without<PlayerSheetSprite>)>,
+    player_q: Query<(&Facing, &AnimFrame), With<LocalPlayer>>,
+) {
+    let Some(sheet_handle) = art.player_sheet.as_ref() else {
+        return;
+    };
+    let Some(layout_handle) = art.player_atlas.as_ref() else {
+        return;
+    };
+    let loaded = matches!(
+        asset_server.get_load_state(sheet_handle),
+        Some(bevy::asset::LoadState::Loaded)
+    );
+    let Ok((facing, anim)) = player_q.get_single() else {
+        return;
+    };
+    let index = player_atlas_index(*facing, anim.idx);
+    for (mut sprite, mut vis) in &mut sheet_q {
+        if loaded {
+            sprite.image = sheet_handle.clone();
+            sprite.texture_atlas = Some(TextureAtlas {
+                layout: layout_handle.clone(),
+                index,
+            });
+            *vis = Visibility::Inherited;
+        } else {
+            *vis = Visibility::Hidden;
+        }
+    }
+    for mut vis in &mut body_q {
+        *vis = if loaded {
+            Visibility::Hidden
+        } else {
+            Visibility::Inherited
+        };
+    }
+}
+
+// ── Indoor tint overlay ──────────────────────────────────────────────────────
+
+/// Indoor zone footprints in **world** coords (already scaled by S=4).
+/// Each tuple is (centre_x, centre_y, half_width, half_height). Mirrors the
+/// `zone_label` calls in `spawn_buildings_and_zones` minus PARK and GARAGE
+/// (those are outdoor-feeling). Half-extents are tuned to the visible
+/// building facades, not the broader zone tile fill.
+const INDOOR_ZONES: &[(f32, f32, f32, f32)] = &[
+    // North row
+    (-425.0 * 4.0, 180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // HOME
+    (-255.0 * 4.0, 180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // GYM
+    (-85.0 * 4.0, 180.0 * 4.0, 75.0 * 4.0, 60.0 * 4.0),  // LIBRARY
+    (425.0 * 4.0, 180.0 * 4.0, 75.0 * 4.0, 60.0 * 4.0),  // OFFICE
+    // South row
+    (-425.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // BANK
+    (-255.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // HOSPITAL
+    (-85.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0),  // MARKET
+    (85.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0),   // RESTAURANT
+    (255.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0),  // ADOPTION
+    // Back-street
+    (-450.0 * 4.0, 460.0 * 4.0, 60.0 * 4.0, 55.0 * 4.0), // SCHOOL
+    (450.0 * 4.0, 460.0 * 4.0, 60.0 * 4.0, 55.0 * 4.0),  // TRANSIT
+];
+
+/// Returns true if `(x, y)` falls inside any indoor zone footprint.
+pub fn is_indoors(x: f32, y: f32) -> bool {
+    INDOOR_ZONES
+        .iter()
+        .any(|&(cx, cy, hw, hh)| (x - cx).abs() <= hw && (y - cy).abs() <= hh)
+}
+
+/// Maximum indoor-tint alpha when the player is fully inside a building.
+const INDOOR_TINT_MAX: f32 = 0.18;
+/// How fast the overlay alpha eases toward its target each second.
+const INDOOR_TINT_LERP: f32 = 4.0;
+
+/// Update the indoor tint overlay: ease alpha toward the target each frame
+/// based on whether the local player is inside any building footprint. The
+/// transition feels like crossing a doorway rather than a hard cut.
+pub fn update_indoor_tint(
+    time: Res<Time>,
+    player_q: Query<&Transform, With<LocalPlayer>>,
+    mut tint_q: Query<&mut Sprite, With<IndoorTint>>,
+) {
+    let Ok(player_tf) = player_q.get_single() else {
+        return;
+    };
+    let target = if is_indoors(player_tf.translation.x, player_tf.translation.y) {
+        INDOOR_TINT_MAX
+    } else {
+        0.0
+    };
+    let dt = time.delta_secs();
+    for mut sprite in &mut tint_q {
+        let mut c = sprite.color.to_srgba();
+        let lerp_t = (INDOOR_TINT_LERP * dt).clamp(0.0, 1.0);
+        c.alpha += (target - c.alpha) * lerp_t;
+        sprite.color = Color::Srgba(c);
+    }
+}

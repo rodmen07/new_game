@@ -55,6 +55,9 @@ fn main() {
                     file_path: asset_root(),
                     ..default()
                 })
+                // Nearest-neighbour sampling keeps pixel-art / procedural tile
+                // textures crisp at any zoom (Stardew-style top-down look).
+                .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "Everyday Life Simulator".to_string(),
@@ -99,12 +102,14 @@ fn main() {
         .init_resource::<FestivalState>()
         .init_resource::<LightningTimer>()
         .init_resource::<TutorialState>()
+        .init_resource::<ArtAssets>()
         // ── Save / load ───────────────────────────────────────────────────────
         .init_resource::<PendingLoad>()
         .add_event::<SaveRequest>()
         .add_event::<PlayerAction>()
         // ── Systems ───────────────────────────────────────────────────────────
         .add_systems(Startup, (apply_settings, setup).chain())
+        .add_systems(Startup, init_art_assets)
         // Reset + apply save data every time we enter Playing (skipped on Resume).
         .add_systems(
             OnEnter(AppState::Playing),
@@ -181,6 +186,14 @@ fn main() {
                 update_typing_word_row_scale,
                 update_skill_panel,
                 update_day_night,
+                apply_y_sort,
+                update_player_facing,
+                update_npc_facing,
+                update_anim_frames,
+                update_streetlamp_glow,
+                update_neon_signs,
+                update_player_sheet,
+                update_indoor_tint,
             )
                 .chain()
                 .after(player_visuals)
