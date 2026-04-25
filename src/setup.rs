@@ -1,13 +1,14 @@
 use crate::components::Furnishings;
 use crate::components::{
     ActionKind, AnimFrame, ApartmentUnit, BarSmooth, BodyPart, Building, BuildingKind, Collider,
-    DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, InteractHighlight, Interactable,
-    ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel, NpcPersonality,
-    ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator, PlayerSheetSprite,
-    ProceduralBody, SkillCareerBar, SkillCookingBar, SkillFitnessBar, SkillPanel, SkillSocialBar,
-    TutorialBodyText, TutorialHintText, TutorialOverlay, TypingInstruction, TypingLabel,
-    TypingOverlay, TypingOverlayFade, TypingRetries, TypingWordCurrent, TypingWordCurrentBox,
-    TypingWordRemaining, TypingWordRow, TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
+    DayNightOverlay, Facing, HobbyKind, HudBar, HudLabel, IndoorTint, InteractHighlight,
+    Interactable, ItemKind, LocalPlayer, MainCamera, NotifContainer, Npc, NpcId, NpcLabel,
+    NpcPersonality, ObjectSize, OwnedPetVisual, PetKind, Player, PlayerId, PlayerIndicator,
+    PlayerSheetSprite, ProceduralBody, SkillCareerBar, SkillCookingBar, SkillFitnessBar,
+    SkillPanel, SkillSocialBar, TutorialBodyText, TutorialHintText, TutorialOverlay,
+    TypingInstruction, TypingLabel, TypingOverlay, TypingOverlayFade, TypingRetries,
+    TypingWordCurrent, TypingWordCurrentBox, TypingWordRemaining, TypingWordRow,
+    TypingWordRowScale, TypingWordTyped, Vehicle, YSort,
 };
 use crate::resources::{
     ActionPrompt, BankInput, HousingTier, Inventory, PlayerMovement, PlayerStats, Skills,
@@ -3518,6 +3519,16 @@ fn spawn_player_entity(commands: &mut Commands) {
         },
         Transform::from_xyz(0., 0., 50.),
         DayNightOverlay,
+    ));
+    // Indoor warm tint overlay (alpha animated by update_indoor_tint)
+    commands.spawn((
+        Sprite {
+            color: Color::srgba(1.0, 0.85, 0.55, 0.0),
+            custom_size: Some(Vec2::splat(24000.)),
+            ..default()
+        },
+        Transform::from_xyz(0., 0., 50.5),
+        IndoorTint,
     ));
     // Interactable proximity highlight
     commands.spawn((

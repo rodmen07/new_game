@@ -193,6 +193,7 @@ fn main() {
                 update_streetlamp_glow,
                 update_neon_signs,
                 update_player_sheet,
+                update_indoor_tint,
             )
                 .chain()
                 .after(player_visuals)

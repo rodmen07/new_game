@@ -785,3 +785,64 @@ pub fn update_player_sheet(
         };
     }
 }
+
+// ── Indoor tint overlay ──────────────────────────────────────────────────────
+
+/// Indoor zone footprints in **world** coords (already scaled by S=4).
+/// Each tuple is (centre_x, centre_y, half_width, half_height). Mirrors the
+/// `zone_label` calls in `spawn_buildings_and_zones` minus PARK and GARAGE
+/// (those are outdoor-feeling). Half-extents are tuned to the visible
+/// building facades, not the broader zone tile fill.
+const INDOOR_ZONES: &[(f32, f32, f32, f32)] = &[
+    // North row
+    (-425.0 * 4.0, 180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // HOME
+    (-255.0 * 4.0, 180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // GYM
+    (-85.0 * 4.0, 180.0 * 4.0, 75.0 * 4.0, 60.0 * 4.0),  // LIBRARY
+    (425.0 * 4.0, 180.0 * 4.0, 75.0 * 4.0, 60.0 * 4.0),  // OFFICE
+    // South row
+    (-425.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // BANK
+    (-255.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0), // HOSPITAL
+    (-85.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0),  // MARKET
+    (85.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0),   // RESTAURANT
+    (255.0 * 4.0, -180.0 * 4.0, 70.0 * 4.0, 60.0 * 4.0),  // ADOPTION
+    // Back-street
+    (-450.0 * 4.0, 460.0 * 4.0, 60.0 * 4.0, 55.0 * 4.0), // SCHOOL
+    (450.0 * 4.0, 460.0 * 4.0, 60.0 * 4.0, 55.0 * 4.0),  // TRANSIT
+];
+
+/// Returns true if `(x, y)` falls inside any indoor zone footprint.
+pub fn is_indoors(x: f32, y: f32) -> bool {
+    INDOOR_ZONES
+        .iter()
+        .any(|&(cx, cy, hw, hh)| (x - cx).abs() <= hw && (y - cy).abs() <= hh)
+}
+
+/// Maximum indoor-tint alpha when the player is fully inside a building.
+const INDOOR_TINT_MAX: f32 = 0.18;
+/// How fast the overlay alpha eases toward its target each second.
+const INDOOR_TINT_LERP: f32 = 4.0;
+
+/// Update the indoor tint overlay: ease alpha toward the target each frame
+/// based on whether the local player is inside any building footprint. The
+/// transition feels like crossing a doorway rather than a hard cut.
+pub fn update_indoor_tint(
+    time: Res<Time>,
+    player_q: Query<&Transform, With<LocalPlayer>>,
+    mut tint_q: Query<&mut Sprite, With<IndoorTint>>,
+) {
+    let Ok(player_tf) = player_q.get_single() else {
+        return;
+    };
+    let target = if is_indoors(player_tf.translation.x, player_tf.translation.y) {
+        INDOOR_TINT_MAX
+    } else {
+        0.0
+    };
+    let dt = time.delta_secs();
+    for mut sprite in &mut tint_q {
+        let mut c = sprite.color.to_srgba();
+        let lerp_t = (INDOOR_TINT_LERP * dt).clamp(0.0, 1.0);
+        c.alpha += (target - c.alpha) * lerp_t;
+        sprite.color = Color::Srgba(c);
+    }
+}

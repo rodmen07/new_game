@@ -316,6 +316,13 @@ pub struct ProceduralBody;
 /// index from `Facing` + `AnimFrame` each frame.
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct PlayerSheetSprite;
+
+/// Full-screen overlay sprite that fades to a soft warm tint when the
+/// player is inside a building footprint. Alpha is animated by
+/// `update_indoor_tint` each frame so transitions feel like crossing
+/// a doorway rather than a hard cut.
+#[derive(Component, Clone, Copy, Debug, Default)]
+pub struct IndoorTint;
 /// Smoothed display value for a stat bar (0–100). Lerps toward `target`
 /// each frame so bars drain/fill visibly instead of jumping instantly.
 #[derive(Component, Default)]
