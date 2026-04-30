@@ -6,23 +6,30 @@ This repository now has complete SpendSteward proxy integration. All Claude API 
 
 ## Quick Start (2 minutes)
 
-### 1. Get Your JWT Token
+### ⚠️ Important: Key Architecture
+
+**Two separate keys:**
+- **Anthropic API Key** (`sk-ant-api03-...`): Already registered in SpendSteward ✅
+- **JWT Token**: Get fresh token for each session → **This is what you use**
+
+See `KEY_SETUP.md` for detailed explanation.
+
+### 1. Get Your JWT Token (Per Session)
 
 ```bash
-curl -X POST http://localhost:8000/auth/jwt/login \
+JWT_TOKEN=$(curl -s -X POST http://localhost:8000/auth/jwt/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d 'username=test@example.com&password=testpassword123'
+  -d 'username=test@example.com&password=testpassword123' | \
+  python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 ```
 
-Save the `access_token` value.
-
-### 2. Run the Agent with Proxy
+### 2. Run the Agent with JWT Token
 
 ```bash
-./run_agent_with_proxy.sh <your-jwt-token>
+./run_agent_with_proxy.sh $JWT_TOKEN
 
 # Or with Python directly:
-python3 run_agent_with_proxy.py --jwt-token <your-jwt-token>
+python3 run_agent_with_proxy.py --jwt-token $JWT_TOKEN
 ```
 
 ### 3. Monitor Costs
@@ -39,6 +46,8 @@ curl -s http://localhost:8000/api/v1/usage/summary \
 |------|---------|
 | `run_agent_with_proxy.py` | Python orchestrator for agent + proxy setup |
 | `run_agent_with_proxy.sh` | Shell wrapper (one-liner execution) |
+| `KEY_SETUP.md` | **Read this first!** Architecture of two-key system |
+| `QUICKSTART.md` | Fast 5-minute setup guide |
 | `AGENT_INTEGRATION.md` | Complete integration guide with examples |
 | `PROXY_SETUP_GUIDE.md` | SpendSteward setup walkthrough |
 | `SPENDSTEWARD_PROXY.md` | Detailed technical documentation |
