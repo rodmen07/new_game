@@ -121,7 +121,7 @@ pub fn crisis_trigger_system(
         CrisisKind::MedicalEmergency => {
             let bill = MEDICAL_BILL_AMOUNT * dmg_mult;
             stats.health = MEDICAL_HEALTH_FLOOR;
-            stats.money = (stats.money - bill).max(0.);
+            stats.money = (stats.money - bill).max(-DEBT_LIMIT);
             stats.modify_energy(-MEDICAL_ENERGY_DRAIN);
             notif.push(
                 format!("CRISIS: Medical emergency! Health dropped to {}, -${:.0} bill. Recover over {} days.{}",

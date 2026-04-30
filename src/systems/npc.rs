@@ -128,8 +128,8 @@ pub fn npc_collisions(
     colliders_q: Query<(&Transform, &Collider), Without<Npc>>,
 ) {
     for mut ntf in &mut npc_q {
-        let npc_pos = ntf.translation.truncate();
         for (ctf, collider) in &colliders_q {
+            let npc_pos = ntf.translation.truncate();
             let collider_pos = ctf.translation.truncate();
             if let Some(delta) = resolve_aabb_push(npc_pos, NPC_HALF, collider_pos, collider.0) {
                 ntf.translation.x += delta.x;
