@@ -5,7 +5,7 @@ Each run:
   1. Load state (which dimension/focus pairs are done).
   2. Pick the next task in dimension-first interleaved order.
   3. Create a feature branch off origin/main.
-  4. Run the Anthropic Claude Haiku 4.5 agent loop for cost-effective agentic code generation.
+  4. Run the Anthropic claude-3-5-haiku-4-5-20241022 agent loop for cost-effective agentic code generation.
   5. Verify cargo fmt + clippy + test inside the agent's tool calls.
   6. On success: re-verify from the orchestrator, commit, write PR
      metadata for the workflow step to push + open a PR.
@@ -18,8 +18,11 @@ Exit codes (read by the GitHub Actions wrapper):
   3 = all tasks complete; stop
 
 Environment:
-  GITHUB_TOKEN          required, used both for git push (via the workflow) and
-                        for GitHub Models inference
+  ANTHROPIC_API_KEY /   required for inference when using the default
+  GAMEDEV_AGENT_TOKEN   Anthropic API base
+  GITHUB_TOKEN          required for git push / PR operations via the workflow;
+                        only used for inference if GAMEDEV_AGENT_BASE points to
+                        GitHub Models
   GAMEDEV_AGENT_MODEL   optional, defaults to "claude-3-5-haiku-4-5-20241022"
   GAMEDEV_AGENT_BASE    optional, defaults to "https://api.anthropic.com"
   FORCE_DIMENSION       optional, force a dimension id (e.g. "graphics")
