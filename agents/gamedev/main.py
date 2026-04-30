@@ -201,7 +201,7 @@ def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> st
     client = Anthropic(auth_token=token, base_url=base) if base != DEFAULT_BASE else Anthropic(auth_token=token)
     dispatch = make_dispatch(allowed_paths)
     tools = tool_schemas()
-    
+
     # Convert OpenAI tool format to Anthropic format
     anthropic_tools = []
     for tool in tools:
@@ -233,22 +233,22 @@ def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> st
         # Process response content blocks
         tool_calls = []
         text_response = None
-        
+
         for block in resp.content:
             if block.type == "text":
                 text_response = block.text
             elif block.type == "tool_use":
                 tool_calls.append(block)
-        
+
         # Append assistant message
         assistant_entry: dict = {
             "role": "assistant",
             "content": []
         }
-        
+
         if text_response:
             assistant_entry["content"].append({"type": "text", "text": text_response})
-        
+
         for tool_call in tool_calls:
             assistant_entry["content"].append({
                 "type": "tool_use",
@@ -256,9 +256,9 @@ def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> st
                 "name": tool_call.name,
                 "input": tool_call.input,
             })
-        
+
         messages.append(assistant_entry)
-        
+
         if not tool_calls:
             if text_response:
                 text = text_response.strip()
@@ -274,10 +274,9 @@ def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> st
         for tool_call in tool_calls:
             fn_name = tool_call.name
             fn_args = tool_call.input or {}
-            
-            result_text = None
+
             log.info("Tool [%d] %s args=%s", round_num + 1, fn_name, list(fn_args.keys()) if isinstance(fn_args, dict) else [])
-            
+
             if fn_name not in dispatch:
                 result_text = f"ERROR: unknown tool '{fn_name}'"
             else:
@@ -285,13 +284,13 @@ def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> st
                     result_text = dispatch[fn_name](fn_args)
                 except Exception as exc:
                     result_text = f"ERROR executing {fn_name}: {exc}"
-            
+
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": tool_call.id,
                 "content": result_text,
             })
-        
+
         # Append tool results as user message
         if tool_results:
             messages.append({
