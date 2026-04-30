@@ -80,7 +80,7 @@ There are **TWO separate keys** in this setup:
 
 ### Already Done ✅
 
-Your Anthropic API key (`sk-ant-api03-cwqoSeb...`) is already registered in SpendSteward.
+Your Anthropic API key (`sk-ant-api03-...`) is already registered in SpendSteward.
 
 ### For Each Agent Run
 

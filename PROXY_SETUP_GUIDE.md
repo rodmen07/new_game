@@ -21,10 +21,10 @@ Your test credentials are:
 The proxy works via standard HTTP requests with JWT authentication. To use it with your gamedev agent:
 
 ```bash
-cd /home/rodmendoza07/Projects/new_game
+cd /path/to/new_game
 
 # Option A: Direct curl test
-TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkOWJiNjEzNS04OWI0LTQwY2QtYWNmZC1hYWJkOWE1MDYyYjYiLCJhdWQiOlsiZmFzdGFwaS11c2VyczphdXRoIl0sImV4cCI6MTc3NzU1OTY0OH0.Lalw_GfSoP0pHDwjSFPcawCj2Rdd6wi3FIjUhx7ApCk"
+TOKEN="eyJ..."
 
 curl -X POST http://localhost:8000/api/v1/proxy/anthropic/messages \
   -H "Authorization: Bearer $TOKEN" \
@@ -45,7 +45,7 @@ http://localhost:8000/api/v1/usage/summary
 
 With your JWT token:
 ```bash
-TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkOWJiNjEzNS04OWI0LTQwY2QtYWNmZC1hYWJkOWE1MDYyYjYiLCJhdWQiOlsiZmFzdGFwaS11c2VyczphdXRoIl0sImV4cCI6MTc3NzU1OTY0OH0.Lalw_GfSoP0pHDwjSFPcawCj2Rdd6wi3FIjUhx7ApCk"
+TOKEN="eyJ..."
 
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/usage/summary | python3 -m json.tool
 ```
@@ -134,7 +134,7 @@ curl -X POST http://localhost:8000/auth/jwt/login \
 
 **Q: Backend not running?**
 ```bash
-cd /home/rodmendoza07/Projects/SpendSteward/backend
+cd /path/to/SpendSteward/backend
 source .venv/bin/activate
 python -m uvicorn spendsteward.hosted.app:app --host 127.0.0.1 --port 8000
 ```
@@ -146,4 +146,4 @@ python -m uvicorn spendsteward.hosted.app:app --host 127.0.0.1 --port 8000
 3. Check the dashboard for savings opportunities
 4. Optimize expensive requests based on recommendations
 
-Questions? See `/home/rodmendoza07/Projects/new_game/SPENDSTEWARD_PROXY.md`
+Questions? See `SPENDSTEWARD_PROXY.md`

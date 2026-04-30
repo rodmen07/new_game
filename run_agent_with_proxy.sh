@@ -33,7 +33,7 @@ if [ ! -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
     echo "Run setup first:"
     echo "  python3 -m venv .venv"
     echo "  source .venv/bin/activate"
-    echo "  pip install openai"
+    echo "  pip install anthropic"
     exit 1
 fi
 

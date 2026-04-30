@@ -53,18 +53,18 @@ if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
     echo "   ✓ Installed from requirements.txt"
 else
     # Fallback: install commonly needed packages
-    pip install --quiet openai anthropic python-dotenv
-    echo "   ✓ Installed: openai, anthropic, python-dotenv"
+    pip install --quiet anthropic python-dotenv
+    echo "   ✓ Installed: anthropic, python-dotenv"
 fi
 echo ""
 
 # Verify installation
 echo "✔️  Verifying installation..."
-if python3 -c "import openai" 2>/dev/null; then
-    OPENAI_VERSION=$(python3 -c "import openai; print(openai.__version__)")
-    echo "   ✓ openai ($OPENAI_VERSION) installed"
+if python3 -c "import anthropic" 2>/dev/null; then
+    ANTHROPIC_VERSION=$(python3 -c "import anthropic; print(anthropic.__version__)")
+    echo "   ✓ anthropic ($ANTHROPIC_VERSION) installed"
 else
-    echo "   ⚠️  openai not found (may be needed for agent)"
+    echo "   ⚠️  anthropic not found (may be needed for agent)"
 fi
 echo ""
 

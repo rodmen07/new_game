@@ -2,7 +2,7 @@
 
 ## Current Networking Scope
 
-The current multiplayer implementation is a WASM-only relay in [src/network.rs](d:\Projects\new_game\src\network.rs) that synchronizes player position only. It does not synchronize authoritative gameplay state such as economy, inventory, quests, NPC state, time progression, or stat decay.
+The current multiplayer implementation is a WASM-only relay in [src/network.rs](src/network.rs) that synchronizes player position only. It does not synchronize authoritative gameplay state such as economy, inventory, quests, NPC state, time progression, or stat decay.
 
 ## Mechanic Categories
 
@@ -46,11 +46,11 @@ The game has no model for two players acting on the same NPC, shop inventory, qu
 
 ## Immediate Follow-up Areas
 
-- [src/resources.rs](d:\Projects\new_game\src\resources.rs): identify which resources must become server-owned.
-- [src/save.rs](d:\Projects\new_game\src\save.rs): separate local presentation settings from canonical progression data.
-- [src/systems/interaction.rs](d:\Projects\new_game\src\systems\interaction.rs): convert direct stat mutation into action requests.
-- [src/systems/time.rs](d:\Projects\new_game\src\systems\time.rs): define server-driven world time semantics.
-- [src/systems/npc.rs](d:\Projects\new_game\src\systems\npc.rs): decide whether NPCs are globally shared, instanced, or sharded.
+- [src/resources.rs](src/resources.rs): identify which resources must become server-owned.
+- [src/save.rs](src/save.rs): separate local presentation settings from canonical progression data.
+- [src/systems/interaction.rs](src/systems/interaction.rs): convert direct stat mutation into action requests.
+- [src/systems/time.rs](src/systems/time.rs): define server-driven world time semantics.
+- [src/systems/npc.rs](src/systems/npc.rs): decide whether NPCs are globally shared, instanced, or sharded.
 
 ## Implemented (Transport Stability Increment)
 

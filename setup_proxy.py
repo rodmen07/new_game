@@ -4,8 +4,11 @@ Setup SpendSteward proxy integration for new_game agent.
 This script configures the gamedev agent to use SpendSteward's Claude proxy
 instead of GitHub Models, allowing cost tracking and optimization.
 
+The agent authenticates with SpendSteward using a JWT token obtained from
+/auth/jwt/login. The proxy endpoint is /api/v1/proxy/anthropic.
+
 Usage:
-    python setup_proxy.py --key sk-your-spendsteward-key [--url http://localhost:8000]
+    python setup_proxy.py --jwt-token <token> [--url http://localhost:8000]
 """
 
 import os
@@ -15,18 +18,19 @@ import json
 from pathlib import Path
 
 
-def setup_proxy_config(api_key: str, base_url: str = "http://localhost:8000") -> dict:
+def setup_proxy_config(jwt_token: str, base_url: str = "http://localhost:8000") -> dict:
     """Create proxy configuration for the agent."""
     config = {
         "proxy_enabled": True,
         "spendsteward_base_url": base_url,
-        "spendsteward_api_key": api_key,
-        "proxy_endpoint": f"{base_url}/v1",
+        "jwt_token": jwt_token,
+        "proxy_endpoint": f"{base_url}/api/v1/proxy/anthropic",
         "claude_model": "claude-3-5-sonnet-20241022",
         "notes": [
             "Cost tracking: All Claude API calls will be tracked in SpendSteward",
             "Optimization: Requests can be automatically routed to cheaper models",
-            "Dashboard: View usage and costs at SpendSteward dashboard"
+            "Dashboard: View usage and costs at SpendSteward dashboard",
+            "JWT tokens expire after ~1 hour; re-run this script to refresh"
         ]
     }
     return config
@@ -36,6 +40,8 @@ def create_proxy_wrapper():
     """Create a wrapper script for running the agent with proxy settings."""
     wrapper_script = '''#!/bin/bash
 # Wrapper for new_game gamedev agent with SpendSteward proxy
+# This script expects a JWT token (from /auth/jwt/login), not a static API key.
+# Use run_agent_with_proxy.sh for the recommended JWT-based workflow.
 
 set -e
 
@@ -44,29 +50,24 @@ PROXY_CONFIG="${1:-.spendsteward_proxy.json}"
 
 if [ ! -f "$PROXY_CONFIG" ]; then
     echo "Error: $PROXY_CONFIG not found"
-    echo "Run: python setup_proxy.py --key <your-api-key>"
+    echo "Run: python setup_proxy.py --jwt-token <your-jwt-token>"
     exit 1
 fi
 
 # Extract configuration
-SPENDSTEWARD_KEY=$(jq -r '.spendsteward_api_key' "$PROXY_CONFIG")
+JWT_TOKEN=$(jq -r '.jwt_token' "$PROXY_CONFIG")
 SPENDSTEWARD_BASE=$(jq -r '.spendsteward_base_url' "$PROXY_CONFIG")
 CLAUDE_MODEL=$(jq -r '.claude_model' "$PROXY_CONFIG")
 
 echo "🔄 Proxy Configuration:"
-echo "  Endpoint: $SPENDSTEWARD_BASE/v1"
+echo "  Endpoint: $SPENDSTEWARD_BASE/api/v1/proxy/anthropic"
 echo "  Model: $CLAUDE_MODEL"
-echo "  Auth: $(echo $SPENDSTEWARD_KEY | cut -c1-10)..."
 echo ""
 
 # Set environment variables
-export GAMEDEV_AGENT_BASE="$SPENDSTEWARD_BASE/v1"
+export GAMEDEV_AGENT_BASE="$SPENDSTEWARD_BASE/api/v1/proxy/anthropic"
 export GAMEDEV_AGENT_MODEL="$CLAUDE_MODEL"
-export GAMEDEV_AGENT_TOKEN="$SPENDSTEWARD_KEY"
-
-# Note: The agent uses GITHUB_TOKEN for auth; we're using SpendSteward key instead
-# The SpendSteward proxy handles authentication transparently
-export GITHUB_TOKEN="$SPENDSTEWARD_KEY"
+export GAMEDEV_AGENT_TOKEN="$JWT_TOKEN"
 
 echo "✓ Running gamedev agent with SpendSteward proxy..."
 echo ""
@@ -82,9 +83,9 @@ def main():
         description="Setup SpendSteward proxy for new_game gamedev agent"
     )
     parser.add_argument(
-        "--key",
+        "--jwt-token",
         required=True,
-        help="SpendSteward API key (sk-...)"
+        help="SpendSteward JWT token (obtained from POST /auth/jwt/login)"
     )
     parser.add_argument(
         "--url",
@@ -96,36 +97,35 @@ def main():
         default=".spendsteward_proxy.json",
         help="Output configuration file"
     )
-    
+
     args = parser.parse_args()
-    
-    # Validate API key format
-    if not args.key.startswith("sk-"):
-        print("⚠️  Warning: API key should start with 'sk-'")
-    
+
+    # Validate JWT token format
+    if not args.jwt_token.startswith("eyJ"):
+        print("⚠️  Warning: JWT token should start with 'eyJ'")
+
     # Create configuration
-    config = setup_proxy_config(args.key, args.url)
-    
+    config = setup_proxy_config(args.jwt_token, args.url)
+
     # Save configuration
     config_path = Path(args.output)
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
-    
+
     print("✅ SpendSteward Proxy Configuration Created")
     print(f"📝 Config file: {config_path}")
     print()
     print("Configuration:")
     print(f"  SpendSteward URL: {args.url}")
-    print(f"  Proxy Endpoint:   {args.url}/v1")
+    print(f"  Proxy Endpoint:   {args.url}/api/v1/proxy/anthropic")
     print(f"  Claude Model:     {config['claude_model']}")
-    print(f"  API Key:          {args.key[:20]}...")
     print()
     print("Next steps:")
     print("  1. Test the proxy:")
-    print(f"     curl -X GET {args.url}/health -H 'Authorization: Bearer {args.key}'")
+    print(f"     curl -X GET {args.url}/healthz -H 'Authorization: Bearer <jwt_token>'")
     print()
     print("  2. Run the agent with proxy:")
-    print(f"     source setup_spendsteward_proxy.sh {args.key}")
+    print(f"     source setup_spendsteward_proxy.sh <jwt_token>")
     print("     python agents/gamedev/main.py")
     print()
     print("Or use the wrapper:")
@@ -133,7 +133,7 @@ def main():
     print()
     print("Monitor costs:")
     print(f"     Visit SpendSteward dashboard at: {args.url}/dashboard")
-    
+
     # Optionally create wrapper script
     wrapper_path = Path("run_with_proxy.sh")
     if not wrapper_path.exists():
