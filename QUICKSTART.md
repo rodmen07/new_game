@@ -8,18 +8,23 @@
 
 ## Setup (One Time)
 
-### 1. Install Dependencies
+### 1. Set Up Virtual Environment
 
 ```bash
 cd /home/rodmendoza07/Projects/new_game
-python3 -m venv .venv
-source .venv/bin/activate
-pip install openai
+./setup_venv.sh
 ```
 
-Or use our setup script:
+This will:
+- Create a Python virtual environment in `.venv/`
+- Install required dependencies (openai, anthropic, python-dotenv)
+- Verify the installation
+
+**Manual setup (if you prefer):**
 ```bash
-./setup.sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install openai anthropic python-dotenv
 ```
 
 ### 2. Verify SpendSteward is Running
