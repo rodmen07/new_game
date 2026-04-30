@@ -143,9 +143,13 @@ def main():
         print(f"❌ ERROR: Agent script not found: {agent_script}")
         sys.exit(1)
     
+    # Use venv Python if available
+    venv_python = Path(__file__).parent / ".venv" / "bin" / "python3"
+    python_exe = str(venv_python) if venv_python.exists() else "python3"
+    
     try:
         result = subprocess.run(
-            ["python3", str(agent_script)],
+            [python_exe, str(agent_script)],
             env=env,
             cwd=Path(__file__).parent
         )

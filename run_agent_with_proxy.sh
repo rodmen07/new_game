@@ -25,5 +25,19 @@ fi
 # Shift to get remaining arguments
 shift
 
+# Activate virtual environment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
+    echo "❌ ERROR: Virtual environment not found at $SCRIPT_DIR/.venv"
+    echo ""
+    echo "Run setup first:"
+    echo "  python3 -m venv .venv"
+    echo "  source .venv/bin/activate"
+    echo "  pip install openai"
+    exit 1
+fi
+
+source "$SCRIPT_DIR/.venv/bin/activate"
+
 # Run the Python wrapper with the token
-exec python3 run_agent_with_proxy.py --jwt-token "$JWT_TOKEN" "$@"
+exec python3 "$SCRIPT_DIR/run_agent_with_proxy.py" --jwt-token "$JWT_TOKEN" "$@"
