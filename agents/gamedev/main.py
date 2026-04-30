@@ -36,7 +36,7 @@ import pathlib
 import subprocess
 import sys
 
-from openai import OpenAI
+from anthropic import Anthropic
 
 from prompts import SYSTEM_PROMPT, build_task_prompt
 from tasks import DIMENSIONS, build_task_queue, pick_next_task
@@ -189,86 +189,114 @@ def run_verify(cmd: list[str]) -> tuple[bool, str]:
 # ---------------------------------------------------------------------------
 
 def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> str | None:
-    token = os.environ.get("GITHUB_TOKEN")
+    token = os.environ.get("GAMEDEV_AGENT_TOKEN") or os.environ.get("GITHUB_TOKEN")
     if not token:
-        log.error("GITHUB_TOKEN is not set; required for GitHub Models inference")
+        log.error("GAMEDEV_AGENT_TOKEN or GITHUB_TOKEN is not set; required for inference")
         return None
 
     model = os.environ.get("GAMEDEV_AGENT_MODEL", DEFAULT_MODEL)
     base  = os.environ.get("GAMEDEV_AGENT_BASE",  DEFAULT_BASE)
     log.info("Inference: model=%s base=%s", model, base)
 
-    client = OpenAI(api_key=token, base_url=base)
+    client = Anthropic(api_key=token, base_url=base) if base != DEFAULT_BASE else Anthropic(api_key=token)
     dispatch = make_dispatch(allowed_paths)
     tools = tool_schemas()
+    
+    # Convert OpenAI tool format to Anthropic format
+    anthropic_tools = []
+    for tool in tools:
+        anthropic_tools.append({
+            "name": tool["function"]["name"],
+            "description": tool["function"]["description"],
+            "input_schema": tool["function"]["parameters"],
+        })
 
     messages: list[dict] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user",   "content": build_task_prompt(dim, focus, scope, allowed_paths)},
+        {"role": "user", "content": build_task_prompt(dim, focus, scope, allowed_paths)},
     ]
 
     summary: str | None = None
 
     for round_num in range(MAX_TOOL_ROUNDS):
         try:
-            resp = client.chat.completions.create(
+            resp = client.messages.create(
                 model=model,
+                max_tokens=4096,
+                system=SYSTEM_PROMPT,
                 messages=messages,
-                tools=tools,
-                tool_choice="auto",
-                temperature=0.2,
+                tools=anthropic_tools,
             )
         except Exception as exc:
             log.error("Inference call failed: %s", exc)
             return None
 
-        choice = resp.choices[0]
-        msg = choice.message
-        tool_calls = getattr(msg, "tool_calls", None) or []
-
-        # Append the assistant turn (must include tool_calls when present).
-        assistant_entry: dict = {"role": "assistant", "content": msg.content or ""}
-        if tool_calls:
-            assistant_entry["tool_calls"] = [
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {"name": tc.function.name, "arguments": tc.function.arguments},
-                }
-                for tc in tool_calls
-            ]
+        # Process response content blocks
+        tool_calls = []
+        text_response = None
+        
+        for block in resp.content:
+            if block.type == "text":
+                text_response = block.text
+            elif block.type == "tool_use":
+                tool_calls.append(block)
+        
+        # Append assistant message
+        assistant_entry: dict = {
+            "role": "assistant",
+            "content": []
+        }
+        
+        if text_response:
+            assistant_entry["content"].append({"type": "text", "text": text_response})
+        
+        for tool_call in tool_calls:
+            assistant_entry["content"].append({
+                "type": "tool_use",
+                "id": tool_call.id,
+                "name": tool_call.name,
+                "input": tool_call.input,
+            })
+        
         messages.append(assistant_entry)
-
+        
         if not tool_calls:
-            text = (msg.content or "").strip()
-            if len(text) < 20:
-                log.warning("Agent final message too short (%d chars): %r", len(text), text)
-                return None
-            summary = text
-            log.info("Agent concluded after %d rounds.", round_num + 1)
+            if text_response:
+                text = text_response.strip()
+                if len(text) < 20:
+                    log.warning("Agent final message too short (%d chars): %r", len(text), text)
+                    return None
+                summary = text
+                log.info("Agent concluded after %d rounds.", round_num + 1)
             break
 
         # Execute every requested tool call and append responses.
-        for tc in tool_calls:
-            fn_name = tc.function.name
-            try:
-                fn_args = json.loads(tc.function.arguments or "{}")
-            except json.JSONDecodeError as exc:
-                result_text = f"ERROR: tool args were not valid JSON: {exc}"
+        tool_results = []
+        for tool_call in tool_calls:
+            fn_name = tool_call.name
+            fn_args = tool_call.input or {}
+            
+            result_text = None
+            log.info("Tool [%d] %s args=%s", round_num + 1, fn_name, list(fn_args.keys()) if isinstance(fn_args, dict) else [])
+            
+            if fn_name not in dispatch:
+                result_text = f"ERROR: unknown tool '{fn_name}'"
             else:
-                log.info("Tool [%d] %s args=%s", round_num + 1, fn_name, list(fn_args.keys()))
-                if fn_name not in dispatch:
-                    result_text = f"ERROR: unknown tool '{fn_name}'"
-                else:
-                    try:
-                        result_text = dispatch[fn_name](fn_args)
-                    except Exception as exc:
-                        result_text = f"ERROR executing {fn_name}: {exc}"
-
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc.id,
+                try:
+                    result_text = dispatch[fn_name](fn_args)
+                except Exception as exc:
+                    result_text = f"ERROR executing {fn_name}: {exc}"
+            
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": tool_call.id,
                 "content": result_text,
+            })
+        
+        # Append tool results as user message
+        if tool_results:
+            messages.append({
+                "role": "user",
+                "content": tool_results,
             })
     else:
         log.error("Agent loop exhausted %d rounds without a final response", MAX_TOOL_ROUNDS)
