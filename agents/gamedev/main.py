@@ -5,7 +5,7 @@ Each run:
   1. Load state (which dimension/focus pairs are done).
   2. Pick the next task in dimension-first interleaved order.
   3. Create a feature branch off origin/main.
-  4. Run the GitHub Models tool-calling loop (default: anthropic/claude-sonnet-4-5).
+  4. Run the Anthropic Claude Haiku 4.5 agent loop for cost-effective agentic code generation.
   5. Verify cargo fmt + clippy + test inside the agent's tool calls.
   6. On success: re-verify from the orchestrator, commit, write PR
      metadata for the workflow step to push + open a PR.
@@ -20,8 +20,8 @@ Exit codes (read by the GitHub Actions wrapper):
 Environment:
   GITHUB_TOKEN          required, used both for git push (via the workflow) and
                         for GitHub Models inference
-  GAMEDEV_AGENT_MODEL   optional, defaults to "anthropic/claude-sonnet-4-5"
-  GAMEDEV_AGENT_BASE    optional, defaults to "https://models.github.ai/inference"
+  GAMEDEV_AGENT_MODEL   optional, defaults to "claude-3-5-haiku-4-5-20241022"
+  GAMEDEV_AGENT_BASE    optional, defaults to "https://api.anthropic.com"
   FORCE_DIMENSION       optional, force a dimension id (e.g. "graphics")
   FORCE_FOCUS           optional, force a focus id (must be paired with FORCE_DIMENSION)
 """
@@ -61,8 +61,8 @@ STATE_FILE  = AGENT_DIR / "state.json"
 OUTPUT_FILE = AGENT_DIR / ".gamedev-output.json"
 MAX_TOOL_ROUNDS = 25
 
-DEFAULT_MODEL = "anthropic/claude-sonnet-4-5"
-DEFAULT_BASE  = "https://models.github.ai/inference"
+DEFAULT_MODEL = "claude-3-5-haiku-4-5-20241022"
+DEFAULT_BASE  = "https://api.anthropic.com"
 
 EXIT_COMMITTED = 0
 EXIT_ERROR     = 1
