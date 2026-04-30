@@ -185,7 +185,7 @@ def run_verify(cmd: list[str]) -> tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
-# Agent loop (GitHub Models / OpenAI-compatible chat completions)
+# Agent loop (Anthropic SDK with proxy support)
 # ---------------------------------------------------------------------------
 
 def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> str | None:
@@ -198,7 +198,7 @@ def agent_loop(dim: str, focus: str, scope: str, allowed_paths: list[str]) -> st
     base  = os.environ.get("GAMEDEV_AGENT_BASE",  DEFAULT_BASE)
     log.info("Inference: model=%s base=%s", model, base)
 
-    client = Anthropic(api_key=token, base_url=base) if base != DEFAULT_BASE else Anthropic(api_key=token)
+    client = Anthropic(auth_token=token, base_url=base) if base != DEFAULT_BASE else Anthropic(auth_token=token)
     dispatch = make_dispatch(allowed_paths)
     tools = tool_schemas()
     
